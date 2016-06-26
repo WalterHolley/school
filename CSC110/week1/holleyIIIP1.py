@@ -8,6 +8,8 @@ outputs the following:
 -total bags of potting soil needed
 -the cost(subtotal, tax, and total price) of the order
 '''
+from decimal import ROUND_HALF_UP, Decimal
+
 #constants
 SMALL_POT_DIAMETER = 9
 SMALL_POT_HEIGHT = 10
@@ -62,8 +64,8 @@ total_petunias = (small_pot_petunias * pots_small) + (med_pot_petunias * pots_me
 total_pot_price = (pots_small * SMALL_POT_PRICE) + (pots_med * MED_POT_PRICE) + (pots_large * LARGE_POT_PRICE)
 total_petunia_price = total_petunias * PETUNIA_PRICE
 total_soil_price = total_soil_bags * POTTING_SOIL_PRICE
-subtotal_price = total_pot_price + total_petunia_price + total_soil_price
-total_taxes = subtotal_price * TAX_RATE
+subtotal_price = Decimal(total_pot_price + total_petunia_price + total_soil_price)
+total_taxes = Decimal(subtotal_price * Decimal(TAX_RATE))
 total_price = subtotal_price + total_taxes
 
 
@@ -78,7 +80,21 @@ print("\n")
 print("Petunias:{:>16} plants".format(total_petunias))
 print("Potting soil:{:>12} bags".format(total_soil_bags))
 print("\n")
-print("Subtotal{:>6}{: 9.2f}".format('$', subtotal_price))
+print("Subtotal{:>6}{: 9.2f}".format('$', Decimal(subtotal_price.quantize(Decimal('.01'), rounding=ROUND_HALF_UP))))
 print("Tax{:>11}{: 9.2f}".format('$',total_taxes))
 print("TOTAL{:>9}{: 9.2f}".format('$', total_price))
 print("-" * 50)
+
+#SUMMARY
+'''
+I approached this assignment starting off with what was known(costs, flower pot dimensions, etc.).
+From there, I progressed through the script using the formulas provided, from there, it was a matter of
+tallying price, and presenting the information.  I did get stuck around the issue of rounding without
+using the round() function, but it didn't take much in order to find an alternative.  I tested the program
+by doing the math manually for a few scenarios,and I'm fairly pleased with how things turned out.
+What I don't like is the lack of error handling, and repetition involved with the code.I repeat most of
+the formulas several times, and the script can't parse for numeric values.I get the impression that we'll
+discuss functions and exception handling later on.  The key thing I learned about in this project was the
+decimal object.  I wasn't aware of it before this project.  For the next project, I'd like to use functions
+to reduce code repitition and possibly start filtering input in order to reduce unexpected behavior.
+'''
