@@ -24,7 +24,6 @@ def main():
 def areaTrapezoid(base1, base2, height):
 
     area = height / 2.0 * (base1 + base2)
-
     return area
 
 #Returns the hypotenuse of a right triangle based on the length of its legs
