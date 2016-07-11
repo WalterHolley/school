@@ -5,6 +5,8 @@
 This application takes in a value and unit
 of measure.  Then, runs that information against
 different geometrical formulas, and prints the results
+
+DEPENDENCIES: p4geom.py
 '''
 from p4geom import *
 
