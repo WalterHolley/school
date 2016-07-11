@@ -37,3 +37,15 @@ def circleCircum(radius):
 #returns the area of a circle
 def circleArea(radius):
     return pi*radius**2
+
+
+#SPHERE FUNCTIONS
+
+#returns the volume of s sphere
+def sphereVolume(radius):
+    return 4 / 3 *(pi * radius**3)
+
+#returns surface area of sphere
+def sphereSurfArea(radius):
+    return 4 * pi * radius**2
+
