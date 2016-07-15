@@ -1,13 +1,21 @@
 #Project 3 - Fun with Selection
 '''
 7/8/2016
-Implements functions that use slection control structures.
+Implements several functions that use selection control structures.
 Display their results.
 '''
 
 
 
-##UTILITY FUNCTIONS##
+def main():
+    displayEmpRating()
+    displayNscGrade()
+    displayIsDivisibleBy5or7or11()
+    displayCommission()
+
+
+
+##=====================UTILITY FUNCTIONS=========================================##
 
 
 #prints header section
@@ -16,8 +24,6 @@ def printHeader(headerText):
     print("-" * 50)
     print("{}".format(headerText.upper()))
     print("-" * 50)
-
-
 
 
 #prints the content for the commision display
@@ -37,7 +43,10 @@ def printCommissionDisplay(position, inStateAmount, outStateAmount, monthsEmploy
 
 
 
-##OPERATION FUNCTIONS##
+##================================OPERATION FUNCTIONS============================##
+
+
+
 
 #returns a description of an employee's numeric rating
 #rating: the employee numeric rating
@@ -58,8 +67,6 @@ def empRating(rating):
     return description
 
 
-
-
 #Converts a percentage to an Nsc style grade
 #grade: the students percentage grade(ex: 98.4)
 def pctToNsc(grade):
@@ -78,7 +85,6 @@ def pctToNsc(grade):
 
 
 
-
 #Determines if a number is divisible by 5, 7, or 11
 #number: numberic value to be checked.
 def isDivivsibleBy5or7or11(number):
@@ -88,8 +94,6 @@ def isDivivsibleBy5or7or11(number):
         isDivisible = True
 
     return isDivisible
-
-
 
 
 #Calculates the commission for an employee
@@ -146,8 +150,10 @@ def commission(position, inStateAmount, outStateAmount, monthsAtCompany):
 
 
 
-##DISPLAY FUNCTIONS##
+##====================DISPLAY FUNCTIONS==========================================##
 
+
+#Writes employee rating tests to console
 def displayEmpRating():
     printHeader("Employee Rating Results")
     print("{:<8}{:>2}{:^5}{}".format("Rating:", "10", "-->", empRating(10)))
@@ -160,7 +166,7 @@ def displayEmpRating():
 
 
 
-
+#Writes Nsc Grade tests to console
 def displayNscGrade():
     printHeader("Percentage to NSC Grade results")
     print("{:<12}{:>3}{:^5}{:>4}".format("Percentage:", "-10", "-->", pctToNsc(-10)))
@@ -173,7 +179,7 @@ def displayNscGrade():
 
 
 
-    
+#writes is divisible by 5, 7, or 11 tests to console   
 def displayIsDivisibleBy5or7or11():
     printHeader("Divisible by 5, 7, or 11 results")
     print("{:<8}{:<}{:^5}{}".format("Number:", "33", "-->", isDivivsibleBy5or7or11(33)))
@@ -186,26 +192,52 @@ def displayIsDivisibleBy5or7or11():
 
 
 
-    
+#writes commission tests to console   
 def displayCommission():
     printHeader("Commission Results")
-    printCommissionDisplay("Trainee", 4000, 5000, 39)
+    printCommissionDisplay("Trainee", 4000, 5000, 53)
     printCommissionDisplay("Associate", 10234.43, 600, 8)
+    printCommissionDisplay("Lead", 1000000.46, 345968.33, 121)
+    printCommissionDisplay("Manager", 5000, 329.74, 36)
+    printCommissionDisplay("Trainee", -4769.03, 300, 2)
 
 
 
 
     
-def main():
-    displayEmpRating()
-    displayNscGrade()
-    displayIsDivisibleBy5or7or11()
-    displayCommission()
 
 
 
 
 
 
-##MAIN EXECUTION##
+
+##================================MAIN EXECUTION=================================##
 main()
+
+
+
+
+
+#SUMMARY
+'''
+Much like the previous projects, I took what was known(function names, commission calculation),
+and then worked towards accounting for what wasn't known, which in this case, was nothing.
+When I say nothing, I mean all of the specifications were given, and I just had to go from there.
+I stubbed out all the functions I would need first, then implemented the operations functions.
+After that, I implemented the display functions.  In the main function, I added one diplay function,
+ad tested the output from that function until the code worked and displayed properly, then added
+an additional display function call to main, and repeated the process for the remaining display function calls.
+The commission calculations were verified using excel.
+
+For what I don't like, I would've preferred to have made a decision in commission around taking in negative sales number,
+as there's no way of handling them at this time.  Also, while functions have helped quite a bit in reducing
+repitition, I'm still repeating lines of code.  Particlulary these print statements
+that are near carbon copies of eachother.  A loop structure would help with this problem, but those
+won't be discussed until later on.
+
+Primary take-away from this assignment are the additional exercises in string formatting.  That
+took a little more time compared to the previous projects.  This could be very useful
+for scripts and console utilities.
+
+'''
