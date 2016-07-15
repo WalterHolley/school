@@ -4,10 +4,45 @@
 Implements functions that use slection control structures.
 Display their results.
 '''
+
+
+
+##UTILITY FUNCTIONS##
+
+
+#prints header section
+#headerText: Text for header
+def printHeader(headerText):
+    print("-" * 50)
+    print("{}".format(headerText.upper()))
+    print("-" * 50)
+
+
+
+
+#prints the content for the commision display
+#position: Employee position
+#inStateAmount: Sales amount earned in-state
+#outStateAmount: Sales amount earned out of state
+#monthsEmployed: Numbe of months with company
+def printCommissionDisplay(position, inStateAmount, outStateAmount, monthsEmployed):
+    print("{}{:>40}".format("Position:", position))
+    print("{}{:>15}{:16,.2f}".format("In State Earnings:", "$", inStateAmount))
+    print("{}{:>11}{:16,.2f}".format("Out Of State Earnings:","$", outStateAmount))
+    print("{}{:>33}".format("Months Employed:", monthsEmployed))
+    print("{}{:>22}{:16,.2f}".format("Commission:", "$", commission(position, inStateAmount, outStateAmount, monthsEmployed)))
+    print()
+
+
+
+
+
+##OPERATION FUNCTIONS##
+
 #returns a description of an employee's numeric rating
 #rating: the employee numeric rating
 def empRating(rating):
-    description = "No Description"
+    description = "ERROR"
 
     if rating == 10:
         description = "Excellent"
@@ -22,6 +57,9 @@ def empRating(rating):
 
     return description
 
+
+
+
 #Converts a percentage to an Nsc style grade
 #grade: the students percentage grade(ex: 98.4)
 def pctToNsc(grade):
@@ -30,16 +68,144 @@ def pctToNsc(grade):
     if grade <= 100 and grade >= 0:
         nscGrade = ((grade - 60) / 10) + .4
 
+        if nscGrade > 4.0:
+            nscGrade = 4.0
+
+        elif nscGrade < 1.0:
+            nscGrade = 0.0
+
     return nscGrade
 
+
+
+
+#Determines if a number is divisible by 5, 7, or 11
+#number: numberic value to be checked.
 def isDivivsibleBy5or7or11(number):
 
+    isDivisible = False
     if number % 5 == 0 or number % 7 == 0 or number % 11 == 0:
-        return true
+        isDivisible = True
 
-    return false
+    return isDivisible
 
+
+
+
+#Calculates the commission for an employee
+#position: Employee's position
+#inStateAmount: Dollar amount sold in-state
+#outStateAmount: Dollar amount sold out of state
+#monthsAtCompany: number of months employee has been with company
 def commission(position, inStateAmount, outStateAmount, monthsAtCompany):
+    totalCommission = 0
+    bumpRate = 0
+    inStateRate = 0
+    outStateRate = 0
+    position = position.lower()
+
+    #determine in/out state commission rates
+
+    if position == "trainee":
+        inStateRate = 0.01
+        outStateRate = 0.02
+
+    elif position == "associate":
+        inStateRate = 0.03
+        outStateRate = 0.05
+        
+    elif position == "lead":
+        inStateRate = 0.04
+        outStateRate = 0.06
+
+    elif position == "manager":
+        inStateRate = 0.05
+        outStateRate = 0.08
+
+
+    #determine 'bump' rate
+
+    if monthsAtCompany >= 120:
+        bumpRate = 0.03
+        
+    elif monthsAtCompany >= 48 and monthsAtCompany <= 119:
+        bumpRate = 0.02
+
+    elif monthsAtCompany >= 24 and monthsAtCompany <= 47:
+        bumpRate = 0.01
+
+    #calculate commission
+
+    totalCommission = (inStateAmount * inStateRate + outStateAmount * outStateRate)
+    totalCommission += totalCommission * bumpRate
+
+    return totalCommission
+
+
+
+
+
+
+##DISPLAY FUNCTIONS##
+
+def displayEmpRating():
+    printHeader("Employee Rating Results")
+    print("{:<8}{:>2}{:^5}{}".format("Rating:", "10", "-->", empRating(10)))
+    print("{:<8}{:>2}{:^5}{}".format("Rating:", "0", "-->", empRating(0)))
+    print("{:<8}{:>2}{:^5}{}".format("Rating:", "7", "-->", empRating(7)))
+    print("{:<8}{:>2}{:^5}{}".format("Rating:", "9", "-->", empRating(9)))
+    print("{:<8}{:>2}{:^5}{}".format("Rating:", "1", "-->", empRating(1)))
+    print()
     
 
+
+
+
+def displayNscGrade():
+    printHeader("Percentage to NSC Grade results")
+    print("{:<12}{:>3}{:^5}{:>4}".format("Percentage:", "-10", "-->", pctToNsc(-10)))
+    print("{:<12}{:>3}{:^5}{:>4}".format("Percentage:", "100", "-->", pctToNsc(100)))
+    print("{:<12}{:>3}{:^5}{:>4}".format("Percentage:", "63", "-->", pctToNsc(63)))
+    print("{:<12}{:>3}{:^5}{:>4}".format("Percentage:", "87", "-->", pctToNsc(87)))
+    print("{:<12}{:>3}{:^5}{:>4}".format("Percentage:", "101", "-->", pctToNsc(101)))
+    print()
+
+
+
+
+    
+def displayIsDivisibleBy5or7or11():
+    printHeader("Divisible by 5, 7, or 11 results")
+    print("{:<8}{:<}{:^5}{}".format("Number:", "33", "-->", isDivivsibleBy5or7or11(33)))
+    print("{:<8}{:<}{:^5}{}".format("Number:", "47", "-->", isDivivsibleBy5or7or11(47)))
+    print("{:<8}{:<}{:^5}{}".format("Number:", "15", "-->", isDivivsibleBy5or7or11(15)))
+    print("{:<8}{:<}{:^5}{}".format("Number:", "49", "-->", isDivivsibleBy5or7or11(49)))
+    print("{:<8}{:<}{:^5}{}".format("Number:", "24", "-->", isDivivsibleBy5or7or11(24)))
+    print()
+    
+
+
+
+    
+def displayCommission():
+    printHeader("Commission Results")
+    printCommissionDisplay("Trainee", 4000, 5000, 39)
+    printCommissionDisplay("Associate", 10234.43, 600, 8)
+
+
+
+
+    
 def main():
+    displayEmpRating()
+    displayNscGrade()
+    displayIsDivisibleBy5or7or11()
+    displayCommission()
+
+
+
+
+
+
+##MAIN EXECUTION##
+main()
