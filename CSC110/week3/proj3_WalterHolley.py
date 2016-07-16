@@ -77,7 +77,6 @@ def pctToNsc(grade):
 
         if nscGrade > 4.0:
             nscGrade = 4.0
-
         elif nscGrade < 1.0:
             nscGrade = 0.0
 
@@ -89,11 +88,8 @@ def pctToNsc(grade):
 #number: numberic value to be checked.
 def isDivivsibleBy5or7or11(number):
 
-    isDivisible = False
-    if number % 5 == 0 or number % 7 == 0 or number % 11 == 0:
-        isDivisible = True
+    return number % 5 == 0 or number % 7 == 0 or number % 11 == 0
 
-    return isDivisible
 
 
 #Calculates the commission for an employee
@@ -113,15 +109,12 @@ def commission(position, inStateAmount, outStateAmount, monthsAtCompany):
     if position == "trainee":
         inStateRate = 0.01
         outStateRate = 0.02
-
     elif position == "associate":
         inStateRate = 0.03
-        outStateRate = 0.05
-        
+        outStateRate = 0.05       
     elif position == "lead":
         inStateRate = 0.04
         outStateRate = 0.06
-
     elif position == "manager":
         inStateRate = 0.05
         outStateRate = 0.08
@@ -130,11 +123,9 @@ def commission(position, inStateAmount, outStateAmount, monthsAtCompany):
     #determine 'bump' rate
 
     if monthsAtCompany >= 120:
-        bumpRate = 0.03
-        
+        bumpRate = 0.03    
     elif monthsAtCompany >= 48 and monthsAtCompany <= 119:
         bumpRate = 0.02
-
     elif monthsAtCompany >= 24 and monthsAtCompany <= 47:
         bumpRate = 0.01
 
@@ -179,7 +170,7 @@ def displayNscGrade():
 
 
 
-#writes is divisible by 5, 7, or 11 tests to console   
+#Writes is divisible by 5, 7, or 11 tests to console   
 def displayIsDivisibleBy5or7or11():
     printHeader("Divisible by 5, 7, or 11 results")
     print("{:<8}{:<}{:^5}{}".format("Number:", "33", "-->", isDivivsibleBy5or7or11(33)))
@@ -192,7 +183,7 @@ def displayIsDivisibleBy5or7or11():
 
 
 
-#writes commission tests to console   
+#Writes commission tests to console   
 def displayCommission():
     printHeader("Commission Results")
     printCommissionDisplay("Trainee", 4000, 5000, 53)
@@ -226,7 +217,7 @@ and then worked towards accounting for what wasn't known, which in this case, wa
 When I say nothing, I mean all of the specifications were given, and I just had to go from there.
 I stubbed out all the functions I would need first, then implemented the operations functions.
 After that, I implemented the display functions.  In the main function, I added one diplay function,
-ad tested the output from that function until the code worked and displayed properly, then added
+and tested the output from that function until the code worked and displayed properly, then added
 an additional display function call to main, and repeated the process for the remaining display function calls.
 The commission calculations were verified using excel.
 
