@@ -26,16 +26,21 @@ def main():
         
 ##================UTILTITY FUNCTIONS===================##
 
-def getInterestPayment(totalPayment, interestRate):
-    return totalPayment * interestRate
 
 
+#determines the rate at which interest is compounded
 def getRatePerPeriod(annualInterest):
     return annualInterest / 12
 
+
+
 #converts received interest value to percentage
+#annualInterest: the decimal form of the annual interest e.g:ArithmeticError 2.9
 def convertInterest(annualInterest):
     return annualInterest * 0.01
+
+
+
 
 ##================OPERATIONS FUNCTIONS=================##
 
@@ -47,6 +52,9 @@ def inputLoanData():
 
     return loanAmount, convertInterest(interestRate)
 
+
+
+#displays a menu for selecting loan terms(12 months, 24 months, etc.)
 def showMenu():
     choice = -1
 
@@ -70,36 +78,53 @@ def showMenu():
 
     return choice * 12
 
-#Calculates the base principal payment for the loan
+
+
+#Calculates the base principal payment for the loan.  Rounded to nearest penny
+#presentValue: full balance of the loan
+#ratePerPeriod: the interest rate paid per payment period
+#numberOfPeriod: the total number of periods from which interest will be paid
 def payment(presentValue, ratePerPeriod, numberOfPeriods):
     return round((ratePerPeriod * presentValue) / (1 - (1 + ratePerPeriod)**-numberOfPeriods), 2)
 
 
+
+
+#
 def showReport(presentValue, annualInterestRate, numberOfPeriods, paymentAmount):
     interestRate = getRatePerPeriod(annualInterestRate)
     totalPaymentAmount = 0
 
-    print(paymentAmount)
     #print report header
-    print("{:<8}{:>9}{:>10}{:>11}{:>12}".format("Pmt#", "PmtAmt", "Int", "Princ", "Balance"))
-    print("{:<8}{}{:>10}{:>11}{:>12}".format("-" * 4, "-" * 9, "-" * 5, "-" * 6, "-" * 8))
+    print("{:<8}{:>14}{:>14}{:>16}{:>16}".format("Pmt#", "PmtAmt", "Int", "Princ", "Balance"))
+    print("{:<8}{:>14}{:>14}{:>16}{:>16}".format("-" * 4, "-" * 9, "-" * 5, "-" * 6, "-" * 8))
 
     
     for i in range(1, numberOfPeriods + 1):
 
         #determine payments
-        interestPayment = presentValue * interestRate
+        interestPayment = round(presentValue * interestRate, 2)
         principalPayment = paymentAmount - interestPayment
-        #totalPaymentAmount += principalPayment + interestPayment
+        
+        
+
+        #adjust balances
+        presentValue -= principalPayment
         totalPaymentAmount += paymentAmount
         
-        #reduce balances and periods
-        presentValue -= principalPayment
+        if i == numberOfPeriods:
+            principalPayment += presentValue
+            paymentAmount += presentValue
+            totalPaymentAmount += presentValue
+            presentValue -= presentValue
             
-        #display payments
-        print("{:>4}{:>13,.2f}{:>10.2f}{:>11.2f}{:>11.2f}".format(i, paymentAmount, interestPayment, principalPayment, presentValue))
+        
+            
+        #display payments and balances
+        print("{:>4}{:>18,.2f}{:>14,.2f}{:>16,.2f}{:>16,.2f}".format(i, paymentAmount, interestPayment, principalPayment, presentValue))
 
-    print(totalPaymentAmount)
+    print("{:>22}".format("-" * 9))
+    print("{:>22,.2f}".format(totalPaymentAmount))
 
         
     return 0
@@ -110,3 +135,16 @@ def showReport(presentValue, annualInterestRate, numberOfPeriods, paymentAmount)
 
 ##=============MAIN EXECUTION==========================##
 main()
+
+
+#TESTING
+
+
+
+
+
+#SUMMARY
+'''
+pitfalls
+-large numbers(billions or greater cause massive display disruption
+'''
