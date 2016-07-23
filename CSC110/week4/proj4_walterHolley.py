@@ -10,19 +10,22 @@ a potential buyer's loan payments
 def main():
 
     loanAmount, interestRatePerPeriod = inputLoanData()
-    totalPeriods = showMenu();
+    totalPeriods = 1
   
     while totalPeriods:
-        #determine payment
-        paymentAmount = payment(loanAmount, interestRatePerPeriod, totalPeriods)
 
-        #display report
-        showReport(loanAmount, interestRatePerPeriod, totalPeriods, paymentAmount)
-
-        #Pause for menu input
-        input("Press <Enter> to continue")
-        print()
         totalPeriods = showMenu()
+
+        if totalPeriods > 0:
+            paymentAmount = payment(loanAmount, interestRatePerPeriod, totalPeriods)
+
+            #display report
+            showReport(loanAmount, interestRatePerPeriod, totalPeriods, paymentAmount)
+
+            #Pause for menu input
+            input("Press <Enter> to continue")
+            print()
+        
         
         
 ##================UTILTITY FUNCTIONS===================##
@@ -61,13 +64,11 @@ def inputLoanData():
 #returns number of periods
 def showMenu():
     choice = -1
-
-    
+   
     #menu Header
     print("-" * 50)
     print("Amy's Auto - Loan Report Menu")
     print("-" * 50)
-
 
     #menu contents
     for i in range(1,6):
@@ -101,7 +102,6 @@ def payment(presentValue, ratePerPeriod, numberOfPeriods):
 #paymentAmount:  The determined payment amount for the loan
 def showReport(presentValue, ratePerPeriod, numberOfPeriods, paymentAmount):
     totalPaymentAmount = 0
-
     
     #print report header
     print("{:<8}{:>20}{:>24}{:>24}{:>25}".format("Pmt#", "PmtAmt", "Int", "Princ", "Balance"))
@@ -114,8 +114,6 @@ def showReport(presentValue, ratePerPeriod, numberOfPeriods, paymentAmount):
         interestPayment = round(presentValue * ratePerPeriod, 2)
         principalPayment = paymentAmount - interestPayment
         
-        
-
         #adjust balances
         presentValue -= principalPayment
         totalPaymentAmount += paymentAmount
@@ -125,13 +123,9 @@ def showReport(presentValue, ratePerPeriod, numberOfPeriods, paymentAmount):
             paymentAmount += presentValue
             totalPaymentAmount += presentValue
             presentValue -= presentValue
-            
-
-            
-        #display payments and balances
+                       
+        #display
         print("{:>4}{:>24,.2f}{:>24,.2f}{:>24,.2f}{:>25,.2f}".format(i, paymentAmount, interestPayment, principalPayment, presentValue))
-
-        
         
     #display final balance
     print("{:>28}".format("-" * 9))
