@@ -49,8 +49,8 @@ def fixPartSpecific(data):
 def fixCommon(data):
     itemType = fixType(data[1])
     printInventoryLine("Type:", itemType)
-    printInventoryLine("Part#:", fixPartNumber(data[2][0:8]))
-    printInventoryLine("Description:", fixDescription(data[2][9: -1]))
+    printInventoryLine("Part#:", fixPartNumber(data[2][:9]))
+    printInventoryLine("Description:", fixDescription(data[2][9:])) 
     printInventoryLine("Qty:", fixQuantity(data[3]))
     printInventoryLine("Loc:", fixLocation(data[4]))
     printInventoryLine("Cost:", fixCost(data[5]))
@@ -59,7 +59,7 @@ def fixCommon(data):
     return itemType
     
 
-
+#capitalizes the type value
 def fixType(typeValue):
     
     if typeValue.lower() == "part":
@@ -92,7 +92,7 @@ def fixDescription(partNumber):
     return newPartNumber
                 
 
-
+#converts quantity value to integer
 def fixQuantity(quantity):
     return int(quantity)
 
@@ -106,7 +106,7 @@ def fixLocation(location):
 
 #strips dollar sign and commas from cost amount
 def fixCost(cost):
-    return cost.replace('$','').replace(',','')
+    return float(cost.replace('$','').replace(',',''))
 
 
 
@@ -128,12 +128,12 @@ def fixModel(model):
 
 #returns first half of year string
 def fixStartYear(yearString):
-    return yearString[0:4]
+    return int(yearString[:4])
 
 
 #returns second half of year string
 def fixEndYear(yearString):
-    return yearString[4:8]
+    return int(yearString[4:])
     
 
 
