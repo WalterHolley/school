@@ -146,7 +146,6 @@ if __name__ == "__main__":
 
 
 #TESTING
-#See proj5_tests_walterHolley.py
 '''
 I worked on a test harness for this project. You'll see the
 results inside of the above mentioned file.  I know it's not required,
@@ -154,6 +153,39 @@ but I decided to give it a shot by writing code that executed the
 'fix' functions, and displayed what I thought the result should be, versus
 what was actually produced.  This helped me pick up on a few issues
 with some of the string slices I was doing earlier.
+
+Since only one file is allowed for this, I'll post the console results from my test.
+
+##TESTING STRINGS##
+Testing Start Year Result
+Test Value:12345869                 Expected:1234            Result:==>1234
+Test Value:98743652                 Expected:9874            Result:==>9874
+Test Value:52163298                 Expected:5216            Result:==>5216
+
+Testing End Year Result
+Test Value:12345869                 Expected:5869            Result:==>5869
+Test Value:98743652                 Expected:3652            Result:==>3652
+Test Value:52163298                 Expected:3298            Result:==>3298
+
+Testing Description Result
+Test Value:DdDD                     Expected:Dd D D          Result:==>Dd D D
+Test Value:TestYourMight            Expected:Test Your Might Result:==>Test Your Might
+Test Value:I mean yeahNot Really    Expected:I mean yeah Not Really Result:==>I mean yeah Not  Really
+
+Testing Type Result
+Test Value:PART                     Expected:Part            Result:==>Part
+Test Value:pArT                     Expected:Part            Result:==>Part
+Test Value:acc                      Expected:Accessory       Result:==>Accessory
+
+Testing Part Number Result
+Test Value:oooollll                 Expected:00001111        Result:==>00001111
+Test Value:AIRF13078                Expected:AIRF13078       Result:==>AIRF13078
+Test Value:DRPNO432l                Expected:DRPN04321       Result:==>DRPN04321
+
+Testing Location Result
+Test Value:PART                     Expected:Part            Result:==>Part
+Test Value:pArT                     Expected:Part            Result:==>Part
+Test Value:acc                      Expected:Accessory       Result:==>Accessory
 '''
 
 #SUMMARY
