@@ -8,8 +8,6 @@ only handles a specific sequence of data.
 Currently parses parts and accessories data
 '''
 
-
-
 #main execution of program
 def main():
     inventoryString = str(input("Enter inventory string:")).split("#")
@@ -21,19 +19,12 @@ def main():
 
 ##================UTILITY FUNCTIONS====================##
 
-
 #writes formatted inventory line
 def printInventoryLine(itemDescription, itemValue):
     print("{:<15}{}".format(itemDescription, itemValue))
 
-        
-
-
-
-
 
 ##================OPERATIONS FUNCTIONS=================##
-
 
 
 #prints parts related elements of a record
@@ -42,7 +33,6 @@ def fixPartSpecific(data):
     printInventoryLine("Model:", fixModel(data[8]))
     printInventoryLine("Year Start:", fixStartYear(data[9]))
     printInventoryLine("Year End:", fixEndYear(data[9]))
-
 
 
 #prints common elements all of records
@@ -70,12 +60,10 @@ def fixType(typeValue):
     return typeValue
 
 
-
 #fixes part number.  Replaces the letter 'o' w/zeros, and 'l' with 1
 def fixPartNumber(partNumber):
     return partNumber.lower().replace(' ','').replace('o', '0').replace('l', '1').upper()
     
-
 
 #puts spaces between capital letters in the item description
 def fixDescription(partNumber):
@@ -97,11 +85,9 @@ def fixQuantity(quantity):
     return int(quantity)
 
 
-
 #removes all whitespaces from location string
 def fixLocation(location):
     return location.strip().replace(' ','')
-
 
 
 #strips dollar sign and commas from cost amount
@@ -109,17 +95,13 @@ def fixCost(cost):
     return float(cost.replace('$','').replace(',',''))
 
 
-
 #strips dollar sign and commas from price amount
 def fixPrice(price):
     return fixCost(price)
 
 
-
-
 def fixMake(make):
     return make
-
 
 
 def fixModel(model):
@@ -135,7 +117,6 @@ def fixStartYear(yearString):
 def fixEndYear(yearString):
     return int(yearString[4:])
     
-
 
 ##================MAIN EXECUTION=======================##
 
@@ -201,7 +182,7 @@ handle anything beyond the specific formatting of the inventory lines.
 There's plenty of room for bad data, and potentially many errors that can
 crash the program.
 
-The test harness is the bif take-away here.  It took a little bit of digging
+The test harness is the big take-away here.  It took a little bit of digging
 to understand how to get things working properly; especially to prevent execution
 of main for this program.
 Honorable mention goes to string slicing.  I haven't spent too much
