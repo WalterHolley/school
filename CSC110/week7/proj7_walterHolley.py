@@ -361,6 +361,35 @@ else
 except
 exec
 
+
+TEST:  Sort test
+
+Original file:
+and
+del
+from
+not
+while
+as
+elif
+global
+or
+with
+assert
+
+RESULTS:
+and
+as
+assert
+del
+elif
+from
+global
+not
+or
+while
+with
+
 '''
 
 
