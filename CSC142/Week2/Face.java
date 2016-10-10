@@ -88,6 +88,7 @@ public class Face {
 		System.out.println(" | /\\   /\\ |");
 		System.out.println("(| o    o  |)");
 		
+		
 	}
 	
 	//Custom eyes portion
