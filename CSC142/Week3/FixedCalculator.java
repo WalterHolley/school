@@ -51,9 +51,31 @@ public class FixedCalculator {
 	private static void caluculateResults(Scanner console) {
 		//change:  moved instructions display to help section
 		//displayCalculatorInstructions();
-		double operand1 = console.nextDouble();
-		char operator = console.next().charAt(0);
-		double operand2 = console.nextDouble();
+		double operand1 = 0;
+		char operator = ' ';
+		double operand2 = 0;
+		boolean validInput = false;
+		
+		//fix7: check for invalid input
+		while(!validInput){
+			
+			System.out.print("Your expression: ");
+			try{		
+				operand1 = console.nextDouble();
+				operator = console.next().charAt(0);
+				operand2 = console.nextDouble();
+				validInput = true;
+				
+			}
+			catch(java.util.InputMismatchException ex){
+				System.out.println("Invalid input. Please try again.");
+				displayCalculatorInstructions();
+				console.nextLine();
+			}
+			
+			
+		}
+		
 		
 		//fix3: type mismatch for result(int can't handle double)
 		double result = 0.0;
@@ -85,18 +107,22 @@ public class FixedCalculator {
 			isOperatorValid = false;
 		}
 		if (isOperatorValid){
-			//fix7: improper string concatenation
-			System.out.println(operand1 +" "+operator+" "+operand2+" = " + result);//would be nice use printf to control the precision of result 
+			//would be nice use printf to control the precision of result 
+			//change: precision of results display up to 3 decimal places.
+			System.out.printf("%f %s %f = %.3f", operand1, operator, operand2, result);
+			System.out.println();
+			
 		}
 	}
 
 	private static void displayCalculatorInstructions() {
 		System.out.println("Enter a mathematical expression to evaluate");
 		System.out.println("Valid operations are: +, -, /, *, ^ for power");
+		System.out.println("You may only perform operations against numbers");
 		System.out.println("Expression are entered with spaces between the values and operator");
 		System.out.println("Here is the valid format:");
 		System.out.println("\t<value><space><operator><space><value>");
-		System.out.print("Your expression: ");
+		//moved 'your expression' statement to calculateResults function
 	}
 	
 
