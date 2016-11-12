@@ -1,3 +1,8 @@
+/*CSC 142 - Week 7 practice exercises
+ * Walter Holley III
+ * 
+ */
+
 import java.util.*;
 import java.io.*;
 
