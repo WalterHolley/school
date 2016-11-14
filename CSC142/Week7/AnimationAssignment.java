@@ -7,8 +7,6 @@
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.geom.Ellipse2D;
-
-
 import javax.swing.*;
 
 
@@ -19,7 +17,6 @@ class DrawSurface extends JPanel implements ActionListener{
 	private double stringX;
 	private double stringY;
 	private static final int CIRCLE_SIZE = 20;
-	private boolean reverseAnimation = false;
 	
 	public DrawSurface(){
 		//initialize timer and animation position
@@ -34,7 +31,7 @@ class DrawSurface extends JPanel implements ActionListener{
 		animationTimer.start();
 	}
 	
-	//draws circle object
+	//draws face 
 	public void drawFace(Graphics g){
 		Graphics2D graphics2d = (Graphics2D)g;
 		graphics2d.setColor(Color.blue);
@@ -51,13 +48,13 @@ class DrawSurface extends JPanel implements ActionListener{
 		g.drawString("D", (int)stringX, (int)stringY);
 	}
 	
-	//moves the circle across the screen
+	//moves the face across the screen
 	public void animateFace(double x1, double y1, double x2, double y2){
 		if(x1 <= 720){
 			x1+= 5;
 			y1 = (int)(y1 + (10 * Math.sin(.03 * x1)));
-			if(y1 > 240){
-				y1 = 240;
+			if(y1 > 280){
+				y1 = 280;
 			}
 		}
 		else{
@@ -67,8 +64,8 @@ class DrawSurface extends JPanel implements ActionListener{
 		if(x2 <= 720){
 			x2+= 5;
 			y2 = (int)(y2 + (10 * Math.sin(.03 * x2)));
-			if(y2 > 280){
-				y2 = 280;
+			if(y2 > 320){
+				y2 = 320;
 			}
 		}
 		else{
@@ -78,8 +75,8 @@ class DrawSurface extends JPanel implements ActionListener{
 		if(stringX <= 720){
 			stringX += 5;
 			stringY = (int)(stringY + (10 * Math.sin(.03 * stringX)));
-			if(stringY > 280){
-				stringY = 280;
+			if(stringY > 320){
+				stringY = 320;
 			}
 		}
 		else{
@@ -96,7 +93,7 @@ class DrawSurface extends JPanel implements ActionListener{
 		circle2.setFrame(x2, y2, CIRCLE_SIZE, CIRCLE_SIZE);
 	}
 	
-    //Draws circle to the screen
+    //Draws face to the screen
 	@Override
 	public void paintComponent(Graphics g){
 		super.paintComponent(g);
