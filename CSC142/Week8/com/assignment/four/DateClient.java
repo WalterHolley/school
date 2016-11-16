@@ -16,11 +16,15 @@ public class DateClient {
 	 */
 	public static void main(String[] args) {
 		boolean endProgram = false;
+		Date testDate = new Date(2016, 11, 15);
+		System.out.print(testDate.getDayOfTheWeek());
+		/*
 		Scanner console = new Scanner(System.in);
 		
 		while(!endProgram){
 			
 		}
+		*/
 
 	}
 	
