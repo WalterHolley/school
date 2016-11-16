@@ -16,7 +16,7 @@ public class DateClient {
 	 */
 	public static void main(String[] args) {
 		boolean endProgram = false;
-		Date testDate = new Date(2016, 11, 15);
+		Date testDate = new Date(2016, 11, 16);
 		System.out.print(testDate.getDayOfTheWeek());
 		/*
 		Scanner console = new Scanner(System.in);
@@ -95,7 +95,7 @@ public class DateClient {
 	}
 	
 	private static boolean isValidYear(int year){
-		return (year > 0);
+		return (year >= 1753);
 	}
 
 }

@@ -47,6 +47,7 @@ public class Date {
 	//determines if this date falls on a leap year
 	public boolean isLeapYear(){
 		boolean isALeapYear = false;
+		
 		if(this._year % 100 == 0){
 			if(this._year % 400 == 0){
 				isALeapYear = true;
@@ -84,6 +85,7 @@ public class Date {
 	//of days between the two date objects.
 	public int advanceTo(Date endDay){
 		int days = 0;
+		
 		while(!this.equals(endDay)){
 			this.nextDay();
 			days++;
