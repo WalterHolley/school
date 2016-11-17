@@ -1,23 +1,28 @@
 package com.assignment.four;
 
 public class Date {
-	int _month;
-	int _year;
-	int _day;
+	private int _month;
+	private int _year;
+	private int _day;
+	public static Date MinDate = new Date(1753, 1, 1);
+	
 	public Date(int year, int month, int day){
 		_month = month;
 		_year = year;
 		_day = day;
 	}
 	
+	//Returns year of date object
 	public int getYear(){
 		return _year;
 	}
 	
+	//returns month of date object
 	public int getMonth(){
 		return _month;
 	}
 	
+	//returns day of date object
 	public int getDay(){
 		return _day;
 	}
@@ -28,6 +33,8 @@ public class Date {
 		return _year + "/" + _month + "/" + _day;
 	}
 	
+	//Determines if the received date object is the same
+	//as this date object
 	public boolean equals(Date d){
 		boolean isEqual = true;
 		
@@ -46,18 +53,18 @@ public class Date {
 	
 	//determines if this date falls on a leap year
 	public boolean isLeapYear(){
-		boolean isALeapYear = false;
+		boolean isLeapYear = false;
 		
 		if(this._year % 100 == 0){
 			if(this._year % 400 == 0){
-				isALeapYear = true;
+				isLeapYear = true;
 			}
 		}
 		else if(this._year % 4 == 0){
-				isALeapYear = true;
+				isLeapYear = true;
 		}
 		
-		return isALeapYear;
+		return isLeapYear;
 	}
 	
 	//advances the date one day
@@ -99,7 +106,7 @@ public class Date {
 		String dayOfWeek = null;
 		
 		//The minimum date begins on a monday
-		Date minDate = new Date(1753, 1, 1);
+		Date minDate = this.MinDate;
 		int days = minDate.advanceTo(this);
 		days = days % 7;
 		
@@ -131,7 +138,7 @@ public class Date {
 	}
 	
 	//determines the number of days in a month
-	private int getDaysInMonth(){
+	public int getDaysInMonth(){
 		int[] thirtyDayMonths = {9,4,6,11};
 		int days = 31;
 		
