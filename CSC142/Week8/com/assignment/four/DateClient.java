@@ -66,6 +66,7 @@ private static final String INPUT_ERROR_MSG = "Input is invalid, please try agai
 			}
 			catch(Exception e){
 				System.out.println(INPUT_ERROR_MSG);
+				console.nextLine();
 				continue;
 			}
 			
@@ -145,3 +146,26 @@ private static final String INPUT_ERROR_MSG = "Input is invalid, please try agai
 	}
 
 }
+
+/*
+ * ==REFLECTIONS==
+ * This was a great project for understanding the basics of classes and how they work
+ * within applications.  I didn't find this particular assignment difficult.  This
+ * was due to prior software experience, however, if I were a first time student, I'd
+ * say this was a good challenge, as well a great opportunity to actually think about
+ * how something works(for this assignment, that was Dates from the gregorian calendar).
+ * 
+ * Completion time was under 5 hours roughly.   I started by writing the client code first,
+ * because I really wanted to nail down what the user would experience, and make sure they
+ * had an 'error free' experience.  After that, I put together validation scenarios for
+ * the input the program would receive, and refined that process as I found more error cases,
+ * or discovered issues with the cases I had already accounted for.  The Date class was
+ * more methodical.  I went through the assignment documentation and created the methods in the
+ * order that was shown in the document.
+ * 
+ * The best part of this assignment, in my opinion, was learning about the dates themselves.
+ * I never knew the full criteria for leap years.  I had to get additional clarification
+ * on leap years at one point of development because I was having an issue where I wasn't getting
+ * the correct dates after 1800, and looking at the instructions I had received just wasn't
+ * helping things come together.
+ */
