@@ -7,6 +7,9 @@ public class NameTest {
 	public static void main(String[] args) {
 		
 		System.out.println("***BEGIN NAME CLASS TESTS***");
+		Name sampleName = new Name("John", 'Q', "Public");
+		runReverseNameTest("Public, John Q.", sampleName);
+		runNameStringTest("John Q. Public", sampleName);
 		
 		System.out.println("***END NAME CLASS TESTS***");
 
@@ -15,7 +18,7 @@ public class NameTest {
 	private static boolean runReverseNameTest(String expectedResult, Name name){
 		boolean testPassed = false;
 		String testResult = name.getReverseOrder();
-		testPassed = (testResult == expectedResult)? true: false;
+		testPassed = (testResult.equals(expectedResult))? true: false;
 		System.out.println("***REVERSE NAME TEST***");
 		System.out.printf("EXPECTED: %s \nRESULT: %s \n", expectedResult, testResult);
 		
@@ -33,7 +36,7 @@ public class NameTest {
 	private static boolean runNameStringTest(String expectedResult, Name name){
 		boolean testPassed = false;
 		String testResult = name.toString();
-		testPassed = (testResult == expectedResult)? true: false;
+		testPassed = (testResult.equals(expectedResult))? true: false;
 		System.out.println("***NAME STRING TEST***");
 		System.out.printf("EXPECTED: %s \nRESULT: %s \n", expectedResult, testResult);
 		
