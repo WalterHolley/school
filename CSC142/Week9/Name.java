@@ -17,9 +17,9 @@
 //Create class named Name with
 //fields for first name, middle initial, and last name
 public class Name {
-	public static String FirstName;
-	public static char MiddleInitial;
-	public static String LastName;
+	private String FirstName;
+	private char MiddleInitial;
+	private String LastName;
 	
 	//Self-check problem #19  constructor for name object
 	public Name(String first, char middle, String last){

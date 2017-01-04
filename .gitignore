@@ -6,3 +6,7 @@ CSC142/bin/
 *.jpg
 CSC142/Week2/walter_holley/
 CSC142/src/
+*.class
+*.classpath
+*.project
+*.prefs

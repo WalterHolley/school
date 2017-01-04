@@ -5,7 +5,7 @@
  * assignment.  Gathers and validates data
  * to be processed by the Date Object.
  */
-package com.assignment.four;
+
 
 import java.util.Scanner;
 

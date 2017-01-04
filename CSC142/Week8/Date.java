@@ -1,4 +1,10 @@
-package com.assignment.four;
+/* CSC 142 - Assignment Four
+ * Walter Holley III
+ * Date.java
+ * Date class for assignment.
+ * Represents a calendar date.
+ */
+
 
 public class Date {
 	private int _month;
