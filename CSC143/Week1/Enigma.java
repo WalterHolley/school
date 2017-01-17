@@ -1,9 +1,13 @@
-
+/*
+ * @author Walter Holley III CSC 143
+ * Assignment #1 - Encryption
+ * @version 1.0
+ */
 public class Enigma {
-	public static final String outerRotor = "#BDFHJLNPRTVXZACEGIKMOQSUWY"; 
 	//required instance members go here 
-	private String _innerRotor = "#GNUAHOVBIPWCJQXDKRYELSZFMT";
-	private String _middleRotor = "#EJOTYCHMRWAFKPUZDINSXBGLQV";
+	public static final String outerRotor = "#BDFHJLNPRTVXZACEGIKMOQSUWY"; 
+	public static String innerRotor = "#GNUAHOVBIPWCJQXDKRYELSZFMT";
+	public static String middleRotor = "#EJOTYCHMRWAFKPUZDINSXBGLQV";
 	private int _innerRotorOffset = 0;
 	private int _middleRotorOffset = 0;
 	
@@ -13,11 +17,11 @@ public class Enigma {
 	} 
 	
 	//non-default constructor - constructs machine with user specified inner and middle rotors
-	public Enigma(String innerRotor, String middleRotor){ 
+	public Enigma(String s1, String s2){ 
 		
-		if(isRotorValid(innerRotor) && isRotorValid(middleRotor)){
-			this._innerRotor = innerRotor;
-			this._middleRotor = middleRotor;
+		if(isRotorValid(s1) && isRotorValid(s2)){
+			this.innerRotor = s1;
+			this.middleRotor = s2;
 		}
 		
 	}
@@ -30,24 +34,18 @@ public class Enigma {
 	 */
 	private boolean isRotorValid (String rotStr){
 		boolean isValid = false;
-		
-
+		//TODO Revise validation with checksum algorithm
+		int  rotorCheckSum = 2050;
 		if(rotStr.length() == 27){
 			
 			if(rotStr.toCharArray()[0] == '#'){
-				boolean matchFound = false;
-				
-				checkLoop:
+				int checkSum = 0;
+			
 				for(int i = 0; i < rotStr.length(); i++){
-					for(int c = i + 1; c < rotStr.length(); c++){
-						if(rotStr.toCharArray()[i] == rotStr.toCharArray()[c]){
-							matchFound = true;
-							break checkLoop;
-						}
-					}
+					checkSum += (int)rotStr.toCharArray()[i];
 				}
 				
-				if(!matchFound){
+				if(rotorCheckSum == checkSum){
 					isValid = true;
 				}
 			}
@@ -67,8 +65,6 @@ public class Enigma {
 			rotateClockwise();
 		}
 		
-		reset();
-		
 		return encryptedString;
 	}
 	
@@ -82,9 +78,7 @@ public class Enigma {
 			//call to decodeChar
 			rotateAntiClockwise();
 		}
-		
-		reset();
-		
+	
 		return decryptedString;
 	} 
 	
@@ -94,9 +88,9 @@ public class Enigma {
 			c = '#';
 		}
 		
-		int innerPosition = getRotorPosition(_innerRotor.indexOf(c), this._innerRotorOffset);
+		int innerPosition = getRotorPosition(innerRotor.indexOf(c), this._innerRotorOffset);
 		char outerChar = Enigma.outerRotor.toCharArray()[innerPosition];
-		int middlePosition = getRotorPosition(this._middleRotor.indexOf(outerChar), this._middleRotorOffset);
+		int middlePosition = getRotorPosition(this.middleRotor.indexOf(outerChar), this._middleRotorOffset);
 		outerChar = Enigma.outerRotor.toCharArray()[middlePosition];
 		
 		if(outerChar == '#'){
@@ -112,9 +106,9 @@ public class Enigma {
 		}
 			
 		int outerPosition = Enigma.outerRotor.indexOf(c);
-		char middleChar = this._middleRotor.toCharArray()[getRotorPosition(outerPosition, this._middleRotorOffset)];
+		char middleChar = this.middleRotor.toCharArray()[getRotorPosition(outerPosition, this._middleRotorOffset)];
 		outerPosition = Enigma.outerRotor.indexOf(middleChar);
-		char innerChar = this._innerRotor.toCharArray()[getRotorPosition(outerPosition, this._innerRotorOffset)];
+		char innerChar = this.innerRotor.toCharArray()[getRotorPosition(outerPosition, this._innerRotorOffset)];
 		
 		if(innerChar == '#'){
 			innerChar = ' ';
@@ -124,18 +118,18 @@ public class Enigma {
 	}
 	
 	private int getRotorPosition(int base, int offSet){
-		int sum = base + offSet;
+		int position = base + offSet;
 		
-		if(sum >= 0){
-			if(sum > 26){
-				sum = sum % 27;
+		if(position >= 0){
+			if(position > 26){
+				position = position % 27;
 			}
 		}
 		else{
-			sum = 27 + sum;
+			position = 27 + position;
 		}
 		
-		return sum;
+		return position;
 	
 	}
 	private void rotateClockwise(){ 
