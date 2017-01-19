@@ -11,42 +11,20 @@ public static final String ERROR_MSG_INVALID_INPUT = "Invalid input.  Please try
 		Scanner console = new Scanner(System.in);
 		int menuSelection = 0;
 		String secretMessage = "THIS IS A FAIRLY LENGTHY MESSAGE IT MAY BE DIFFICULT TO DECODE";
-		System.out.println("Welcome to Enigma Console");
-		
+		System.out.println("Welcome to Enigma Console");		
 		while(menuSelection != 4){
 			showMainMenu();
-			
-			boolean isValidSelection = false;
-				
-				while(!isValidSelection){
-					System.out.println("Enter Selection:");
-					try{	
-						menuSelection = console.nextInt();
-					}
-					catch(InputMismatchException e){
-						System.out.println(ERROR_MSG_INVALID_INPUT);
-						continue;
-					}
-					
-					if(menuSelection > 0 && menuSelection < 5){
-						isValidSelection = true;
-					}
-					else{
-						System.out.println(ERROR_MSG_INVALID_INPUT);
-					}
-				}
-			
-				if(menuSelection != 4){
-					processMainMenuSelection(menuSelection, console);
-				}
-					
+			menuSelection = getMenuSelection(1, 4, console);
+			if(menuSelection != 4){
+				processMainMenuSelection(menuSelection, console);
+			}
 		}
-
-		
-		
-
+		System.out.println("Thanks for using the Enigma Console.  Exiting program.");
 	}
 	
+	/*
+	 * Prints the main menu of the application
+	 */
 	private static void showMainMenu(){
 		System.out.println("**MAIN MENU**");
 		System.out.println("1. Use default rotor settings");
@@ -56,6 +34,9 @@ public static final String ERROR_MSG_INVALID_INPUT = "Invalid input.  Please try
 
 	}
 	
+	/*
+	 * Prints the enigma options menu
+	 */
 	private static void showEnigmaMenu(){
 		System.out.println("**ENIGMA MENU**");
 		System.out.println("1. Encrypt");
@@ -64,6 +45,11 @@ public static final String ERROR_MSG_INVALID_INPUT = "Invalid input.  Please try
 		System.out.println("4. Return to Main Menu");
 	}
 	
+	/*
+	 * Handles the menu option selected in the main menu
+	 * @param selection the user's selection from the menu
+	 * @param console object representing the command line
+	 */
 	private static void processMainMenuSelection(int selection, Scanner console){
 		Enigma enigma = null;
 		
@@ -96,9 +82,7 @@ public static final String ERROR_MSG_INVALID_INPUT = "Invalid input.  Please try
 				}
 				else{
 					System.out.println(ERROR_MSG_INVALID_INPUT);
-				}
-				
-				
+				}			
 			}
 		}
 		//show settings
@@ -110,8 +94,12 @@ public static final String ERROR_MSG_INVALID_INPUT = "Invalid input.  Please try
 		processEnigma(enigma, console);
 	}
 	
-	private static int getEnigmaMenuSelection(Scanner console){
-		showEnigmaMenu();
+	/*
+	 * Gets the user's selection from a menu
+	 * @param console object representing the command line
+	 * @return int indicating chosen menu selection.
+	 */
+	private static int getMenuSelection(int lowOption, int highOption, Scanner console){
 		boolean isValidSelection = false;
 		int menuSelection = 0;
 		
@@ -122,62 +110,83 @@ public static final String ERROR_MSG_INVALID_INPUT = "Invalid input.  Please try
 			}
 			catch(InputMismatchException e){
 				System.out.println(ERROR_MSG_INVALID_INPUT);
+				console.nextLine();
 				continue;
 			}
 			
-			if(menuSelection > 0 && menuSelection < 5){
+			if(menuSelection >= lowOption && menuSelection <= highOption){
 				isValidSelection = true;
+				
 			}
 			else{
 				System.out.println(ERROR_MSG_INVALID_INPUT);
 			}
+			console.nextLine();
 		}
 		
 		return menuSelection;
 	}
 	
+	/*
+	 * Takes the user's enigma object and performs
+	 * 
+	 * @param enigma Enigma object
+	 * @param console object that represents the command line
+	 */
 	private static void processEnigma(Enigma enigma, Scanner console){
 		int selection = 0;
 		
 		while(selection != 4){
 			showEnigmaMenu();
-			selection = getEnigmaMenuSelection(console);
+			selection = getMenuSelection(1, 4, console);
+			//Encrypt string
 			if(selection == 1){
 				System.out.println("Enter string to encrypt.  spaces and alpha characters only.");
 				String messageToEncrypt = console.nextLine();
-				if(!validateEncryptInput(messageToEncrypt)){
+				if(!validateEncryptDecryptInput(messageToEncrypt)){
 					System.out.println(ERROR_MSG_INVALID_INPUT);
 				}
 				else{
-					System.out.printf("Encrypted message: %s\n", enigma.encrypt(messageToEncrypt));
 					enigma.reset();
+					System.out.printf("Encrypted message:[%s]\n", enigma.encrypt(messageToEncrypt));
+					
 				}
 			}
+			//Decrypt string
 			else if(selection == 2){
 				System.out.println("Enter string to decrypt.  Ensure your rotor settings are correct.");
 				String messageToDecrypt = console.nextLine();
-				if(!validateEncryptInput(messageToDecrypt)){
+				if(!validateEncryptDecryptInput(messageToDecrypt)){
 					System.out.println(ERROR_MSG_INVALID_INPUT);
 				}
 				else{
-					System.out.printf("Dencrypted message: %s\n", enigma.decrypt(messageToDecrypt));
 					enigma.reset();
+					System.out.printf("Decrypted message: [%s]\n", enigma.decrypt(messageToDecrypt));
+					
 				}
 			}
+			//Run Demonstration program
 			else if(selection == 3){
 				runDemo();
 			}
 		}
+		console.nextLine();
 	}
 	
-	private static boolean validateEncryptInput(String message){
+	/*
+	 * Determines if the given message is a a valid encryption message.
+	 * Messages contain only spaces and alpha characters.
+	 * @param message the message to validate
+	 * @return true if message is valid; otherwise false.
+	 */
+	private static boolean validateEncryptDecryptInput(String message){
 		boolean isValid = true;
 		
 		for(int i = 0; i < message.length(); i++){
 			int x = (int)message.toUpperCase().toCharArray()[i];
 			
 			if(x != 32){
-				if(x < 65 && x > 90){
+				if(x < 65 || x > 90){
 					isValid = false;
 					break;
 				}

@@ -89,9 +89,9 @@ public class Enigma {
 		}
 		
 		int innerPosition = getRotorPosition(innerRotor.indexOf(c), this._innerRotorOffset);
-		char outerChar = Enigma.outerRotor.toCharArray()[innerPosition];
+		char outerChar = this.outerRotor.toCharArray()[innerPosition];
 		int middlePosition = getRotorPosition(this.middleRotor.indexOf(outerChar), this._middleRotorOffset);
-		outerChar = Enigma.outerRotor.toCharArray()[middlePosition];
+		outerChar = this.outerRotor.toCharArray()[middlePosition];
 		
 		if(outerChar == '#'){
 			outerChar = ' ';
@@ -105,9 +105,9 @@ public class Enigma {
 			c = '#';
 		}
 			
-		int outerPosition = Enigma.outerRotor.indexOf(c);
+		int outerPosition = this.outerRotor.indexOf(c);
 		char middleChar = this.middleRotor.toCharArray()[getRotorPosition(outerPosition, this._middleRotorOffset)];
-		outerPosition = Enigma.outerRotor.indexOf(middleChar);
+		outerPosition = this.outerRotor.indexOf(middleChar);
 		char innerChar = this.innerRotor.toCharArray()[getRotorPosition(outerPosition, this._innerRotorOffset)];
 		
 		if(innerChar == '#'){
