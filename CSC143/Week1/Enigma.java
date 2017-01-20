@@ -1,4 +1,4 @@
-/*
+/**
  * @author Walter Holley III CSC 143
  * Assignment #1 - Encryption
  * @version 1.0
