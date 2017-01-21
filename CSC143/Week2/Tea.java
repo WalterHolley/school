@@ -1,18 +1,20 @@
 
 public class Tea extends CaffeinatedDrinks {
-	public String teaType = "English Breakfast";
+	public String teaFlavor = "English Breakfast";
 	
 	public Tea(){
 		this.name = "Tea";
 	}
-	
-	public Tea(String type){
+	/**
+	 * 
+	 * @param flavor the name of the tea's flavor
+	 */
+	public Tea(String flavor){
 		this.name = "Tea";
-		this.teaType = type;
-		this.drinkSize = size;
+		this.teaFlavor = flavor;
 	}
 	
 	public String toString(){
-		return String.format("%s, flavor %s, size %s, cost: %f", this.name, this.teaType, this.drinkSize, getPrice());
+		return String.format("%s, flavor %s, size %s, cost: $%.2f", this.name, this.teaFlavor, this.drinkSize, getPrice());
 	}
 }

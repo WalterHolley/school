@@ -2,11 +2,13 @@
 public class NonCaffeinatedDrinks extends Drinks {
 	
 	public NonCaffeinatedDrinks(){
-		this.price_per_oz = this.price_per_oz * 2;
+		setPricePerOunce(getPricePerOunce() * 2);
 	}
 	
 	public NonCaffeinatedDrinks(String drinkName){
-		this.price_per_oz = this.price_per_oz * 2;
+		if(!drinkName.toLowerCase().equals("water")){
+			setPricePerOunce(getPricePerOunce() * 2); 
+		}
 		this.name = drinkName;
 	}
 	
