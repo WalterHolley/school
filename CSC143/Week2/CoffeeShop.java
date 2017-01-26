@@ -18,7 +18,7 @@ public class CoffeeShop {
 		while(runApplication){
 			showMainMenu();
 			int selection = getMenuSelection(1, 3);
-			
+			//Start new order, or add to existing order.
 			if(selection == 1){
 				Drinks drink = getDrinkForOrder();
 				if(drink != null){
@@ -26,9 +26,11 @@ public class CoffeeShop {
 					drinkOrder.add(drink);
 				}				
 			}
+			//view drink order
 			else if(selection == 2){
 				showDrinkOrder(drinkOrder);
 			}
+			//End transaction and exit program
 			else if(selection == 3){
 				
 				float total = 0f;
@@ -49,6 +51,10 @@ public class CoffeeShop {
 		_console.close();
 	}
 	
+	/**
+	 * Prints the primary application menu
+	 * to the console
+	 */
 	private static void showMainMenu(){
 		System.out.println("++Main MENU++");
 		if(drinkOrder.size() > 0){
@@ -68,6 +74,9 @@ public class CoffeeShop {
 		
 	}
 	
+	/**
+	 * Print the Main Drinks menu to the console
+	 */
 	private static void showDrinksMenu(){
 		System.out.println("++DRINKS MENU++");
 		System.out.println("1. Caffeinated Drinks");
@@ -75,6 +84,9 @@ public class CoffeeShop {
 		System.out.println("3. Back to Main Menu");
 	}
 	
+	/**
+	 * Prints the Caffeinated Drinks selection to the console
+	 */
 	private static void showCaffDrinksMenu(){
 		System.out.println("++Caffeinated Drinks++");
 		System.out.println("1. Coffee");
@@ -82,6 +94,10 @@ public class CoffeeShop {
 		System.out.println("3. Back");
 	}
 	
+	/**
+	 * Prints a list of drinks to the console
+	 * @param drinkList the list of Drinks objects
+	 */
 	private static void showDrinkOrder(ArrayList<Drinks> drinkList){
 		if(drinkList.size() > 0){
 			for(int i = 0; i < drinkList.size(); i++){
@@ -93,6 +109,11 @@ public class CoffeeShop {
 		}
 	}
 	
+	/**
+	 * Selects a non-caffeinated drink for the user
+	 * @return NonCaffeinatedDrinks object of the user's choice,
+	 * null if the user didn't make a choice
+	 */
 	private static NonCaffeinatedDrinks getNoCaffDrinkSelection(){
 		String[] drinkList = {"Water", "Juice", "Back"};
 		NonCaffeinatedDrinks drink  = null;
@@ -106,6 +127,11 @@ public class CoffeeShop {
 		return drink;
 	}
 	
+	/**
+	 * Selects a Coffee drink for the user
+	 * @return Coffee Object of the user's choice,
+	 * null if the user didn't make a choice.
+	 */
 	private static Coffee getCoffeeSelection(){
 		String[] coffeeList = {"Drip", "Mocha", "Espresso", "Macchiato", "Back"};
 		Coffee coffee = null;
@@ -119,6 +145,11 @@ public class CoffeeShop {
 		return coffee;
 	}
 	
+	/**
+	 * Performs the overall selection process for drinks
+	 * @return Drinks object of the user's choice.
+	 * null if the user doesn't make a choice.
+	 */
 	private static Drinks getDrinkForOrder(){
 		Drinks drink = null;
 		boolean gettingDrink = true;
@@ -196,7 +227,11 @@ public class CoffeeShop {
 		return drink;
 	}
 	
-	
+	/**
+	 * Allows the user to select a Tea Drink
+	 * @return Tea object of the user's choice,
+	 * null if the user doesn't make a selection.
+	 */
 	private static Tea getTeaSelection(){
 		String[] teaList = {"English Breakfast", "Earl Grey", "Oolong", "Back"};
 		Tea tea = null;
@@ -210,6 +245,11 @@ public class CoffeeShop {
 		return tea;
 	}
 	
+	/**
+	 * Selects a drink size
+	 * @param drink the drink object that needs it's size selected
+	 * @return Drinks object with determined size
+	 */
 	private static Drinks getDrinkSize(Drinks drink){
 		String[] drinkSizes = {"Small", "Medium", "Large", "Back"};
 		System.out.println("Select Drink Size:");
@@ -225,6 +265,10 @@ public class CoffeeShop {
 		return drink;
 	}
 	
+	/**
+	 * prints out a list of strings to be used in a menu
+	 * @param menu the list of strings to print.
+	 */
 	private static void printListMenu(String[] menu){
 		for(int i = 0; i < menu.length; i++){
 			System.out.printf("%s. %s\n", i + 1, menu[i]);
@@ -232,8 +276,9 @@ public class CoffeeShop {
 	}
 	
 	/**
-	 * Gets the user's selection from a menu
-	 * @param console object representing the command line
+	 * Gets the user's selection from a console menu
+	 * @param lowOption the lowest menu choice
+	 * @param highOption the highest menu choice
 	 * @return int indicating chosen menu selection.
 	 */
 	private static int getMenuSelection(int lowOption, int highOption){

@@ -1,4 +1,8 @@
-
+/**
+ * @author Walter Holley III
+ * CSC143 Weekly Problems 5 & 6
+ * Tea.  Inherits the CaffeinatedDrinks class
+ */
 public class Tea extends CaffeinatedDrinks {
 	public String teaFlavor = "English Breakfast";
 	
@@ -6,7 +10,7 @@ public class Tea extends CaffeinatedDrinks {
 		this.name = "Tea";
 	}
 	/**
-	 * 
+	 * Constructor for Tea object
 	 * @param flavor the name of the tea's flavor
 	 */
 	public Tea(String flavor){

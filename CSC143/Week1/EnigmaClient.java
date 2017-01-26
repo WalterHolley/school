@@ -167,6 +167,7 @@ public static final String ERROR_MSG_INVALID_INPUT = "Invalid input.  Please try
 				}
 				else{
 					enigma.reset();
+					System.out.println("NOTE: Message is enclosed in brackets []. This is not part of the actual message.");
 					System.out.printf("Encrypted message:[%s]\n", enigma.encrypt(messageToEncrypt));
 					
 				}
@@ -180,6 +181,7 @@ public static final String ERROR_MSG_INVALID_INPUT = "Invalid input.  Please try
 				}
 				else{
 					enigma.reset();
+					System.out.println("NOTE: Message is enclosed in brackets []. This is not part of the actual message.");
 					System.out.printf("Decrypted message: [%s]\n", enigma.decrypt(messageToDecrypt));
 					
 				}

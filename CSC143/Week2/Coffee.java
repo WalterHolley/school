@@ -1,4 +1,8 @@
-
+/**
+ * @author Walter Holley III
+ * CSC143 Weekly Problems 5 & 6
+ * Coffee.  Inherits the CaffeinatadDrinks class
+ */
 public class Coffee extends CaffeinatedDrinks {
 	private float priceSurcharge = 0f;
 	public String coffeeType = "drip";
@@ -7,13 +11,17 @@ public class Coffee extends CaffeinatedDrinks {
 		this.name = "Coffee";
 	}
 	
+	/**
+	 * Constructor for Coffee Class
+	 * @param coffeeType the type of coffee being prepared.
+	 */
 	public Coffee(String coffeeType){
 		this.name = "Coffee";
 		this.coffeeType = coffeeType;
 		
 		
 	}
-	
+
 	public float getPrice(){
 		
 		if(this.drinkSize.toLowerCase().equals("medium")){

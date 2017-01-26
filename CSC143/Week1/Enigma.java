@@ -13,10 +13,15 @@ public class Enigma {
 	
 	
 	public Enigma(){ 
-		//default constructor - constructs enigma machine as shown in spec 
+		
 	} 
 	
-	//non-default constructor - constructs machine with user specified inner and middle rotors
+	
+	/**
+	 * non-default constructor - constructs machine with user specified inner and middle rotors
+	 * @param s1 the inner rotor
+	 * @param s2 the middle rotor
+	 */
 	public Enigma(String s1, String s2){ 
 		
 		if(isRotorValid(s1) && isRotorValid(s2)){
@@ -26,11 +31,12 @@ public class Enigma {
 		
 	}
 	
-	/*
-	 *verify that rotStr is exactly 27 chars long 
-	 *verify that all chars from english alphabet occur only once 
-	 *verify that rotor starts with a # char
+	/**
+	 *verify that rotStr is exactly 27 chars long, 
+	 *that all chars from english alphabet occur only once, 
+	 *and rotor starts with a '#' char
 	 * @param rotStr rotor character string
+	 * @return true if rotor is valid, otherwise false.
 	 */
 	private boolean isRotorValid (String rotStr){
 		boolean isValid = false;
@@ -53,6 +59,11 @@ public class Enigma {
 		return isValid;
 	} 
 	
+	/**
+	 * Encrypts a string
+	 * @param message the message to encrypt
+	 * @return string representing the encrypted message
+	 */
 	public String encrypt (String message){
 		
 		String encryptedString = "";
@@ -68,6 +79,12 @@ public class Enigma {
 		return encryptedString;
 	}
 	
+	/**
+	 * Decrypts a string back to it's original state.
+	 * You will have to ensure correct rotor settings for correct output
+	 * @param message the message to decrypt
+	 * @return decrypted result
+	 */
 	public String decrypt (String message){ 
 		String decryptedString = "";
 		for(int i = 0; i < message.length(); i++){
@@ -82,6 +99,11 @@ public class Enigma {
 		return decryptedString;
 	} 
 	
+	/**
+	 * Encodes a character.  Masking it's original value
+	 * @param c the character to encode
+	 * @return the encoded representation of the character.
+	 */
 	private char encodeChar(char c){
 		//account for spaces
 		if(c == ' '){
@@ -98,7 +120,13 @@ public class Enigma {
 		}
 		return outerChar;
 	}
-
+	
+	/**
+	 * Decodes a character to it's original form.
+	 * Correct rotor settings are required for correct output
+	 * @param c the character to decode
+	 * @return decoded character
+	 */
 	private char decodeChar(char c){
 		//account for spaces
 		if(c == ' '){
@@ -117,6 +145,12 @@ public class Enigma {
 		return innerChar;
 	}
 	
+	/**
+	 * determines the rotor's actual position
+	 * @param base the base position of the unmoved rotor
+	 * @param offSet the offset position of the base rotor
+	 * @return number of the actual rotor position
+	 */
 	private int getRotorPosition(int base, int offSet){
 		int position = base + offSet;
 		
@@ -132,6 +166,9 @@ public class Enigma {
 		return position;
 	
 	}
+	/**
+	 * Iterates the rotor in a clockwise fashion.
+	 */
 	private void rotateClockwise(){ 
 		if(this._innerRotorOffset == 26){
 			this._innerRotorOffset = 0;
@@ -147,6 +184,9 @@ public class Enigma {
 		}
 	} 
 	
+	/**
+	 * Iterates the rotor in an anti-clockwise fashion
+	 */
 	private void rotateAntiClockwise(){ 
 		if(this._innerRotorOffset == -26){
 			this._innerRotorOffset = 0;
@@ -161,6 +201,9 @@ public class Enigma {
 			this._innerRotorOffset--;
 		}
 	}
+	/**
+	 * Returns the rotors to their original positions.
+	 */
 	public void reset (){
 		//resets to align all # chars on all rotors (returns rotors to initial configuration)
 		this._innerRotorOffset = 0;
