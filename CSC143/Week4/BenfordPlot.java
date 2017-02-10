@@ -1,4 +1,5 @@
 
+import java.awt.Color;
 import java.awt.EventQueue;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -45,9 +46,10 @@ public class BenfordPlot extends JFrame {
 	 * @throws FileNotFoundException 
 	 */
 	private void init() throws FileNotFoundException, IOException{
-		add(new BenfordDraw(new Benford(new File(FILE_NAME)).benfordPercents()));
+		add(new BenfordDraw(new Benford(new File(FILE_NAME))));
 		setTitle("Assignment 2: Benford Analysis");
-		setSize(800, 600);
+		setSize(1024, 768);
+		setBackground(Color.BLACK);
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 	}
 

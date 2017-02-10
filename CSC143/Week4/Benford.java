@@ -32,11 +32,23 @@ public class Benford {
 		}
 		
 		for(int i = 0; i < percentages.length; i++){
-			percentages[i] = percentages[i] / benfordList.size();
+			percentages[i] = percentages[i] / benfordList.size() * 100;
 		}
 		
 		return percentages;
 		
+	}
+	
+	/**
+	 * Determines if the data within the Benford object matches
+	 * the criteria of Benford's law.
+	 * @return true if the dataset matches Benford frequencies.
+	 * Otherwise, false.
+	 */
+	public boolean isBenfordCompliant(){
+		boolean isCompliant = false;
+		
+		return isCompliant;
 	}
 	
 	private int getFirstNumber(String textString){
