@@ -24,7 +24,11 @@ public class BenfordDraw extends JPanel implements ActionListener {
 	
 
 	private void drawPercentageBars(Graphics g){
-		drawBar(1, _plotResults.benfordPercents()[0], g);
+		double[] benfordResults = _plotResults.benfordPercents();
+		for(int i = 0; i < benfordResults.length; i++){
+			drawBar(i + 1, benfordResults[i] , g);
+		}
+		
 	}
 	
 	private void drawStaticText(Graphics g){
@@ -51,16 +55,28 @@ public class BenfordDraw extends JPanel implements ActionListener {
 		double width = (percent / 30.1) * MAX_BAR_LENGTH;
 		
 		graphics.setColor(Color.YELLOW);
-		graphics.fillRect(30, 50 * position, (int)width, 24);
+		graphics.fillRect(40, (50 * position) + (20 * (position - 1)), (int)width, 24);
 		graphics.setColor(Color.RED);
 		graphics.setFont(new Font("Arial", Font.PLAIN, 20));
-		graphics.drawString(String.valueOf(percent), (int)width / 2, 70 * position);
+		graphics.drawString(String.format("%.1f%s", percent, "%"), (int)width / 2, 70 * position);
+	}
+	
+	private void drawBenfordPoints(Graphics g){
+		double[] benfordPoints = {30.1, 17.6, 12.5, 9.7, 7.9, 6.7, 5.8, 5.1, 4.6};
+		g.setColor(Color.RED);
+		g.setFont(new Font("Arial", Font.PLAIN, 24));
+		for(int i = 0; i < benfordPoints.length; i++){
+			double xPosition = benfordPoints[i] / benfordPoints[0] * MAX_BAR_LENGTH - 10;
+			g.drawString("^", (int)xPosition, 70 * (i + 1));
+		}
+		
 	}
 	
 	@Override
 	public void paintComponent(Graphics g){
 		drawStaticText(g);
 		drawPercentageBars(g);
+		drawBenfordPoints(g);
 	}
 	
 	
