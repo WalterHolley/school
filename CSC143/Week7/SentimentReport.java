@@ -10,15 +10,39 @@ import java.util.ArrayList;
  */
 public class SentimentReport {
 	private static final boolean TEST_MODE = true;
+	private static final String POSITIVE_WORD_FILE = "posWords.txt";
+	private static final String NEGATIVE_WORD_FILE = "negWords.txt";
 	private static final String FILE_NOT_FOUND_MSG = "The file name you entered cannot be found";
 	private static final String INVALID_INPUT_MSG = "Input is invalid";
-	private static ArrayList<File> bookList;
 	
 	public static void main(String[] args) {
 		boolean runProgram = true;
+		ArrayList<File> bookList;
 		
 		while(runProgram){
-			getInput();
+			if(!TEST_MODE){
+				bookList = getInput();
+			}
+			else{
+				bookList = new ArrayList<File>();
+				bookList.add(new File("OliverTwist.txt"));
+				bookList.add(new File("Macbeth.txt"));
+				bookList.add(new File("MuchAdoAboutNothing.txt"));
+			}
+			
+			for(File bookFile: bookList){
+				try{
+					float executionTime = System.nanoTime();
+					getReport(bookFile);
+					executionTime = System.nanoTime() - executionTime;
+					System.out.printf("Execution Time: %s\n\n", executionTime);
+				}
+				catch(FileNotFoundException ex){
+					System.out.printf("The file %s could not be found.\n\n", bookFile.getName());
+				}
+				
+			}
+			
 		}
 		
 	}
@@ -27,12 +51,27 @@ public class SentimentReport {
 		
 	}
 	
-	private static void getReport(File bookFile){
+	private static void getReport(File bookFile)throws FileNotFoundException{
+		File posFile = new File(POSITIVE_WORD_FILE);
+		File negFile = new File(NEGATIVE_WORD_FILE);
+		BookAnalyzer book = new BookAnalyzer(posFile, negFile, bookFile);
 		
+		System.out.println("Analyzing " + bookFile.getName() + "...");
+		int totalWords = book.getBookWordCount();
+		int totalPosWords = book.getTotalPositiveWordOccurrences();
+		float posWordPercentage = book.getPositiveWordPercentage();
+		String commonPosWord = book.getCommonPositiveWord();
+		
+		System.out.println("Analysis Complete");
+		System.out.println("Book Name: " + bookFile.getName());
+		System.out.println("Total Book Words: " + totalWords);
+		System.out.println("Total Positive Words: " + totalPosWords);
+		System.out.println("Positive Word Percentage: " + posWordPercentage);
+		System.out.println("Most Common Positive Word" + commonPosWord);
 	}
 	
-	private static void getInput(){
-		bookList = new ArrayList<File>();
+	private static ArrayList<File> getInput(){
+		ArrayList<File>bookList = new ArrayList<File>();
 		boolean inputBooks = true;
 		boolean isValidInput = false;
 		Scanner console = new Scanner(System.in);
@@ -71,5 +110,6 @@ public class SentimentReport {
 				}
 			}	
 		}
+		return bookList;
 	}
 }
