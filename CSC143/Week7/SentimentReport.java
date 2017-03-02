@@ -43,6 +43,10 @@ public class SentimentReport {
 				
 			}
 			
+			if(TEST_MODE){
+				runProgram = false;
+			}
+			
 		}
 		
 	}
@@ -60,7 +64,7 @@ public class SentimentReport {
 		int totalWords = book.getBookWordCount();
 		int totalPosWords = book.getTotalPositiveWordOccurrences();
 		float posWordPercentage = book.getPositiveWordPercentage();
-		String commonPosWord = book.getCommonPositiveWord();
+		int commonPosWord = book.getWordOccurrence("happy");
 		
 		System.out.println("Analysis Complete");
 		System.out.println("Book Name: " + bookFile.getName());

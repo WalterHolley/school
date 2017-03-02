@@ -52,12 +52,8 @@ public class BookAnalyzer {
 		Scanner fileReader = new Scanner(file);
 		
 		while(fileReader.hasNextLine()){
-			String[] fileLine = fileReader.nextLine().toLowerCase().split("\\s+");
-			for(String word : fileLine){
-				if(!wordHash.contains(word)){
-					wordHash.add(word);
-				}
-			}
+			String fileLine = fileReader.nextLine().toLowerCase();
+			wordHash.add(fileLine);
 		}	
 		fileReader.close();
 		return wordHash;
@@ -71,7 +67,7 @@ public class BookAnalyzer {
 		_bookWords = new ArrayList<String>();
 			
 		while(fileReader.hasNextLine()){
-			String[] bookLine = fileReader.nextLine().split("\\s+");
+			String[] bookLine = fileReader.nextLine().toLowerCase().split("\\s+");
 			for(int i = 0; i < bookLine.length; i++){
 				_bookWords.add(bookLine[i]);
 			}
@@ -84,26 +80,7 @@ public class BookAnalyzer {
 		return _bookWords.size();
 	}
 	
-	private int getWordOccurrenceCount(String word){
-		int occurrences = 0;
-		word = word.toLowerCase();
-		
-		if(_bookWords.contains(word)){
-			for(String bookWord : _bookWords){
-				if(bookWord.toLowerCase().equals(word)){
-					occurrences++;
-				}
-			}
-		}
-		
-		return occurrences;
-	}
 	
-	private void doPositiveWordAnalysis(){
-		for(int i = 0; i < _posWords.size(); i++){
-			
-		}
-	}
 	public String getCommonPositiveWord(){
 		return getMostRecurringElement(_posWords);
 	}
@@ -113,7 +90,7 @@ public class BookAnalyzer {
 	}
 	
 	public int getTotalPositiveWordOccurrences(){
-		return findWordOccurrences(_posWords, (String[])_bookWords.toArray());
+		return findWordOccurrences(_posWords, _bookWords.toArray(new String[_bookWords.size()]));
 	}
 	
 	public float getPositiveWordPercentage(){
@@ -121,7 +98,7 @@ public class BookAnalyzer {
 	}
 	
 	public int getWordOccurrence(String word){
-		return  findWordOccurrences(word, (String[])_bookWords.toArray());
+		return  findWordOccurrences(word, _bookWords.toArray(new String[_bookWords.size()]));
 	}
 	
 	
@@ -129,9 +106,9 @@ public class BookAnalyzer {
 	private String getMostRecurringElement(Set<String> listOfElements){
 		String mostCommonWord = null;
 		int occurrences = 0;
-		
+		String[] bookArray = _bookWords.toArray(new String[_bookWords.size()]);
 		for(String word : listOfElements){
-			int timesFound = findWordOccurrences(word,(String[])_bookWords.toArray());
+			int timesFound = findWordOccurrences(word, bookArray);
 			if(timesFound > occurrences){
 				mostCommonWord = word;
 				occurrences = timesFound;
@@ -160,8 +137,16 @@ public class BookAnalyzer {
 			if(index > -1){
 				occurrences++;
 				if(index < wordArray.length - 1){
-					int newArraySize = wordArray.length - index - 1;
-					occurrences = findWordOccurrences(word, Arrays.copyOfRange(wordArray, index, newArraySize));
+					int rightArraySize = wordArray.length - index - 1;
+					
+					if(rightArraySize > 0){
+						occurrences += findWordOccurrences(word, Arrays.copyOfRange(wordArray, index + 1, index + rightArraySize + 1));
+					}
+					
+					if(index > 0){
+						occurrences += findWordOccurrences(word, Arrays.copyOfRange(wordArray, 0, index));
+					}
+					
 				}
 			}
 		}
