@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.Scanner;
 
@@ -12,7 +13,7 @@ public class BookAnalyzer {
 	private static final String[] DEFAULT_NEGATIVE_WORDS ={"bad", "awful", "hate", "terrible", "miserable",
 		"sad", "dislike", "atrocious", "depressed", "cry"};
 	private static final String[] DEFAULT_POSITIVE_WORDS = {"good", "nice", "love", "excellent", "great",
-		"awesome", "wonderful", "fantastic", "fabulous", "like"};
+		"awesome", "wonderful", "fantastic", "fabulous", "like", "happy"};
 	private Set<String> _negWords;
 	private Set<String> _posWords;
 	private ArrayList<String> _bookWords;
@@ -23,7 +24,7 @@ public class BookAnalyzer {
 			_posWords = readFileToHash(posWordFile);
 		}
 		catch(FileNotFoundException ex){
-			System.out.println(posWordFile.getName() + "not found.  Using defualt positive "
+			System.out.println(posWordFile.getName() + " not found.  Using defualt positive "
 					+ "word list.");
 			_posWords = this.readArrayToHash(DEFAULT_POSITIVE_WORDS);
 		}
@@ -34,7 +35,7 @@ public class BookAnalyzer {
 		catch(FileNotFoundException ex){
 			System.out.println(posWordFile.getName() + "not found.  Using defualt negative "
 					+ "word list.");
-			_negWords = this.readFileToHash(bookFile);
+			_negWords = this.readArrayToHash(DEFAULT_NEGATIVE_WORDS);
 		}
 		
 		processBookWords(bookFile);
@@ -52,7 +53,7 @@ public class BookAnalyzer {
 		Scanner fileReader = new Scanner(file);
 		
 		while(fileReader.hasNextLine()){
-			String fileLine = fileReader.nextLine().toLowerCase();
+			String fileLine = fileReader.nextLine().toLowerCase().trim();
 			wordHash.add(fileLine);
 		}	
 		fileReader.close();
@@ -60,7 +61,6 @@ public class BookAnalyzer {
 	}
 	
 	private void processBookWords(File bookFile) throws FileNotFoundException{
-		_bookWords = new ArrayList<String>();
 		Scanner fileReader;
 		
 		fileReader = new Scanner(bookFile);
@@ -69,6 +69,9 @@ public class BookAnalyzer {
 		while(fileReader.hasNextLine()){
 			String[] bookLine = fileReader.nextLine().toLowerCase().split("\\s+");
 			for(int i = 0; i < bookLine.length; i++){
+				if(bookLine[i].equals("")){
+					continue;
+				}
 				_bookWords.add(bookLine[i]);
 			}
 		}
@@ -90,7 +93,7 @@ public class BookAnalyzer {
 	}
 	
 	public int getTotalPositiveWordOccurrences(){
-		return findWordOccurrences(_posWords, _bookWords.toArray(new String[_bookWords.size()]));
+		return findWordOccurrences(_posWords, _bookWords);
 	}
 	
 	public float getPositiveWordPercentage(){
@@ -98,7 +101,7 @@ public class BookAnalyzer {
 	}
 	
 	public int getWordOccurrence(String word){
-		return  findWordOccurrences(word, _bookWords.toArray(new String[_bookWords.size()]));
+		return  findWordOccurrences(word, _bookWords);
 	}
 	
 	
@@ -106,9 +109,9 @@ public class BookAnalyzer {
 	private String getMostRecurringElement(Set<String> listOfElements){
 		String mostCommonWord = null;
 		int occurrences = 0;
-		String[] bookArray = _bookWords.toArray(new String[_bookWords.size()]);
+
 		for(String word : listOfElements){
-			int timesFound = findWordOccurrences(word, bookArray);
+			int timesFound = findWordOccurrences(word, _bookWords);
 			if(timesFound > occurrences){
 				mostCommonWord = word;
 				occurrences = timesFound;
@@ -119,32 +122,32 @@ public class BookAnalyzer {
 	}
 	
 	
-	private int findWordOccurrences(Set<String> wordOccurrences, String[] wordList){
+	private int findWordOccurrences(Set<String> wordOccurrences, ArrayList<String> wordList){
 		int occurrences = 0;
 		
-		for(String word: wordOccurrences){
+		for( String word: wordOccurrences){
 			occurrences += findWordOccurrences(word, wordList);
 		}
 		
 		return occurrences;
 	}
 	
-	private int findWordOccurrences(String word, String[] wordArray){
+	private int findWordOccurrences(String word, List<String> wordList){
 		int occurrences = 0;
-		if(wordArray.length > 0){
-			int index = Arrays.binarySearch(wordArray, word);
+		if(wordList.size() > 0){
+			int index = Collections.binarySearch(wordList, word);
 			
 			if(index > -1){
 				occurrences++;
-				if(index < wordArray.length - 1){
-					int rightArraySize = wordArray.length - index - 1;
+				if(index < wordList.size() - 1){
+					int rightArraySize = wordList.size() - index - 1;
 					
 					if(rightArraySize > 0){
-						occurrences += findWordOccurrences(word, Arrays.copyOfRange(wordArray, index + 1, index + rightArraySize + 1));
+						occurrences += findWordOccurrences(word, wordList.subList(index + 1, index + rightArraySize + 1));
 					}
 					
 					if(index > 0){
-						occurrences += findWordOccurrences(word, Arrays.copyOfRange(wordArray, 0, index));
+						occurrences += findWordOccurrences(word, wordList.subList(0, index));
 					}
 					
 				}

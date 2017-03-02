@@ -18,7 +18,6 @@ public class SentimentReport {
 	public static void main(String[] args) {
 		boolean runProgram = true;
 		ArrayList<File> bookList;
-		
 		while(runProgram){
 			if(!TEST_MODE){
 				bookList = getInput();
@@ -64,14 +63,15 @@ public class SentimentReport {
 		int totalWords = book.getBookWordCount();
 		int totalPosWords = book.getTotalPositiveWordOccurrences();
 		float posWordPercentage = book.getPositiveWordPercentage();
-		int commonPosWord = book.getWordOccurrence("happy");
+		String commonPosWord = book.getCommonPositiveWord();
+		//int commonPosWord = book.getWordOccurrence("happy");
 		
 		System.out.println("Analysis Complete");
 		System.out.println("Book Name: " + bookFile.getName());
 		System.out.println("Total Book Words: " + totalWords);
 		System.out.println("Total Positive Words: " + totalPosWords);
 		System.out.println("Positive Word Percentage: " + posWordPercentage);
-		System.out.println("Most Common Positive Word" + commonPosWord);
+		System.out.println("Most Common Positive Word: " + commonPosWord);
 	}
 	
 	private static ArrayList<File> getInput(){
@@ -114,6 +114,7 @@ public class SentimentReport {
 				}
 			}	
 		}
+		console.close();
 		return bookList;
 	}
 }
