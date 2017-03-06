@@ -198,16 +198,18 @@ public class BookAnalyzer {
 			if(index > -1){
 				occurrences++;
 				if(index < wordList.size() - 1){
-					int rightArraySize = wordList.size() - index - 1;
+					int rightIndex = index + 1;
+					int leftIndex = index - 1;
 					
-					if(rightArraySize > 0){
-						occurrences += findWordOccurrences(word, wordList.subList(index + 1, index + rightArraySize + 1));
+					while(rightIndex <= wordList.size() && word.equals(wordList.get(rightIndex))){
+						rightIndex++;
+						occurrences++;
 					}
 					
-					if(index > 0){
-						occurrences += findWordOccurrences(word, wordList.subList(0, index));
-					}
-					
+					while(leftIndex >= 0 && word.equals(wordList.get(leftIndex))){
+						leftIndex--;
+						occurrences++;
+					}					
 				}
 			}
 		}
@@ -261,7 +263,7 @@ public class BookAnalyzer {
 				if(bookLine[i].equals("")){
 					continue;
 				}
-				_bookWords.add(bookLine[i]);
+				_bookWords.add(bookLine[i].trim());
 			}
 		}
 		Collections.sort(_bookWords);

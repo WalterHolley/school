@@ -13,9 +13,9 @@ import java.util.ArrayList;
  *files.  Presents findings upon completion.
  */
 public class SentimentReport {
-	private static final boolean TEST_MODE = false;
-	private static final String POSITIVE_WORD_FILE = "posWords2.txt";
-	private static final String NEGATIVE_WORD_FILE = "negWords2.txt";
+	private static final boolean TEST_MODE = true;
+	private static final String POSITIVE_WORD_FILE = "posWords.txt";
+	private static final String NEGATIVE_WORD_FILE = "negWords.txt";
 	private static final String TEST_BOOK_ONE = "OliverTwist.txt";
 	private static final String TEST_BOOK_TWO = "Macbeth.txt";
 	private static final String TEST_BOOK_THREE = "MuchAdoAboutNothing.txt";
@@ -115,7 +115,7 @@ public class SentimentReport {
 		System.out.println("Book File: " + bookFile.getName());
 		System.out.println("Total Book Words: " + totalWords);
 		System.out.println("Total Positive Words: " + totalPosWords);
-		System.out.println("Total Negative Words: " + totalNegWords);
+		System.out.println("Total Negative Words: " + totalNegWords);		
 		System.out.printf("Positive Word Percentage: %.2f%s\n", posWordPercentage, "%");
 		System.out.printf("Negative Word Percentage: %.2f%s\n", negWordPercentage, "%");
 		System.out.println("Most Common Positive Word: " + commonPosWord);
@@ -127,7 +127,7 @@ public class SentimentReport {
 	/**
 	 * Ask the user for the location of the book(s) they wish to
 	 * analyze.
-	 * @return
+	 * @return ArrayList of books selected by the user
 	 */
 	private static ArrayList<File> getInput(Scanner console){
 		ArrayList<File>bookList = new ArrayList<File>();
