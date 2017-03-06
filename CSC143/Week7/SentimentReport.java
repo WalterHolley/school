@@ -13,13 +13,14 @@ import java.util.ArrayList;
  *files.  Presents findings upon completion.
  */
 public class SentimentReport {
-	private static final boolean TEST_MODE = true;
-	private static final String POSITIVE_WORD_FILE = "posWords.txt";
-	private static final String NEGATIVE_WORD_FILE = "negWords.txt";
+	private static final boolean TEST_MODE = false;
+	private static final String POSITIVE_WORD_FILE = "posWords2.txt";
+	private static final String NEGATIVE_WORD_FILE = "negWords2.txt";
 	private static final String TEST_BOOK_ONE = "OliverTwist.txt";
 	private static final String TEST_BOOK_TWO = "Macbeth.txt";
 	private static final String TEST_BOOK_THREE = "MuchAdoAboutNothing.txt";
 	private static final String FILE_NOT_FOUND_MSG = "The file name you entered cannot be found";
+	private static final String FILE_ALREADY_LISTED_MSG = "This file has already been selected for reporting";
 	private static final String INVALID_INPUT_MSG = "Input is invalid";
 	
 	public static void main(String[] args) {
@@ -83,7 +84,7 @@ public class SentimentReport {
 			System.out.println("Add books the analyzer by entering the name or path" +
 					"\nfor a book you want to analyize.  You can enter as many books as" +
 					"\nyou wish.  When done, the application will provide a sentiment summary" +
-					"\nof all the books you selected.");
+					"\nof all the books you selected.\n");
 		}
 	}
 	
@@ -140,6 +141,9 @@ public class SentimentReport {
 				bookFile = new File(userInput);
 				if(!bookFile.exists()){
 					System.out.println(FILE_NOT_FOUND_MSG);
+				}
+				else if(bookList.contains(bookFile)){
+					System.out.println(FILE_ALREADY_LISTED_MSG);
 				}
 				else{
 					bookList.add(bookFile);

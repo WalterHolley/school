@@ -47,7 +47,7 @@ public class BookAnalyzer {
 			_negWords = readFileToHash(negWordFile);
 		}
 		catch(FileNotFoundException ex){
-			System.out.println(negWordFile.getName() + "not found.  Using default negative "
+			System.out.println(negWordFile.getName() + " not found.  Using default negative "
 					+ "word list.");
 			_negWords = this.readArrayToHash(DEFAULT_NEGATIVE_WORDS);
 		}
