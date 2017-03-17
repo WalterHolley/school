@@ -1,12 +1,16 @@
 
-public class BookCatalog {
+public class BookCatalog extends BookCatalogNode {
 		private BookCatalogNode _head;
 		private BookCatalogNode _tail;
 	public BookCatalog(){
+		super();
 		this._head = null;
 		this._tail = null;
+		
 	}
-	
+	public BookCatalogNode next(){
+		return this.getNext();
+	}
 	public void add(Book book){
 		BookCatalogNode node = new BookCatalogNode(book, null);
 		

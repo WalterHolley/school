@@ -34,6 +34,10 @@ public class Book {
 	  return _authorLastName;
   }
   
+  public String getBookName(){
+	  return _bookName;
+  }
+  
   public int getBookYear(){
 	  return _bookYear;
   }
@@ -44,5 +48,16 @@ public class Book {
   
   public String getISBN(){
 	  return _bookCode;
+  }
+  
+  public String getAuthorFullName(){
+	  return this._authorFirstName + " " + this._authorLastName;
+  }
+  
+  public String toString(){
+	  String bookString = String.format("TITLE: %s\nAUTHOR: %s\nPUBLISHED: %s\nISBN: %s\nPRICE: %f\n",
+			  this._bookName, this.getAuthorFullName(), this._bookYear, this._bookCode, this._bookPrice);
+	  
+	  return bookString;
   }
 }

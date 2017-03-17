@@ -2,7 +2,9 @@
 public class BookCatalogNode {
 	private Book _data;
 	private BookCatalogNode _nextNode;
-	
+	public BookCatalogNode(){
+		
+	}
 	public BookCatalogNode(Book book, BookCatalogNode nextNode){
 		this._data = book;
 		this._nextNode = nextNode;
@@ -18,5 +20,9 @@ public class BookCatalogNode {
 	
 	public Book getBook(){
 		return this._data;
+	}
+	
+	public void setBook(Book book){
+		this._data = book;
 	}
 }
