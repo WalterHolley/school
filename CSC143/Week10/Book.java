@@ -55,8 +55,8 @@ public class Book {
   }
   
   public String toString(){
-	  String bookString = String.format("TITLE: %s\nAUTHOR: %s\nPUBLISHED: %s\nISBN: %s\nPRICE: %f\n",
-			  this._bookName, this.getAuthorFullName(), this._bookYear, this._bookCode, this._bookPrice);
+	  String bookString = String.format("%s\t%-25s\t%-60s\t%s\t%.2f", this._bookCode, 
+			  this.getAuthorFullName(), this._bookName, this._bookYear, this._bookPrice);
 	  
 	  return bookString;
   }
