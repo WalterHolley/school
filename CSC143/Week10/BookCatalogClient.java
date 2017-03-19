@@ -1,8 +1,9 @@
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileWriter;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import java.io.PrintStream;
 import java.util.Scanner;
 
 /**
@@ -13,16 +14,17 @@ import java.util.Scanner;
 public class BookCatalogClient {
 	private static final String BOOK_CATALOG_FILE = "bookList.txt";
 	private static final String INVALID_INPUT_MSG = "The input entered is invalid";
+	private static final String EMPTY_CATALOG_MSG = "The book catalog is empty";
 	private static BookCatalog BOOK_CATALOG = null;
+	private static boolean changesMade = false;
 
 	public static void main(String[] args) {
-		boolean runProgram = false;
+		boolean runProgram = true;
 		Scanner console = new Scanner(System.in);
 		int selection = 0;
 		
 		try{
 			processCatalogFile();
-			runProgram = true;
 		}
 		catch(FileNotFoundException ex){
 			System.out.println("The Book Catalog file could not be found.");
@@ -41,7 +43,7 @@ public class BookCatalogClient {
 					doBookSearch(console);
 					break;
 				case 4:
-					runProgram = false;
+					removeBook(console);
 					break;
 				case 5:
 					runProgram = false;
@@ -49,12 +51,27 @@ public class BookCatalogClient {
 			}
 		}
 		
+		//Save changes to catalog if any
+		if(changesMade){
+			if(yesOrNoQuestion(console, "Changes have been made to the catalog.  Would you like to save them? y/n:")){
+				try{
+					saveCatalog();
+				}
+				catch(IOException ex){
+					System.out.println("An error occurred while saving the catalog.  No changes were saved");
+				}
+			}
+		}
 		console.close();
 		System.out.println("Exiting Book Catalog.  Enjoy your day!");
-		
-
 	}
 	
+	/**
+	 * Prints main menu to the console
+	 * and returns the user's selection
+	 * @param console Scanner object for capturing user input
+	 * @return selection made by the user
+	 */
 	private static int showMainMenu(Scanner console){
 		int selection = 0;
 		
@@ -69,10 +86,19 @@ public class BookCatalogClient {
 		return selection;
 	}
 	
+	/**
+	 * Prints the Book catalog to the console
+	 * @param console Scanner object that captures the user's input
+	 */
 	private static void showCatalog(Scanner console){
-		printCatalog();
-		System.out.println("Press ENTER to continue");
-		console.nextLine();
+		if(BOOK_CATALOG.size() == 0){
+			System.out.println(EMPTY_CATALOG_MSG);
+		}
+		else{
+			printCatalog();
+			System.out.println("Press ENTER to continue");
+			console.nextLine();
+		}
 	}
 	
 	/**
@@ -90,9 +116,7 @@ public class BookCatalogClient {
 					book.getBookYear(), book.getPrice());
 			catalog = catalog.getNext();
 			count++;
-		}
-		
-		
+		}	
 	}
 	
 	/**
@@ -102,26 +126,32 @@ public class BookCatalogClient {
 	 */
 	private static void doBookSearch(Scanner console){
 		int selection = 0;
-		
-		while(selection != 4){
-			System.out.println("***SEARCH MENU***");
-			System.out.println("1. Search By Author Last Name");
-			System.out.println("2. Search By Author First Name");
-			System.out.println("3. Search By ISBN#");
-			System.out.println("4. Return to Main Menu");
-			selection = getMenuSelection(console, 1, 4);
-			
-			if(selection != 4){
-				List<Book> result = searchForBook(console, selection);
+		if(BOOK_CATALOG.size() == 0){
+			System.out.println(EMPTY_CATALOG_MSG);
+		}
+		else{
+			while(selection != 4){
+				System.out.println("***SEARCH MENU***");
+				System.out.println("1. Search By Author Last Name");
+				System.out.println("2. Search By Author First Name");
+				System.out.println("3. Search By ISBN#");
+				System.out.println("4. Return to Main Menu");
+				selection = getMenuSelection(console, 1, 4);
 				
-				System.out.printf("%s Result(s) found\n\n", result.size());
-				for(int i = 0; i < result.size(); i++){
-					System.out.println(result.get(i).toString());
-					System.out.println();
-				}
-				
-				if(!yesOrNoQuestion(console, "Perform another search y/n?: ")){
-					selection = 4;
+				if(selection != 4){
+					BookCatalog result = searchForBook(console, selection);
+					
+					System.out.printf("%s Result(s) found\n\n", result.size());
+					BookCatalogNode node = result.getCatalog();
+					while(node != null){
+						System.out.println(node.getBook().toString());
+						System.out.println();
+						node = node.getNext();
+					}
+					
+					if(!yesOrNoQuestion(console, "Perform another search y/n?: ")){
+						selection = 4;
+					}
 				}
 			}
 		}
@@ -136,8 +166,8 @@ public class BookCatalogClient {
 	 * 1 = Author Last Name; 2 = Author First name; 3 = ISBN
 	 * @return List of books discovered in catalog that match the user's criteria
 	 */
-	private static List<Book> searchForBook(Scanner console, int method){
-		List<Book> results = new ArrayList<Book>();
+	private static BookCatalog searchForBook(Scanner console, int method){
+		BookCatalog results = new BookCatalog();
 		System.out.println("Enter Search Criteria");
 		String input = console.nextLine();
 		
@@ -152,7 +182,6 @@ public class BookCatalogClient {
 				results = BOOK_CATALOG.searchByISBN(input);
 				break;
 		}
-		
 		return results;
 	}
 	
@@ -170,14 +199,15 @@ public class BookCatalogClient {
 		float bookPrice = 0;
 		
 		while(!isValidInput){
-			System.out.println("You can stop this process at any point by typing 'quit'");
+			System.out.println("You can stop this process at any point by typing 'q'");
 			try{
 				title = getAddBookStringInput(console, "Book Title:", false, false, false);
 				firstName = getAddBookStringInput(console, "Author First Name:", false, false, false);
 				lastName = getAddBookStringInput(console, "Author Last Name:", false, false, false);
 				bookYear = Integer.parseInt(getAddBookStringInput(console, "Year Published:", true, false, false));
 				bookPrice  = Float.parseFloat(getAddBookStringInput(console, "Book Price:", true, true, false));
-				isbn = getAddBookStringInput(console, "ISBN#:", false, false, true);
+				isbn = getAddBookStringInput(console, "ISBN#:", false, false, true).toUpperCase();
+				isValidInput = true;
 			}
 			catch(NumberFormatException ex){
 				System.out.println(INVALID_INPUT_MSG);
@@ -187,6 +217,7 @@ public class BookCatalogClient {
 			}
 			catch(IOException ex){
 				System.out.println("Book Entry Interrupted.");
+				return;
 			}
 		}
 		
@@ -195,27 +226,52 @@ public class BookCatalogClient {
 			book.setAuthorFirstName(firstName);
 			book.setAuthorLastName(lastName);
 			book.setBookYear(bookYear);
-			BOOK_CATALOG.add(book);
-			System.out.println("Book Successfully Added");
+			try{
+				BOOK_CATALOG.add(book);
+				changesMade = true;
+				System.out.println("Book Successfully Added");
+			}
+			catch(IllegalArgumentException ex){
+				System.out.println(ex.getMessage());
+				if(yesOrNoQuestion(console, "Try adding book again? y/n:")){
+					addBook(console);
+				}
+			}		
 		}
-	
-	
-		
 	}
 	
+	/**
+	 * Removes a book from the book catalog
+	 * @param console Scanner object for capturing user input
+	 */
 	private static void removeBook(Scanner console){
 		int upperBound = BOOK_CATALOG.size();
 		
 		if(upperBound <= 0){
-			System.out.println("The catalog is currently empty");
+			System.out.println(EMPTY_CATALOG_MSG);
 		}
 		else{
 			printCatalog();
 			System.out.println("Enter the number(#) of the book to remove");
 			int selection = getMenuSelection(console, 1, upperBound);
+			Book book = BOOK_CATALOG.getBook(selection);
+			System.out.println(book.toString());
+			if(yesOrNoQuestion(console, "Do you wish to remove this book from the catalog?y/n:")){
+				BOOK_CATALOG.remove(selection);
+				changesMade = true;
+				System.out.println("Removal Successful");
+			}
 		}
 	}
 	
+	/**
+	 * Handles selection and validation for menu
+	 * options selected by the user
+	 * @param console Scanner object that captures user input
+	 * @param lowerBound the minimum selection that can be made
+	 * @param upperBound the maximum selection that can be made
+	 * @return selection made by the user
+	 */
 	private static int getMenuSelection(Scanner console, int lowerBound, int upperBound){
 		int selection = 0;
 		boolean isValidInput = false;
@@ -238,7 +294,6 @@ public class BookCatalogClient {
 				isValidInput = true;
 			}
 		}
-		
 		return selection;
 	}
 	
@@ -260,8 +315,8 @@ public class BookCatalogClient {
 			
 			if(input.equals("y") || input.equals("n")){
 				isValidInput = true;
-				if(input.equals("n")){
-					isYes = false;
+				if(input.equals("y")){
+					isYes = true;
 				}
 			}
 			else{
@@ -303,94 +358,22 @@ public class BookCatalogClient {
 				}
 			}
 			else if(isISBN){
-				isValidInput = isValidISBN(input.toUpperCase());
+				isValidInput = Book.isValidISBN(input.toUpperCase());
 			}
 			else if((int)input.charAt(0) < 48 || (int)input.charAt(0) > 	57){
 				isValidInput = true;
 			}
-			else{
+			if(!isValidInput){
 				System.out.println(INVALID_INPUT_MSG);
 			}
 		}
-		
-		return input;
-		
+		return input;	
 	}
-	
+		
 	/**
-	 * Determines if the given ISBN is valid
-	 * @param isbn the ISBN to validate
-	 * @return true if the number is valid, otherwise false
+	 * Loads the catalog file into the Book Catalog
+	 * @throws FileNotFoundException when the catalog file cannot be found
 	 */
-	private static boolean isValidISBN(String isbn){
-		boolean isValid = false;
-		int dashDigit = (int)'-';
-		
-		if(isbn.length() > 9 && isbn.length() < 14){
-			Integer checkSum = null;
-			int dashCount = 0;
-			int digitTotal = 0;
-			int digitCount = 0;
-			for(int i = 0; i < isbn.length(); i++){
-				int value = 0;
-				char isbnChar = isbn.toCharArray()[i];
-				//get checksum value at the end of the isbn string
-				if(i == isbn.length() -1){
-					if((int)isbnChar == 88){
-						checkSum = 10;
-					}
-					else if((int)isbnChar > 47 && (int)isbnChar < 58){
-						checkSum = Integer.parseInt(String.valueOf(isbn.charAt(i)));
-					}
-					else{
-						break;
-					}
-				}
-				else{
-					if((int)isbnChar > 47 && (int)isbnChar < 58){
-						value = Integer.parseInt(String.valueOf(isbn.charAt(i)));
-					}
-					else if((int)isbnChar == dashDigit){
-						value = dashDigit;
-					}
-					else{
-						break;
-					}
-				}
-				
-				if(value == dashDigit){
-					if(i == 0){
-						break;
-					}
-					else if((int)isbn.charAt(i - 1) == dashDigit){
-						break;
-					}
-					dashCount++;
-					if(dashCount > 3){
-						break;
-					}
-				}
-				else{
-					digitCount++;
-					if(digitCount < 10){
-						digitTotal += value * digitCount;
-					}
-					else{
-						break;
-					}	
-				}
-			}		
-			if(digitCount == 10){
-				int determinedChecksum = digitTotal % 11;
-				if(determinedChecksum == checkSum){
-					isValid = true;
-				}
-			}
-		}
-		return isValid;
-	}
-	
-	
 	private static void processCatalogFile()throws FileNotFoundException{
 		Scanner fileReader = new Scanner(new File(BOOK_CATALOG_FILE));
 		BOOK_CATALOG = new BookCatalog();
@@ -413,6 +396,33 @@ public class BookCatalogClient {
 		}
 		
 		fileReader.close();
+	}
+	
+	/**
+	 * Saves the catalog to a file
+	 * @throws IOException if any issues occur during the file writing process
+	 */
+	private static void saveCatalog()throws IOException{
+		BookCatalogNode node = BOOK_CATALOG.getCatalog();
+		PrintStream fileWriter = null;
+		try{
+			fileWriter = new PrintStream(new File(BOOK_CATALOG_FILE));
+			while(node != null){
+				//writer.write(node.getBook().toString() + "\n");
+				fileWriter.println(node.getBook().toString());
+				node = node.getNext();
+			}
+		}
+		catch(FileNotFoundException ex){
+			System.out.println("An issue occurred while writing the file. Please ensure this program has proper file writing access.");
+		}
+		finally{
+			//writer.close();
+			if(fileWriter != null){
+				fileWriter.close();
+			}
+			
+		}
 	}
 
 }
