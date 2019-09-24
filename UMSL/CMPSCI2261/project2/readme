@@ -1,0 +1,63 @@
+PROJECT 2
+
+INSTRUCTIONS
+
+Having a stock portfolio is how many people make their retirement funds work!
+
+In this project, your goal is to create an application that manages a portfolio which contains a list of unique "stocks" that you can "buy" and "sell" against a "market".
+
+Your "portfolio" must be an object with:
+
+A list of stock objects
+
+A "bank account" which has
+
+Constructor:
+
+Must initialize the list of stocks to be empty (for simplicity sake, make the stock list 20 in length).
+
+A function to "reload" the user's "bank account".
+
+A funciton to "buy" a specific stock by its symbol (money to buy the stock should come from the "bank account").
+
+A function to "sell" a specific stock (which will deposit money back into the "bank account").
+
+A function which tallies the current worth of the stocks in the portfolio.
+
+A function which prints out each unique stock, and how many shares of it the user "owns", and how much all of the combined shares are worth.
+
+Each "stock" must be an object with:
+
+Company name
+
+Stock Symbol up to 4 letters long (a unique identifier, for example, Apple's symbol is AAPL).
+
+Current price of an individual share.
+
+Amount of shares "purchased".
+
+ 
+
+You are provided with a starter project with a "market" which will have 40 stocks, each with varying prices. Your goal is to use that to "buy" from and "sell" to.
+
+Your main function must:
+
+Prompt the user with a menu asking whether they would like to
+
+Buy a stock
+
+Sell a stock
+
+View a list of the stocks and their prices
+
+Add "money" to their account
+
+Print their current portfolio
+
+Print their current assets (i.e. how much money they have in total from stocks).
+
+If a user chooses to buy a stock whose symbol does not exist, reprompt the user to choose an already existing symbol.
+
+In order to buy a stock the user must have adequate "funds" in their account.
+
+At the end of each loop, run the provided function "marketVolatility()" (this function adds or subtracts an amount to each stock to simulate growth).
