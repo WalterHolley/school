@@ -43,7 +43,6 @@ public class Main {
 		init();
 		boolean runProgram = true;
 		
-		
 		while(runProgram) {
 			System.out.println("*** Portfolio Manager***");
 			System.out.println("Please enter the number of your selection:");
