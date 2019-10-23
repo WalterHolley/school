@@ -138,6 +138,38 @@ public class Connect4Game {
 	}
 	
 	/**
+	 * helper function to the other checkDiagonal signature
+	 * @param checkUp if true, searches up the game grid, otherwise down
+	 * @param checkLeft if true, checks the left of the game grid, otherwise right
+	 * @param rowIndex the row index where the search begins
+	 * @param colIndex the column index where the search begins
+	 * @param piece the piece to search for
+	 * @return number of consecutive piece found in a given direction
+	 */
+	private int checkDiagonal(boolean checkUp, boolean checkLeft, int rowIndex, int colIndex, char piece) {
+		int continuousFound = 0;
+		if(colIndex >= 0 && colIndex <= gridWidth - 1 && rowIndex >= 0 && rowIndex <= gridHeight - 1) {
+			
+			if(isPiece(rowIndex, colIndex, piece)) {
+				continuousFound++;
+				
+			}
+			if(checkLeft)
+				colIndex--;
+			else
+				colIndex++;
+			if(checkUp)
+				rowIndex++;
+			else
+				rowIndex--;
+			
+			continuousFound += checkDiagonal(checkUp, checkLeft, rowIndex, colIndex, piece);
+					
+		}
+			
+		return continuousFound;
+	}
+	/**
 	 * Checks the diagonal directions on the game grid for a winning combination
 	 * @param rowIndex row index to begin search
 	 * @param columnIndex column index to begin search
@@ -147,97 +179,29 @@ public class Connect4Game {
 	private boolean checkDiagonal(int rowIndex, int columnIndex, char piece) {
 		boolean result = false;
 		int continuousFound = 0;
-		int verticalUpperBound = rowIndex + 3 > gridHeight - 1 ? gridHeight - 1 : rowIndex + 3;
-		int verticalLowerBound = rowIndex - 3 < 0 ? 0 : rowIndex - 3;
-		int horizontalUpperBound = columnIndex + 3 > gridWidth - 1 ? gridWidth - 1 : columnIndex + 3;
-		int horizontalLowerBound = columnIndex - 3 < 0 ? 0 : columnIndex - 3;
-		int currentRow = rowIndex;
-		int currentCol = columnIndex;
+		int totalFound = 0;
+		
 		
 		//check given location
 		if(isPiece(rowIndex, columnIndex, piece))
 			continuousFound++;
-		
+	
 		//check upper right
-		
-		while(true) {
-			currentRow++;
-			currentCol++;
-			if(currentRow <= verticalUpperBound && currentCol <= horizontalUpperBound) {
-				if(isPiece(currentRow, currentCol, piece))
-					continuousFound++;
-				else
-					break;
-			}
-			else
-				break;
-		}
-		
-		currentRow = rowIndex;
-		currentCol = columnIndex;
+		totalFound += checkDiagonal(true, false, rowIndex + 1, columnIndex + 1, piece);
 		//check lower left
-		while(true) {
-			currentRow--;
-			currentCol--;
-			if(currentRow >= verticalLowerBound && currentCol >= horizontalLowerBound) {
-				if(isPiece(currentRow, currentCol, piece))
-					continuousFound++;
-				else
-					break;
-			}
-			else
-				break;
+		totalFound += checkDiagonal(false, true, rowIndex - 1, columnIndex - 1, piece);
 			
-		}
-		
-		//check for win
-		if(continuousFound < 4) {
-			continuousFound = 0;
-			currentRow = rowIndex;
-			currentCol = columnIndex;
-			
-			if(isPiece(rowIndex, columnIndex, piece))
-				continuousFound++;
-			
+		if(totalFound + continuousFound < 4) {
+			totalFound = 0;
 			//check upper left
-			while(true) {
-				currentRow++;
-				currentCol--;
-				if(currentRow <= verticalUpperBound && currentCol >= horizontalLowerBound) {
-					if(isPiece(currentRow, currentCol, piece))
-						continuousFound++;
-					else
-						break;
-				}
-				else
-					break;
-			}
-			
-			currentRow = rowIndex;
-			currentCol = columnIndex;
-			
+			totalFound += checkDiagonal(true, true, rowIndex + 1, columnIndex - 1, piece);
 			//check lower right
-			while(true) {
-				currentRow--;
-				currentCol++;
-				if(currentRow >= verticalLowerBound && currentCol <= horizontalUpperBound) {
-					if(isPiece(currentRow, currentCol, piece))
-						continuousFound++;
-					else
-						break;
-				}
-				else
-					break;
-			}
-			
-			//check for win
-			if(continuousFound >= 4)
-				result = true;
-			
+			totalFound += checkDiagonal(false, false, rowIndex - 1, columnIndex + 1, piece);
 		}
-		else
-			result = true;
 		
+		if(totalFound + continuousFound >= 4)
+			result = true;
+
 		return result;
 	}
 	
@@ -251,30 +215,51 @@ public class Connect4Game {
 	private boolean checkVertical(int rowIndex, int columnIndex, char piece) {
 		boolean result = false;
 		int continuousFound = 0;
-		int upperBound = rowIndex + 3 > gridHeight - 1 ? gridHeight - 1 : rowIndex + 3;
-		int lowerBound = rowIndex - 3 < 0 ? 0 : rowIndex - 3;
+		int upperBound = gridHeight - 1;
+		int lowerBound = 0;
+		int offset = 1;
+		boolean doneUp = false;
+		boolean doneDown = false;
 		
-		//check up
-		for(int i = rowIndex; i <= upperBound; i++) {
-			if(isPiece(i, columnIndex, piece))
-				continuousFound++;
-			else
-				break;
-		}
-		
-		//check down, do not recount the piece given to the function
-		if(continuousFound < 4) {
-			for(int i = rowIndex - 1; i >= lowerBound; i--) {
-				if(isPiece(i, columnIndex, piece))
-					continuousFound++;
-				else
+		if(isPiece(rowIndex, columnIndex, piece)) {
+			continuousFound++;
+			
+			do {
+				//check up
+				if(!doneUp) {
+					if(rowIndex + offset <= upperBound) {
+						if(isPiece(rowIndex + offset, columnIndex, piece))
+							continuousFound++;
+						else
+							doneUp = true;
+					}
+					else
+						doneUp = true;
+				}
+				//check down
+				if(!doneDown) {
+					if(rowIndex - offset >= lowerBound) {
+						if(isPiece(rowIndex - offset, columnIndex, piece))
+							continuousFound++;
+						else
+							doneDown = true;
+					}
+					else
+						doneDown = true;
+				}
+				
+				if(continuousFound >= 4) {
+					result = true;
 					break;
+				}
+					
+				offset++;
 			}
+			while(!doneUp || !doneDown);			
 		}
+						
 		
-		if(continuousFound >= 4) {
-			result = true;
-		}
+
 		return result;	
 	}
 	
@@ -288,29 +273,51 @@ public class Connect4Game {
 	private boolean checkHorizontal(int rowIndex, int columnIndex, char piece) {
 		boolean result = false;
 		int continuousFound = 0;
-		int upperBound = columnIndex + 3 > gridWidth - 1 ? gridWidth - 1 : columnIndex + 3;
-		int lowerBound = columnIndex - 3 < 0 ? 0 : columnIndex - 3;
+		int upperBound = gridWidth - 1;
+		int lowerBound = 0;
+		boolean doneLeft = false;
+		boolean doneRight = false;
+		int offset = 1;
 		
-		//check left
-		for(int i = columnIndex; i >= lowerBound; i--) {
-			if(isPiece(rowIndex, i, piece))
-				continuousFound++;
-			else
-				break;
-		}
-		
-		//check right, do not recount the piece given to the function
-		if(continuousFound < 4) {
-			for(int i = columnIndex + 1; i <= upperBound; i++) {
-				if(isPiece(rowIndex, i, piece))
-					continuousFound++;
-				else
+		if(isPiece(rowIndex, columnIndex, piece)) {
+			continuousFound++;
+			
+			do {
+				//check left
+				if(!doneLeft) {
+					if(columnIndex - offset >= lowerBound) {
+						if(isPiece(rowIndex, columnIndex - offset, piece))
+							continuousFound++;
+						else
+							doneLeft = true;
+					}
+					else
+						doneLeft = true;
+				}
+				//check right
+				if(!doneRight) {
+					if(columnIndex + offset <= upperBound) {
+						if(isPiece(rowIndex, columnIndex + offset, piece))
+							continuousFound++;
+						else
+							doneRight = true;
+					}
+					else
+						doneRight = true;
+				}
+				
+				if(continuousFound >= 4) {
+					result = true;
 					break;
-			}			
+				}
+					
+				offset++;
+			}
+			while(!doneLeft || !doneRight);			
 		}
+				
 		
-		if(continuousFound >= 4)
-			result = true;
+		
 		
 		return result;
 	}
