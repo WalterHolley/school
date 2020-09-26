@@ -1,12 +1,21 @@
 bash
 #!/bin/bash
 
+function getOffset {
+  local offsetText=$(printf "|--"'%.0s' $(seq $1))
+  local space=" "
+
+  local result=${offsetText//-/"  "}
+  echo $result
+}
+
 function scanDirFiles {
   files=$(find $1 -type f -maxdepth 1 | sort)
   for file in $files
     do
       local fileName=$(echo $file | rev | cut -d'/' -f 1 | rev)
-      text="|-${fileName}"
+      local dirSpacing=$(getOffset $2)
+      text="${dirSpacing}-${fileName}"
       echo $text
     done
 }
@@ -32,7 +41,8 @@ function scanDir {
         continue
       fi
       local dirName=$(echo $directory | rev | cut -d'/' -f 1 | rev)
-      echo $dirName
+      local dirSpacing=$(getOffset $2)
+      echo $dirSpacing-$dirName
       scanDir $directory $offset
     done
   fi
