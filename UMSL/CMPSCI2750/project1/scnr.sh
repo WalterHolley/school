@@ -5,7 +5,7 @@ GREEN_COLOR='\033[0;32m'
 NO_COLOR='\033[0m'
 
 function scanDirFiles {
-  files=$(find $1 -type f -maxdepth 1 | sort)
+  files=$(find $1 -maxdepth 1 -type f | sort)
   for file in $files
     do
       #local fileName=$(echo $file | rev | cut -d'/' -f 1 | rev)
@@ -22,13 +22,13 @@ function scanDir {
   while IFS= read -r -d $'\0'
   do
     internalDirs+=("$REPLY")
-  done < <(find $1 -type d -maxdepth 1 -print0| sort )
+  done < <(find $1 -maxdepth 1 -type d -print0| sort )
 
   local size=${#internalDirs[@]}
 
   if [[ size -gt 0 ]]
   then
-    internalDirs=$(find $1 -type d -maxdepth 1| sort| tail -$size)
+    internalDirs=$(find $1 -maxdepth 1 -type d | sort| tail -$size)
 
     for directory in $internalDirs
     do
@@ -48,7 +48,7 @@ function scanDir {
 }
 
 
-dirs=$(find $1 -type d -maxdepth 0| sort)
+dirs=$(find $1 -maxdepth 0 -type d | sort)
 
 if [[ -z $dirs ]]
 then
