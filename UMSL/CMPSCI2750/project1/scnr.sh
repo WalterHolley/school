@@ -54,6 +54,6 @@ then
   exit 1
 else
   echo $dirs
-  (scanDir $dirs 0)
+  scanDir $dirs 0
   exit 0
 fi
