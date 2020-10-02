@@ -1,5 +1,5 @@
-bash
 #!/bin/bash
+
 YELLOW_COLOR='\033[1;33m'
 GREEN_COLOR='\033[0;32m'
 NO_COLOR='\033[0m'
@@ -8,9 +8,7 @@ function scanDirFiles {
   files=$(find $1 -maxdepth 1 -type f | sort)
   for file in $files
     do
-      #local fileName=$(echo $file | rev | cut -d'/' -f 1 | rev)
       local dirSpacing=$(echo $file |sed -e "s/[^\/]*\//--/g")
-      #text="${YELLOW_COLOR}$${dirSpacing}"
       printf "${GREEN_COLOR}${dirSpacing}${NO_COLOR}\n"
     done
 }
@@ -37,7 +35,7 @@ function scanDir {
         scanDirFiles $1 $offset
         continue
       fi
-      #local dirName=$(echo $directory | rev | cut -d'/' -f 1 | rev)
+
       local dirSpacing=$(echo $directory |sed -e "s/[^\/]*\//--/g")
 
       printf "${YELLOW_COLOR}$dirSpacing${NO_COLOR}\n"
@@ -53,7 +51,9 @@ dirs=$(find $1 -maxdepth 0 -type d | sort)
 if [[ -z $dirs ]]
 then
   echo "$1: Directory not found"
+  exit 1
 else
   echo $dirs
-  scanDir $dirs 0
+  (scanDir $dirs 0)
+  exit 0
 fi
