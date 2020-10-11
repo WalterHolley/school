@@ -1,5 +1,5 @@
 #!/bin/bash
-
+onintr int
 YELLOW_COLOR='\033[1;33m'
 GREEN_COLOR='\033[0;32m'
 NO_COLOR='\033[0m'
@@ -57,3 +57,6 @@ else
   scanDir $dirs 0
   exit 0
 fi
+int:
+  echo "Program halted.  Exiting"
+    exit 1
