@@ -3,11 +3,8 @@ workingDirectory=$PWD
 clearConsole=$(printf "\033c")
 
 function mainMenu {
-  printf "\033c"
-  echo "***********"
-  echo "* Cleanup *"
-  echo "***********"
   echo "Working Directory: $workingDirectory"
+  echo "Make a selection"
   echo "1>>Clear empty files and directories"
   echo "2>>Move Files"
   echo "3>>Compress files"
@@ -15,7 +12,7 @@ function mainMenu {
   echo "5>>Exit"
 
   read selection
-
+  echo $clearConsole
   case $selection in
     [1]*)
     #clear Files
@@ -31,7 +28,6 @@ function mainMenu {
     changeDir
     ;;
     [5]*)
-    echo $clearConsole
     echo "Exiting tool."
     exit 0
     ;;
@@ -45,23 +41,59 @@ function changeDir {
 
   if [[ -z $dirs ]]
   then
-    mainMenu
+    echo "$selection: Directory not found"
   else
     workingDirectory=$dirs
     cd $workingDirectory
+    echo $clearConsole
     echo "Working directory updated"
+    dirs=$(getDirList $workingDirectory)
+    files=$(getFiles $workingDirectory)
+
+    if [[ ${#dirs[@]} -gt 0 ]]
+    then
+        echo "===Directories==="
+        for dir in $dirs
+        do
+          echo $dir
+        done
+    fi
+
+    if [[ ${#files[@]} -gt 0 ]]
+    then
+        echo "======Files======"
+        for file in $files
+        do
+          echo $file
+        done
+    fi
   fi
   mainMenu
 }
 
 function getDirList {
   local internalDirs=()
+
   while IFS= read -r -d $'\0'
   do
-    internalDirs+=("$REPLY")
-  done < <(find $1 -maxdepth 1 -type d -print0| sort )
+    files+=("REPLY")
+  done < <(find $1 -maxdepth 1 -mindepth 1 -type d -print0| sort )
 
+  internalDirs=$(find $1 -maxdepth 1 -mindepth 1 -type d | sort )
   echo $internalDirs
+}
+
+function getFiles {
+
+  local files=()
+
+  while IFS= read -r -d $'\0'
+  do
+    files+=("REPLY")
+  done < <(find $1 -maxdepth 1 -type f -print0| sort )
+  files=$(find $1 -maxdepth 1 -type f | sort )
+  echo $files
+
 }
 
 #remove empty directories
@@ -105,6 +137,8 @@ function cleanFiles {
 
 function compressFiles {
   tar czf dirarchive.tar.gz "${1[@]}"
+  #move to working directory
 }
 
+echo $clearConsole
 mainMenu
