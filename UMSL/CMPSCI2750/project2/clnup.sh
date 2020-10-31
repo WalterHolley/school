@@ -16,7 +16,7 @@ function mainMenu {
   case $selection in
     [1]*)
     #clear Files
-    cleanDir $workingDirectory
+    cleanDir
     ;;
     [2]*)
     #move Files
@@ -55,7 +55,7 @@ function changeDir {
         echo "===Directories==="
         for dir in $dirs
         do
-          echo $dir
+          echo $dir | sed 's/'$workingDirectory'//g'
         done
     fi
 
@@ -64,7 +64,7 @@ function changeDir {
         echo "======Files======"
         for file in $files
         do
-          echo $file
+          echo $file | sed 's/'$workingDirectory'//g'
         done
     fi
   fi
@@ -96,44 +96,16 @@ function getFiles {
 
 }
 
-#remove empty directories
+#remove empty files and directories
 function cleanDir {
-  local internalDirs=()
-  internalDirs=$(getDirList $1)
-  local size=${#internalDirs[@]}
-  local result=0
+  #remove empty files from working directory
+  find $workingDirectory -type f -size 0 -exec rm {} ';'
 
-  if [[ size -gt 0 ]]
-  then
-    for directory in $internalDirs
-    do
-      cleanDir $directory
-      nofiles=$(cleanFiles $directory)
-
-    if [[ $nofiles == 1 ]]
-      then
-        rm -d $directory
-    fi
-    done
-  fi
-
-  nofiles=$(cleanFiles $1)
-
-  #search again for directories
-  internalDirs=$(getDirList $1)
-  #return 1 if no directories or files in directory
-  if [ $internalDirs -eq $nofiles ] && [ $nofiles -eq 1 ]; then
-    result=1
-  fi
-  echo $result
+  #remove empty directories forom working directory
+  find $workingDirectory -type d -size 0 -exec rm {} ';'
 
 }
 
-#remove empty files from directory
-function cleanFiles {
-  result=0
-  echo $result
-}
 
 function compressFiles {
   tar czf dirarchive.tar.gz "${1[@]}"
