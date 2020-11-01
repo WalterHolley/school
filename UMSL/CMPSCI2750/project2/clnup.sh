@@ -25,6 +25,7 @@ function mainMenu {
     #compress Files
     ;;
     [4]*)
+    #change working directory
     changeDir
     ;;
     [5]*)
@@ -33,6 +34,8 @@ function mainMenu {
     ;;
   esac
 }
+
+#TODO create move files function
 
 function changeDir {
   echo "Enter Directory:"
@@ -55,7 +58,7 @@ function changeDir {
         echo "===Directories==="
         for dir in $dirs
         do
-          echo $dir | sed 's/'$workingDirectory'//g'
+          echo $dir | sed 's_'$workingDirectory'__g'
         done
     fi
 
@@ -64,7 +67,7 @@ function changeDir {
         echo "======Files======"
         for file in $files
         do
-          echo $file | sed 's/'$workingDirectory'//g'
+          echo $file | sed 's_'$workingDirectory'__g'
         done
     fi
   fi
@@ -106,9 +109,53 @@ function cleanDir {
 
 }
 
+#TODO: Complete compression menu
+function compressionMenu {
+  echo "Select compression type"
+  echo "1>>gzip(tar.gz)"
+  echo "2>>bzip2(tar.bz2)"
+  echo "3>>xz(tar.xz)"
 
+  read selection
+
+  case $selection in
+    [1]*)
+    ;;
+    [2]*)
+    ;;
+    [3]*)
+    ;;
+  esac
+}
+
+#TODO fix function syntax
 function compressFiles {
+  echo $clearConsole
+  echo "Working Directory: $workingDirectory"
+
+  echo "Enter files(ex: file.txt /dir1/file2.txt):"
+
+  #get file list
+  read fileList
+
+  #verify files
+  for file in $fileList
+  do
+  filepath="${workingDirectory}/${file}"
+  found=$(find $filepath -type f | wc -l)
+
+  #leave on failed verification
+  if [[ $found -eq 0 ]]
+  then
+    echo $clearConsole
+    echo "file not found: $filepath"
+    mainMenu
+  done
+
+  #ask compression preferences
   tar czf dirarchive.tar.gz "${1[@]}"
+
+  #do compression
   #move to working directory
 }
 
