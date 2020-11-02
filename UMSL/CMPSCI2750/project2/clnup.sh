@@ -1,9 +1,19 @@
 #!/bin/bash
+
+#INSTRUCTIONS
+#Search and remove all empty files and directories within the working directory.
+#Provide a series of filenames to move into their own directory (also provided by the user)
+#Provide a series of filenames to be combined via tar, along with a choice of what method of compression the user would like to use.
+#Navigate to another directory (move to the directory, then print the working directory and list all the files and directories).
+#Exit the program
+#If a user provides a file or directory name that does not exist, prompt the user with an error message and reprompt the user for the proper file names.
+#Bonus: Capture SIGINT and call a function to say goodbye to the user.
+
 workingDirectory=$PWD
 clearConsole=$(printf "\033c")
 fileList=""
 
-trap exitOnSigint SIGINT
+
 
 #exits the program when SIGINT is detected
 function exitOnSigint {
@@ -11,71 +21,54 @@ function exitOnSigint {
   exit 0
 }
 
+#main loop for script
 function mainMenu {
-  echo "Working Directory: $workingDirectory"
-  echo "Make a selection"
-  echo "1>>Clear empty files and directories"
-  echo "2>>Move Files"
-  echo "3>>Compress files"
-  echo "4>>Change Directory"
-  echo "5>>Exit"
+  runScript=1
+  until [[ $runScript -eq 0 ]]
+  do
+    echo "Working Directory: $workingDirectory"
+    echo "Make a selection"
+    echo "1>>Clear empty files and directories"
+    echo "2>>Move Files"
+    echo "3>>Compress files"
+    echo "4>>Change Directory"
+    echo "5>>Exit"
 
-  read selection
-  echo $clearConsole
-  case $selection in
-    [1]*)
-    #clear Files
-    cleanDir
-    ;;
-    [2]*)
-    #move Files
-    moveFiles
-    ;;
-    [3]*)
-    #compress Files
-    getFilesToCompress
-    ;;
-    [4]*)
-    #change working directory
-    changeDir
-    ;;
-    [5]*)
-    echo "Exiting tool."
-    exit 0
-    ;;
-    *)
-    echo "Invalid selection"
-    ;;
-  esac
-  mainMenu
+    read selection
+    echo $clearConsole
+    case $selection in
+      1)
+      #clear Files
+      cleanDir
+      ;;
+      2)
+      #move Files
+      moveFiles
+      ;;
+      3)
+      #compress Files
+      getFilesToCompress
+      ;;
+      4)
+      #change working directory
+      changeDir
+      ;;
+      5)
+      echo "Exiting tool."
+      runScript=0
+      ;;
+      *)
+      echo "Invalid selection"
+      ;;
+    esac
+  done
+  exit 0
 }
 
 #moves files within working directory
 function moveFiles {
 
-  found=""
-  echo "Working Directory: $workingDirectory"
-
-  echo "Enter files[ex: file.txt /dir1/file2.txt]:"
-
-  #get file list
-  read fileList
-
-  #verify files
-  for file in $fileList
-  do
-    filepath="${workingDirectory}/${file}"
-    found=$(find $filepath -type f | wc -l)
-
-    #leave on failed verification
-    if [[ $found -eq 0 ]]
-    then
-      echo $clearConsole
-      echo "file not found: $filepath"
-      fileList="-1"
-      break
-    fi
-  done
+  getFilesFromUser
 
   if [[ $fileList != "-1" ]]
   then
@@ -92,11 +85,11 @@ function moveFiles {
       echo "Does not exist.  create? y/n"
       read yesno
 
-      if [[ $yesno -ne "y" ]]
+      if [[ $yesno != "y" ]]
       then
         echo $clearConsole
         echo "File move aborted"
-        break
+        return 0
       else
         mkdir $dir
       fi
@@ -109,66 +102,60 @@ function moveFiles {
 function getFilesFromUser {
   echo $clearConsole
   found=0
-  echo "Working Directory: $workingDirectory"
+  until [[ $found -eq 1 ]]
+    do
+        echo "Working Directory: $workingDirectory"
+        echo "Enter files[ex: file.txt dir1/file2.txt]:"
 
-  echo "Enter files[ex: file.txt /dir1/file2.txt]:"
+        #get file list
+        read fileList
 
-  #get file list
-  read fileList
+        #verify files
+        for file in $fileList
+        do
+          filepath="${workingDirectory}/${file}"
+          found=$(find $filepath -type f | wc -l)
 
-  #verify files
-  for file in $fileList
-  do
-    filepath="${workingDirectory}/${file}"
-    found=$(find $filepath -type f | wc -l)
-
-    #leave on failed verification
-    if [[ $found -eq 0 ]]
-    then
-      echo $clearConsole
-      echo "file not found: $filepath"
-      fileList=-1
-      break
-    fi
-  done
-
-  echo $fileList
+          #leave on failed verification
+          if [[ $found -eq 0 ]]
+          then
+            echo $clearConsole
+            echo "file not found: $filepath"
+            fileList="-1"
+            break
+          fi
+        done
+      done
 }
 
 #changes the working directory
 function changeDir {
-  echo "Working Directory: $workingDirectory"
-  dirs=$(getDirList $workingDirectory)
+  found=0
 
-  echo "Enter Directory:"
-  read selection
-  dirs=$( find $selection -maxdepth 0 -type d | sort )
+  until [[ found -ne 0 ]]
+  do
+    echo "Working Directory: $workingDirectory"
+    echo "Enter exact Directory[ex: /dir1/dir2]:"
+    read selection
+    found=$( find $selection -maxdepth 0 -type d | wc -l )
 
-  echo $clearConsole
+    echo $clearConsole
 
-  if [[ -z $dirs ]]
-  then
-    echo "$selection: Directory not found"
-  else
-    workingDirectory=$dirs
-    cd $workingDirectory
-
-    echo "Working directory updated"
-    showWorkingDirectory
-  fi
-  mainMenu
+    if [[ $found -eq 0 ]]
+    then
+      echo "$selection: Directory not found"
+    else
+      workingDirectory=$selection
+      echo "Working directory updated"
+      showWorkingDirectory
+    fi
+  done
 }
 
 #gets a list of directories in the first level of the working directory
 function getDirList {
-  local internalDirs=()
 
-  while IFS= read -r -d $'\0'
-  do
-    files+=("REPLY")
-  done < <(find $1 -maxdepth 1 -type d | sort )
-
-  internalDirs=$(find $1 -maxdepth 1 -mindepth 1 -type d | sort )
+  internalDirs=$(find $1 -maxdepth 1 -type d | sort )
   echo $internalDirs
 }
 
@@ -205,23 +192,24 @@ function compressionMenu {
 
   #compress files
   case $selection in
-    [1]*)
+    1)
     file="archize.tar.gz"
     selection="-c -z -f"
     ;;
-    [2]*)
+    2)
     file="archive.tar.bz2"
     selection="-c -j -f"
     ;;
-    [3]*)
+    3)
     file="archive.tar.xz"
     selection="-c -J -f"
     ;;
-    [4]*)
+    4)
     file="archive.tar"
     selection="-c -f"
     ;;
-    [5]*)
+    5)
+    echo $clearConsole
     selection=-1
     ;;
     *)
@@ -234,12 +222,10 @@ function compressionMenu {
   if [[ $selection -ne -1 ]]
   then
     archive="${workingDirectory}/${file}"
-    tar $selection $archive $1
+    tar $selection $archive $fileList
     echo $clearConsole
     echo "${archive} created"
   fi
-
-  mainMenu
 }
 
 #entry point for file compression process
@@ -248,28 +234,11 @@ function getFilesToCompress {
   found=0
   getFilesFromUser
 
-  #verify files
-  for file in $fileList
-  do
-    filepath="${workingDirectory}/${file}"
-    found=$(find $filepath -type f | wc -l)
-
-    #leave on failed verification
-    if [[ $found -eq 0 ]]
-    then
-      echo $clearConsole
-      echo "file not found: $filepath"
-      break
-    fi
-  done
-
   #do compression
-  if [[ $found -eq 1 ]]
+  if [[ $fileList != "-1" ]]
   then
-    compressionMenu $fileList
+    compressionMenu
   fi
-  mainMenu
-
 }
 
 #print first level directory and files of working directory
@@ -297,12 +266,16 @@ function showDirs {
       echo "===Directories==="
       for dir in $dirs
       do
-        echo $dir | sed 's_'$workingDirectory'__g'
+        if [[ $dir != $workingDirectory ]]
+        then
+          echo $dir | sed 's_'$workingDirectory'__g'
+        fi
       done
   fi
 
 }
 
+trap exitOnSigint SIGINT
 
 echo $clearConsole
 mainMenu
