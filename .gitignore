@@ -11,3 +11,6 @@ CSC142/src/
 *.project
 *.prefs
 *.png
+*.o
+*.gch
+UMSL/CMPSCI2750/project3/calc
