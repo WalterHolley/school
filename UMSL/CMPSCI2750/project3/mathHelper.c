@@ -1,3 +1,4 @@
+#include <limits.h>
 #include "mathHelper.h"
 
 int add(int value1, int value2){
@@ -16,7 +17,7 @@ int divide(int value1, int value2){
   int answer;
   if(value2 == 0){
     printf("Cannot divide by zero\n");
-    answer = 0;
+    answer = INT_MIN;
   }
   else
     answer = value1 / value2;
@@ -28,5 +29,7 @@ int modulus(int value1, int value2){
 }
 
 void printHelp(){
-
+  printf("USAGE\n");
+  printf("-h \t Shows help\n");
+  printf("-t \t Runs tests for application\n");
 }

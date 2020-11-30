@@ -3,10 +3,13 @@
 #include <unistd.h>
 #include <string.h>
 #include "mathHelper.h"
+#include "mathTests.h"
 
 #define OPTIONS "ht"
 #define MAX_BUFFER_SIZE 12
 
+//Asks for an integer from the user.
+//loops until an integer is received.
 int getValidNumberSelection(char* message){
   int validNumber = 0;
   char input[MAX_BUFFER_SIZE];
@@ -35,6 +38,8 @@ int getValidNumberSelection(char* message){
   }
   return result;
 }
+
+//Processes the math function asked for by the main menu
 void processSelection(int selection){
   int value1 = getValidNumberSelection("Enter the first number:");
   int value2 = getValidNumberSelection("Enter the second number:");
@@ -60,6 +65,7 @@ void processSelection(int selection){
   printf("Answer: %d\n", answer);
 }
 
+//Validates the selection option from the main menu
 int isValidMenuSelection(int selection){
   int result = 0;
   if(selection >= 1 && selection <= 6)
@@ -103,16 +109,6 @@ int isValidArgs(char* arg1, char* arg2){
   return result;
 }
 
-int validateDivision(int value1, int value2){
-  int result = 0;
-  if(value2 == 0){
-    printf("You cannot divide by zero.\n");
-  }
-  else
-    result = 1;
-  return result;
-}
-
 void showMainMenu(){
   int showMenu = 1;
   int selectionLoop;
@@ -149,13 +145,15 @@ int main(int argc, char** argv){
     while ((option = getopt(argc, argv, OPTIONS)) != -1){
       //printf("%d %s %s %s %s\n", argc, argv[0], argv[1], argv[2], argv[3]);
       int argIndex = 1; //getArgIndex(, argv, argc);
-      printf("argIndex: %d", argIndex);
+      //printf("argIndex: %d", argIndex);
       switch(option){
         case 'h':
           //help function
+          printHelp();
           break;
         case 't':
           //test function
+          runAllMathTests();
           break;
         case 'a':
           //addition function
