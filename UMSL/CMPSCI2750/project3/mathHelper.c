@@ -28,7 +28,7 @@ int modulus(int value1, int value2){
   return value1 % value2;
 }
 
-void printHelp(){
+void help(){
   printf("USAGE\n");
   printf("-h \t Shows help\n");
   printf("-t \t Runs tests for application\n");

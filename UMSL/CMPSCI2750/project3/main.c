@@ -21,7 +21,6 @@ int getValidNumberSelection(char* message){
     int selection = atoi(input);
      if(selection == 0){
        if(input[0] != '0'){
-         //system("clear");
          printf("your selection is not a valid number\n");
        }
        else{
@@ -43,6 +42,7 @@ int getValidNumberSelection(char* message){
 void processSelection(int selection){
   int value1 = getValidNumberSelection("Enter the first number:");
   int value2 = getValidNumberSelection("Enter the second number:");
+  system("clear");
   int answer;
   switch(selection){
     case 1:
@@ -75,8 +75,9 @@ int isValidMenuSelection(int selection){
 
 int getArgIndex(char* arg, char** argv, int argc){
   int result = -1;
+  int i;
   printf("total args: %d", argc);
-    for(int i = 0; i < argc; i++){
+    for(i = 0; i < argc; i++){
     if(arg == argv[i]){
       result = i;
       break;
@@ -135,7 +136,6 @@ void showMainMenu(){
         printf("Invalid menu selection\n");
       }
     }
-
   }
 }
 
@@ -143,35 +143,14 @@ int main(int argc, char** argv){
   int option;
   if(argc > 1){
     while ((option = getopt(argc, argv, OPTIONS)) != -1){
-      //printf("%d %s %s %s %s\n", argc, argv[0], argv[1], argv[2], argv[3]);
-      int argIndex = 1; //getArgIndex(, argv, argc);
-      //printf("argIndex: %d", argIndex);
       switch(option){
         case 'h':
           //help function
-          printHelp();
+          help();
           break;
         case 't':
           //test function
           runAllMathTests();
-          break;
-        case 'a':
-          //addition function
-          if(isValidArgs(argv[argIndex + 1], argv[argIndex + 2])){
-            add(atoi(argv[argIndex + 1]), atoi(argv[argIndex + 2]));
-          }
-          break;
-        case 's':
-          //subtraction function
-          break;
-        case 'm':
-          //multiplication function
-          break;
-        case 'd':
-          //division function
-          break;
-        case 'r':
-          //remainder function
           break;
       }
     }
