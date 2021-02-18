@@ -13,13 +13,15 @@
         <p>Header</p>
         </div>
         <div id="pageBody" class="container-fluid">
-        <div id="menu">
-          <p>Link 1</p>
-          <p>Link 2</p>
-          <p>Link 3</p>
+        <div id="content" class="row content">
+        <div id="menu" class="col-xs-12 col-sm-12 col-md-3 col-lg-3 col-xl-2 col-xxl-2">
+          <p><a href="index.html">Home</a></p>
+          <p><a href="animation.html">Animations</a></p>
+          <p><a href="registration.html">Registration</a></p>
           </div>
-          <div id="content">
-            <div id="content1">
+            <div id="body" class="col-xs-12 col-sm-12 col-md-9 col-lg-9 col-xl-10 col-xxl-10">
+            <div id="bodyRow" class="row">
+            <div id="content1" class="col-xs-12 col-sm-12 col-md-12 col-lg-6 col-xl-6 col-xxl-6">
               <input type="text" id="userName">
               <input type="password" id="password">
               <input type="password" id="confirmPassword">
@@ -83,7 +85,7 @@
 	              <option value="WY">Wyoming</option>
               </select>
             </div>
-            <div id="content2">
+            <div id="content2" class="col-xs-12 col-sm-12 col-md-12 col-lg-6 col-xl-6 col-xxl-6">
               <input type="text" id="zipCode">
               <input type="text" id="phone">
               <input type="text" id="email">
@@ -97,10 +99,8 @@
               <input type="submit" id="submit">
               <input type="reset">
             </div>
-            <div id="animations1">
-            </div>
-            <div id="animations2">
-            </div>
+          </div>
+          </div>
         </div>
         <div id="footer">
           <p>Footer</p>
