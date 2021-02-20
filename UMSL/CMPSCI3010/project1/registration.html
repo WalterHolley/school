@@ -21,15 +21,24 @@
           </div>
             <div id="body" class="col-xs-12 col-sm-12 col-md-9 col-lg-9 col-xl-10 col-xxl-10">
             <div id="bodyRow" class="row">
+              <form action="alert("Submitted!");">
             <div id="content1" class="col-xs-12 col-sm-12 col-md-12 col-lg-6 col-xl-6 col-xxl-6">
-              <input type="text" id="userName">
-              <input type="password" id="password">
-              <input type="password" id="confirmPassword">
-              <input type="text" id="firstName">
-              <input type="text" id="lastName">
-              <input type="text" id="address1">
-              <input type="text" id="address2">
-              <input type="text" id="city">
+              <label for="userName">User Name:</label>
+              <input type="text" id="userName"><br>
+              <label for="password">Password:</label>
+              <input type="password" id="password"><br>
+              <label for="confirmPassword">Confirm Password</label>
+              <input type="password" id="confirmPassword"><br>
+              <label for="firstName">First Name:</label>
+              <input type="text" id="firstName"><br>
+              <label for="lastName">Last Name:</label>
+              <input type="text" id="lastName"><br>
+              <label for="address1">Address 1:</label>
+              <input type="text" id="address1"><br>
+              <label for="address2">Address 2:</label>
+              <input type="text" id="address2"><br>
+              <label for="city">City:</label>
+              <input type="text" id="city"><br>
               <label for="state">State:</label>
               <select id="state">
                 <option value="AL">Alabama</option>
@@ -83,22 +92,26 @@
 	              <option value="WV">West Virginia</option>
 	              <option value="WI">Wisconsin</option>
 	              <option value="WY">Wyoming</option>
-              </select>
+              </select><br>
             </div>
             <div id="content2" class="col-xs-12 col-sm-12 col-md-12 col-lg-6 col-xl-6 col-xxl-6">
-              <input type="text" id="zipCode">
-              <input type="text" id="phone">
-              <input type="text" id="email">
+              <label for="zipCode">ZIP code:</label>
+              <input type="text" id="zipCode"><br>
+              <label for="phone">Phone:</label>
+              <input type="text" id="phone"><br>
+              <label for="email">Email:</label>
+              <input type="text" id="email"><br>
               <input type="radio" id="male" name="gender" value="male">
               <input type="radio" id="female" name="gender" value="female">
               <input type="radio" id="other" name="gender" value="other">
-              <label for="maritalStatus">Marital Status:</label>
               <input type="radio" id="married" name="status" value="married">
-              <input type="radio" id="single" name="status" value="single">
-              <input type="date" id="dateOfBirth">
+              <input type="radio" id="single" name="status" value="single"><br>
+              <label for="dateOfBirth">Date of Birth:</label>
+              <input type="date" id="dateOfBirth"><br>
               <input type="submit" id="submit">
               <input type="reset">
             </div>
+            </form>
           </div>
           </div>
         </div>
