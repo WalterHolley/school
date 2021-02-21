@@ -5,42 +5,54 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-BmbxuPwQa2lc/FVzBcNJ7UAyJxM6wuqIj61tLrc4wSX0szH/Ev+nYRRuWlolflfl" crossorigin="anonymous">
     <link rel="stylesheet" href="./styles/index.css">
+    <link rel="stylesheet" href="./styles/registration.css">
     <title>Project 1 for CMPSCI3010</title>
   </head>
   <body>
-    <div id="pageContainer" class="container-fluid">
-      <div id="header">
-        <p>Header</p>
-        </div>
-        <div id="pageBody" class="container-fluid">
+  <div id="pageBody" class="container-fluid">
+          <div id="header" class="row">
+            <p>Header</p>
+            </div>
         <div id="content" class="row content">
-        <div id="menu" class="col-xs-12 col-sm-12 col-md-3 col-lg-3 col-xl-2 col-xxl-2">
+        <div id="menu" class="col-xs-12 col-sm-12 col-md-3 col-lg-2">
           <p><a href="index.html">Home</a></p>
           <p><a href="animation.html">Animations</a></p>
           <p><a href="registration.html">Registration</a></p>
           </div>
-            <div id="body" class="col-xs-12 col-sm-12 col-md-9 col-lg-9 col-xl-10 col-xxl-10">
-            <div id="bodyRow" class="row">
-              <form action="alert("Submitted!");">
-            <div id="content1" class="col-xs-12 col-sm-12 col-md-12 col-lg-6 col-xl-6 col-xxl-6">
-              <label for="userName">User Name:</label>
-              <input type="text" id="userName"><br>
-              <label for="password">Password:</label>
-              <input type="password" id="password"><br>
-              <label for="confirmPassword">Confirm Password</label>
-              <input type="password" id="confirmPassword"><br>
-              <label for="firstName">First Name:</label>
-              <input type="text" id="firstName"><br>
-              <label for="lastName">Last Name:</label>
-              <input type="text" id="lastName"><br>
-              <label for="address1">Address 1:</label>
-              <input type="text" id="address1"><br>
-              <label for="address2">Address 2:</label>
-              <input type="text" id="address2"><br>
-              <label for="city">City:</label>
-              <input type="text" id="city"><br>
-              <label for="state">State:</label>
-              <select id="state">
+            <div id="body" class="col-xs-12 col-sm-12 col-md-9 col-lg-10">
+              <form class="row">
+            <div id="content1" class="col-xs-12 col-sm-12 col-md-12 col-lg-6">
+                <h4>User Information</h4><br>
+                <input type="text" class="form-control" id="userName" placeholder="User Name"><br>
+                <input type="password" class="form-control" id="password" placeholder="Password"><br>
+                <input type="password" class="form-control" id="confirmPassword" placeholder="Confirm Password"><br>
+                <input type="text" class="form-control" type="text" id="firstName" placeholder="First Name"><br>
+                <input type="text" class="form-control" id="lastName" placeholder="Last Name"><br>
+                <h4>Gender</h4><br>
+                <span>
+                <input type="radio" class="form-check-input" id="male" name="gender" value="male">
+                <label for="male" class="form-check-label">Male</label>
+                <input type="radio" class="form-check-input" id="female" name="gender" value="female">
+                <label for="female" class="form-check-label">Female</label>
+                <input type="radio" class="form-check-input" id="other" name="gender" value="other">
+                <label for="other" class="form-check-label">Other</label>
+                </span>
+              <br>
+              <label>Marital Status</label><br>
+              <input type="radio" class="form-check-input" id="married" name="status" value="married">
+              <label for="married">Married</label>
+              <input type="radio" class="form-check-input" id="single" name="status" value="single">
+              <label for="single" class="form-check-label">Single</label><br>
+              <label for="dateOfBirth">Date of Birth:</label><br>
+              <input type="date" class="form-contol" id="dateOfBirth" placeholder="Password"><br><br>
+            </div>
+            <div id="content2" class="col-xs-12 col-sm-12 col-md-12 col-lg-6">
+              <h4>Contact Information</h4><br>
+              <input type="text" class="form-control" id="address1" placeholder="Address 1"><br>
+              <input type="text" class="form-control" id="address2" placeholder="Address 2"><br>
+              <input type="text" class="form-control" id="city" placeholder="City"><br>
+              <select id="state" class="form-select">
+                <option selected>Choose State...</option>
                 <option value="AL">Alabama</option>
 	              <option value="AK">Alaska</option>
 	              <option value="AZ">Arizona</option>
@@ -93,29 +105,22 @@
 	              <option value="WI">Wisconsin</option>
 	              <option value="WY">Wyoming</option>
               </select><br>
+              <input type="text" id="zipCode" class="form-control" placeholder="ZIP code"><br>
+              <input type="text" id="phone" class="form-control" placeholder="Phone Number"><br>
+              <input type="text" id="email" class="form-control" placeholder="Email Address"><br>
+
+
             </div>
-            <div id="content2" class="col-xs-12 col-sm-12 col-md-12 col-lg-6 col-xl-6 col-xxl-6">
-              <label for="zipCode">ZIP code:</label>
-              <input type="text" id="zipCode"><br>
-              <label for="phone">Phone:</label>
-              <input type="text" id="phone"><br>
-              <label for="email">Email:</label>
-              <input type="text" id="email"><br>
-              <input type="radio" id="male" name="gender" value="male">
-              <input type="radio" id="female" name="gender" value="female">
-              <input type="radio" id="other" name="gender" value="other">
-              <input type="radio" id="married" name="status" value="married">
-              <input type="radio" id="single" name="status" value="single"><br>
-              <label for="dateOfBirth">Date of Birth:</label>
-              <input type="date" id="dateOfBirth"><br>
+            <div id="sendForm" class="col-xs-12 col-sm-12 col-md-9 col-lg-12">
+              <span class="mx-auto">
               <input type="submit" id="submit">
               <input type="reset">
+              </span>
             </div>
             </form>
           </div>
-          </div>
         </div>
-        <div id="footer">
+        <div id="footer" class="row">
           <p>Footer</p>
           </div>
       </div>
