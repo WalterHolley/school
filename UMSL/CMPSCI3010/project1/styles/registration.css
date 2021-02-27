@@ -1,3 +1,15 @@
-div #content1 input {
+
+h4 {
+  text-align: center;
+}
+
+div#sendForm span {
+  display: block;
   width: 200px;
 }
+
+input#submit {
+  float: right;
+}
+
+input#
