@@ -1,0 +1,44 @@
+#header{
+  color: #717671;
+  background-color: #000000;
+
+
+}
+
+body{
+  background-color: #000000;
+  height: 100%;
+}
+a{
+  text-align: center;
+  text-decoration: none;
+}
+
+p{
+ text-align: center;
+ color: #bbbdbf;
+}
+
+a, a:visited, a:active, a:before, a:after{
+  color: #0b4eb3;
+}
+
+/*
+#menu{
+  background-color: #33FF33;
+}
+
+#content1{
+  background-color: #9e9c95;
+}
+
+#content2{
+  background-color: #9e9c95;
+}
+*/
+div#footer{
+  background-color: #000000;
+}
+div#footer p{
+  color: #f0f3f7;
+}
