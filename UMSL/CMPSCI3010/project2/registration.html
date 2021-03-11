@@ -23,34 +23,41 @@
               <form class="row">
             <div id="content1" class="col-xs-12 col-sm-12 col-md-12 col-lg-6">
                 <p class="h5">User Information</p>
-                <input type="text" class="form-control" id="userName" placeholder="User Name"><br>
-                <input type="password" class="form-control" id="password" placeholder="Password"><br>
-                <input type="password" class="form-control" id="confirmPassword" placeholder="Confirm Password"><br>
-                <input type="text" class="form-control" type="text" id="firstName" placeholder="First Name"><br>
-                <input type="text" class="form-control" id="lastName" placeholder="Last Name"><br>
-                <p class="h5">Gender</p>
-
+                <span class="redText">*</span>
+                <input type="text" class="form-control" id="userName" name="User Name" placeholder="User Name"><br>
+                <span class="redText">*</span>
+                <input type="password" class="form-control" id="password" name="Password" placeholder="Password"><br>
+                <span class="redText">*</span>
+                <input type="password" class="form-control" id="confirmPassword" name="Confirm Password" placeholder="Confirm Password"><br>
+                <span class="redText">*</span>
+                <input type="text" class="form-control" type="text" id="firstName" name="First Name" placeholder="First Name"><br>
+                <span class="redText">*</span>
+                <input type="text" class="form-control" id="lastName" name="Last Name" placeholder="Last Name"><br>
+                <p class="h5">Gender<span class="redText">*</span></p>
                 <p><input type="radio" class="form-check-input" id="male" name="gender" value="male">
                 <label for="male" class="form-check-label">Male</label>
                 <input type="radio" class="form-check-input" id="female" name="gender" value="female">
                 <label for="female" class="form-check-label">Female</label>
                 <input type="radio" class="form-check-input" id="other" name="gender" value="other">
                 <label for="other" class="form-check-label">Other</label></p>
-              <p class="h5">Marital Status</p>
+              <p class="h5">Marital Status<span class="redText">*</span></p>
 
               <p><input type="radio" class="form-check-input" id="married" name="status" value="married">
               <label for="married">Married</label>
               <input type="radio" class="form-check-input" id="single" name="status" value="single">
               <label for="single" class="form-check-label">Single</label></p>
 
-              <p class="h5">Date of Birth</p>
+              <p class="h5">Date of Birth<span class="redText">*</span></p>
               <p><input type="date" class="form-contol" id="dateOfBirth" placeholder="Password"></p>
             </div>
             <div id="content2" class="col-xs-12 col-sm-12 col-md-12 col-lg-6">
               <p class="h5">Contact Information</p>
+              <span class="redText">*</span>
               <input type="text" class="form-control" id="address1" placeholder="Address 1"><br>
               <input type="text" class="form-control" id="address2" placeholder="Address 2"><br>
+              <span class="redText">*</span>
               <input type="text" class="form-control" id="city" placeholder="City"><br>
+              <span class="redText">*</span>
               <select id="state" class="form-select">
                 <option selected>Choose State...</option>
                 <option value="AL">Alabama</option>
@@ -105,9 +112,12 @@
 	              <option value="WI">Wisconsin</option>
 	              <option value="WY">Wyoming</option>
               </select><br>
-              <input type="text" id="zipCode" class="form-control" placeholder="ZIP code"><br>
-              <input type="text" id="phone" class="form-control" placeholder="Phone Number"><br>
-              <input type="text" id="email" class="form-control" placeholder="Email Address"><br>
+              <span class="redText">*</span>
+              <input type="number" id="zipCode" class="form-control" placeholder="ZIP code"><br>
+              <span class="redText">*</span>
+              <input type="number" id="phone" class="form-control" placeholder="Phone Number"><br>
+              <span class="redText">*</span>
+              <input type="email" id="email" class="form-control" placeholder="Email Address"><br>
 
             </div>
             <div id="sendForm" class="row">
@@ -142,6 +152,7 @@
           </div>
           </div>
       </div>
+      <script src="./js/formValidation.js"></script>
   </body>
 </html>
 </!DOCTYPE html>
