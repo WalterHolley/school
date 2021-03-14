@@ -15,3 +15,11 @@ input#submit {
 .redText{
   color: #f51616;
 }
+
+.error{
+  font-size: 10px;
+}
+
+.hide{
+  display: none;
+}
