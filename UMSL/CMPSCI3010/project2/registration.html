@@ -24,8 +24,8 @@
             <div id="content1" class="col-xs-12 col-sm-12 col-md-12 col-lg-6">
                 <p class="h5">User Information</p>
                 <span class="redText">*&nbsp;<span id="userNameError" class="error hide">Required: from 6-50 characters</span></span>
-                <input type="text" class="form-control" id="userName" name="User Name" placeholder="User Name"><br>
-                <span class="redText">*&nbsp;<span id="passwordError" class="error hide">Required: from 8-50 characters one number, one digit, one non alpha-numeric character</span></span>
+                <input type="text" class="form-control" id="userName" name="User Name" placeholder="User Name" required><br>
+                <span class="redText">*&nbsp;<span id="passwordError" class="error hide">Required: from 8-50 characters, one digit, one letter, one special character</span></span>
                 <input type="password" class="form-control" id="password" name="Password" placeholder="Password"><br>
                 <span class="redText">*&nbsp;<span id="confirmPasswordError" class="error hide">Required: must match password</span></span>
                 <input type="password" class="form-control" id="confirmPassword" name="Confirm Password" placeholder="Confirm Password"><br>
@@ -34,22 +34,22 @@
                 <span class="redText">*&nbsp;<span id="lastNameError" class="hide">Required: from 1-50 characters</span></span>
                 <input type="text" class="form-control" id="lastName" name="Last Name" placeholder="Last Name"><br>
                 <p class="h5">Gender<span class="redText">*</span></p>
-                <span id="genderError" class="hide">Required: must select an option</span>
-                <p><input type="radio" class="form-check-input" id="male" name="gender" value="male">
+                <p><span id="genderError" class="hide redText error">Required: must select an option</span></p>
+                <p><input type="radio" class="form-check-input" id="male" name="gender" value="male" required>
                 <label for="male" class="form-check-label">Male</label>
-                <input type="radio" class="form-check-input" id="female" name="gender" value="female">
+                <input type="radio" class="form-check-input" id="female" name="gender" value="female" required>
                 <label for="female" class="form-check-label">Female</label>
-                <input type="radio" class="form-check-input" id="other" name="gender" value="other">
+                <input type="radio" class="form-check-input" id="other" name="gender" value="other" required>
                 <label for="other" class="form-check-label">Other</label></p>
               <p class="h5">Marital Status<span class="redText">*</span></p>
-              <span id="statusError" class="redText error hide">Required: must select an option</span>
-              <p><input type="radio" class="form-check-input" id="married" name="status" value="married">
+              <p><span id="statusError" class="redText error hide">Required: must select an option</span></p>
+              <p><input type="radio" class="form-check-input" id="married" name="maritalStatus" value="married" required>
               <label for="married">Married</label>
-              <input type="radio" class="form-check-input" id="single" name="status" value="single">
+              <input type="radio" class="form-check-input" id="single" name="maritalStatus" value="single" required>
               <label for="single" class="form-check-label">Single</label></p>
 
               <p class="h5">Date of Birth<span class="redText">*</span></p>
-              <span id="dateofBirthError" class="hide redText error">Required: mm/dd/yyyy. Cannot be in the future</span>
+              <p><span id="dateOfBirthError" class="hide redText error">Required: mm/dd/yyyy. Cannot be in the future</span></p>
               <p><input type="date" class="form-contol" id="dateOfBirth" placeholder="Password"></p>
             </div>
             <div id="content2" class="col-xs-12 col-sm-12 col-md-12 col-lg-6">
@@ -116,9 +116,9 @@
 	              <option value="WI">Wisconsin</option>
 	              <option value="WY">Wyoming</option>
               </select><br>
-              <span class="redText">*&nbsp;<span id="zipCodeError" class="hide error">Required: from 5-10 digits</span></span>
+              <span class="redText">*&nbsp;<span id="zipCodeError" class="hide error">Required: 5 or 10 digits(xxxxx-xxxx).</span></span>
               <input type="text" id="zipCode" class="form-control" placeholder="ZIP code"><br>
-              <span class="redText">*&nbsp;<span id="phoneError" class="hide error">Required: from 1-12 characters</span></span>
+              <span class="redText">*&nbsp;<span id="phoneError" class="hide error">Required: 10 digits (xxx-xxx-xxxx)</span></span>
               <input type="text" id="phone" class="form-control" placeholder="Phone Number"><br>
               <span class="redText">*&nbsp;<span id="emailError" class="hide">Required: format: x@xx.xx</li></span>
               <input type="email" id="email" class="form-control" placeholder="Email Address"><br>
@@ -126,10 +126,10 @@
             </div>
             <div id="sendForm" class="row">
               <div class="col-6">
-                <input type="submit" id="submit">
+                <input type="button" id="submit" value="Submit">
                 </div>
                 <div class="col-6">
-                  <input type="reset">
+                  <input type="button" id="reset" value="Reset">
                   </div>
               </div>
             </form>
