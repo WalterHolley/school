@@ -1,0 +1,84 @@
+
+
+@keyframes slide {
+  0%, 100% {left: 0%;}
+  50% {left: 85%;}
+}
+
+@keyframes  box1{
+  0%, 100% {left: 0%; top: 0%;}
+  25% {left: 92%; top: 0%;}
+  50% {left: 92%; top: 70%;}
+  75% {left: 0%; top: 70%}
+}
+
+@keyframes box2 {
+  0%, 100% {left: 92%; top: 0%;}
+  25% {left: 92%; top: 70%;}
+  50% {left: 0%; top: 70%;}
+  75% {left: 0%; top: 0%}
+}
+
+@keyframes box3 {
+  0%, 100% {left: 92%; top: 70%;}
+  25% {left: 0%; top: 70%;}
+  50% {left: 0%; top: 0%;}
+  75% {left: 92%; top: 0%}
+}
+
+@keyframes box4 {
+  0%, 100% {left: 0%; top: 70%;}
+  25% {left: 0%; top: 0%;}
+  50% {left: 92%; top: 0%;}
+  75% {left: 92%; top: 70%}
+}
+
+div#msImg img{
+  max-width: 20%;
+  max-height: 50%;
+  margin: 0;
+  position: relative;
+  background-color: #000000;
+  animation-name: slide;
+  animation-duration: 4s;
+  animation-iteration-count: infinite;
+  animation-play-state: running;
+
+}
+
+div#content2 {
+  position: relative;
+}
+
+
+
+div.box-1, .box-2, .box-3, .box-4{
+  height: 30px;
+  width: 30px;
+  display: block;
+  margin: 0;
+  position: absolute;
+  animation-duration: 4s;
+  animation-iteration-count: infinite;
+  animation-play-state: running;
+}
+
+.box-1{
+  animation-name: box1;
+  background-color: #FF0303;
+}
+
+.box-2{
+  animation-name: box2;
+  background-color: #33FF33;
+}
+
+.box-3{
+  animation-name: box3;
+  background-color: #fad039;
+}
+
+.box-4{
+  animation-name: box4;
+  background-color: #2fc0e0;
+}
