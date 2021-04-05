@@ -499,7 +499,13 @@ async function sendForm(){
   });
 
   let result = await response.json();
-  alert(result.status);
+
+  if(result.status == "ERROR"){
+
+  }
+  else{
+    window.location.replace("./confirmation.php?id=" + result.id);
+  }
 
 }
 

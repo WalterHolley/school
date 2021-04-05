@@ -7,7 +7,7 @@ $required_fields = array("userName", "password", "confirmPassword","firstName", 
 $optional_fields = array("address2");
 //check for post method
 if($_SERVER['REQUEST_METHOD'] === "POST"){
-  error_log(print_r($_POST, TRUE));
+  //error_log(print_r($_POST, TRUE));
   echo json_encode(validateForm());
 }
 //validates length of field
@@ -68,10 +68,10 @@ function isValidPhoneNumber($phoneNumber){
   $phoneRegex1 = "/[0-9]{10}/";
   $phoneRegex2 = "/[0-9]{3}-[0-9]{3}-[0-9]{4}/";
 
-  if(validateLength($fieldValue, 12,12)){
+  if(validateLength($phoneNumber, 10,10)){
     $isValid = preg_match($phoneRegex1, $phoneNumber);
   }
-  elseif(validateLength($fieldValue, 10,10)){
+  elseif(validateLength($phoneNumber, 12,12)){
     $isValid = preg_match($phoneRegex2, $phoneNumber);
   }
 
@@ -97,10 +97,13 @@ function isValidZipCode($zipCode){
 //validates required fields
 //returns array of fields that are invalid
 function validateRequiredFields(){
-  $errorFields = array();
+  $errorFields = null;
+  global $required_fields;
+
     foreach($required_fields as $field){
       $isValid = false;
       $fieldValue = trim($_POST[$field]);
+      error_log($field);
 
       if($field == "address1"){
         $isValid = validateLength($fieldValue, 1, 100);
@@ -123,10 +126,10 @@ function validateRequiredFields(){
           $isValid = true;
         }
       }
-      elseif($field="email"){
+      elseif($field == "email"){
         $isValid = isValidEmail($fieldValue);
       }
-      elseif($field="dateOfBirth"){
+      elseif($field == "dateOfBirth"){
         $isValid = isValidDateOfBirth($fieldValue);
       }
       else {
@@ -140,16 +143,21 @@ function validateRequiredFields(){
 
       }
       else{
+        if($errorFields == null){
+          $errorFields = array();
+        }
         $errorFields[] = $field;
       }
 
 
     }
+
+    return $errorFields;
 }
 
 //validates optional fields
 function validateOptionalFields(){
-
+  return null;
 }
 
 //sanitizes input from form
@@ -159,21 +167,28 @@ function sanitizeInput(){
 
 //validates a submitted registration form
 function validateForm(){
-  $errorFields = array();
+  $errorFields = null;
   $result = array();
   $errorFields = validateRequiredFields();
-  $errorFields[] = validateOptionalFields();
+  $optionalFields = validateOptionalFields();
+
+  if($optionalFields !== null){
+    $errorFields[] = $optionalFields;
+  }
 
   //when all requirements are met, store values in session, and redirect to confirmation page.
-  if(!count($errorFields)){
+  if($errorFields == null){
+    session_start();
     $result['status'] = "OK";
+    $result['id'] = session_id();
+    $_SESSION = $_POST;
   }
   else{
     $result['status'] = "ERROR";
     $result['error'] = $errorFields;
   }
-
   return $result;
+
 
 }
 
