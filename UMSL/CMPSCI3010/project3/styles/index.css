@@ -19,6 +19,10 @@ p{
  color: #bbbdbf;
 }
 
+li{
+  color: #bbbdbf;
+}
+
 a, a:visited, a:active, a:before, a:after{
   color: #0b4eb3;
 }

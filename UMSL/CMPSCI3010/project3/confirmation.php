@@ -29,10 +29,11 @@
             <div id="content1" class="col-xs-12 col-sm-12 col-md-12 col-lg-6">
                 <p class="h5">User Information</p>
                 <p><ul>
+                  <li>User Name:&nbsp;<?php echo $_SESSION['userName'] ?></li>
                   <li>First Name:&nbsp;<?php echo $_SESSION['firstName'] ?></li>
                   <li>Last Name:&nbsp;<?php echo $_SESSION['lastName'] ?></li>
                   <li>Gender:&nbsp;<?php echo $_SESSION['gender'] ?></li>
-                  <li>Marital Status:&nbsp;<?php echo $_SESSION['status'] ?></li>
+                  <li>Marital Status:&nbsp;<?php echo $_SESSION['maritalStatus'] ?></li>
                   <li>Date of Birth:&nbsp;<?php echo $_SESSION['dateOfBirth'] ?></li>
                 </ul></p>
               </div>
@@ -40,7 +41,11 @@
                 <p class="h5">Contact Information</p>
                 <p><ul>
                   <li>Address 1:&nbsp;<?php echo $_SESSION['address1'] ?></li>
-                  <li>Address 2:&nbsp;<?php echo $_SESSION['address2'] ?></li>
+                  <li>Address 2:&nbsp;<?php
+                  if(isset($_SESSION['address2'])){
+                    echo $_SESSION['address2'];
+                  } ?>
+                  </li>
                   <li>City:&nbsp;<?php echo $_SESSION['city'] ?></li>
                   <li>State:&nbsp;<?php echo $_SESSION['state'] ?></li>
                   <li>Zip Code:&nbsp;<?php echo $_SESSION['zipCode'] ?></li>

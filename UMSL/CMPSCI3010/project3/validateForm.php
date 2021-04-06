@@ -4,10 +4,64 @@
 $required_fields = array("userName", "password", "confirmPassword","firstName", "lastName", "gender",
 "maritalStatus", "dateOfBirth","address1", "state", "city", "zipCode", "phone", "email");
 
+//optional field name list
 $optional_fields = array("address2");
+
+$stateList = array(
+  "AL" => "Alabama",
+	"AK" => "Alaska",
+	"AZ" => "Arizona",
+	"AR" => "Arkansas",
+  "CA" => "California",
+	"CO" => "Colorado",
+  "CT" => "Connecticut",
+	"DE" => "Delaware",
+  "DC" => "District Of Columbia",
+  "FL" => "Florida",
+  "GA" => "Georgia",
+  "HI" => "Hawaii",
+  "ID" => "Idaho",
+  "IL" => "Illinois",
+  "IN" => "Indiana",
+  "IA" => "Iowa",
+  "KS" => "Kansas",
+  "KY" => "Kentucky",
+  "LA" => "Louisiana",
+  "ME" => "Maine",
+	"MD" => "Maryland",
+  "MA" => "Massachusetts",
+	"MI" => "Michigan",
+	"MN" => "Minnesota",
+	"MS" => "Mississippi",
+	"MO" => "Missouri",
+	"MT" => "Montana",
+	"NE" => "Nebraska",
+	"NV" => "Nevada",
+	"NH" => "New Hampshire",
+	"NJ" => "New Jersey",
+	"NM" => "New Mexico",
+	"NY" => "New York",
+	"NC" => "North Carolina",
+	"ND" => "North Dakota",
+	"OH" => "Ohio",
+	"OK" => "Oklahoma",
+	"OR" => "Oregon",
+	"PA" => "Pennsylvania",
+	"RI" => "Rhode Island",
+	"SC" => "South Carolina",
+	"SD" => "South Dakota",
+	"TN" => "Tennessee",
+	"TX" => "Texas",
+	"UT" => "Utah",
+  "VT" => "Vermont",
+	"VA" => "Virginia",
+	"WA" => "Washington",
+	"WV" => "West Virginia",
+	"WI" => "Wisconsin",
+	"WY" => "Wyoming");
+
 //check for post method
 if($_SERVER['REQUEST_METHOD'] === "POST"){
-  //error_log(print_r($_POST, TRUE));
   echo json_encode(validateForm());
 }
 //validates length of field
@@ -70,6 +124,10 @@ function isValidPhoneNumber($phoneNumber){
 
   if(validateLength($phoneNumber, 10,10)){
     $isValid = preg_match($phoneRegex1, $phoneNumber);
+    if($isValid){
+      $phoneNumber = substr($phoneNumber,0,3)."-".substr($phoneNumber,3,3)."-".substr($phoneNumber,7,4);
+      $_POST['phone'] = $phoneNumber;
+    }
   }
   elseif(validateLength($phoneNumber, 12,12)){
     $isValid = preg_match($phoneRegex2, $phoneNumber);
@@ -94,6 +152,15 @@ function isValidZipCode($zipCode){
 
 }
 
+function isValidState($state){
+  $isValid = false;
+  if(array_key_exists($state, $stateList) && validateLength($state, 1,52)){
+    $isValid = true;
+  }
+
+  return $isValid;
+}
+
 //validates required fields
 //returns array of fields that are invalid
 function validateRequiredFields(){
@@ -103,13 +170,17 @@ function validateRequiredFields(){
     foreach($required_fields as $field){
       $isValid = false;
       $fieldValue = trim($_POST[$field]);
-      error_log($field);
 
       if($field == "address1"){
         $isValid = validateLength($fieldValue, 1, 100);
       }
       elseif ($field == "state") {
-        $isValid = validateLength($fieldValue, 1, 52);
+        $isValid = false;
+        if(isValidState($fieldValue)){
+          $fieldValue = $stateList[$fieldValue];
+          $isValid = true;
+        }
+
       }
       elseif ($field == "zipCode") {
         if(isValidZipCode($fieldValue)){
@@ -119,6 +190,7 @@ function validateRequiredFields(){
       elseif ($field == "phone") {
         if(isValidPhoneNumber($fieldValue)){
           $isValid = true;
+          $fieldValue = $_POST[$field];
         }
       }
       elseif ($field == "password") {
@@ -140,7 +212,7 @@ function validateRequiredFields(){
 
       //html encode field value if valid, and update post value
       if($isValid){
-
+        $_POST[$field] = sanitizeInput($fieldValue);
       }
       else{
         if($errorFields == null){
@@ -148,8 +220,6 @@ function validateRequiredFields(){
         }
         $errorFields[] = $field;
       }
-
-
     }
 
     return $errorFields;
@@ -157,12 +227,27 @@ function validateRequiredFields(){
 
 //validates optional fields
 function validateOptionalFields(){
-  return null;
+  global $optional_fields;
+  $errors = null;
+  foreach($optio$optional_fields as $field){
+    if(isset$_POST[$field]){
+      if(!validateLength($_POST[$field],1,100)){
+        if($errors == null){
+          $errors = array();
+        }
+        $errors[$field];
+      }
+      else{
+        $_POST[$field] = sanitizeInput($_POST[$field])
+      }
+    }
+  }
+  return $errors;
 }
 
 //sanitizes input from form
-function sanitizeInput(){
-
+function sanitizeInput($fieldValue){
+  return htmlentities($fieldValue);
 }
 
 //validates a submitted registration form
