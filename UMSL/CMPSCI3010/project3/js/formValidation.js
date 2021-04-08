@@ -1,7 +1,6 @@
 
-var regex = null;
 var requiredFieldIDs = ["userName", "password", "confirmPassword", "firstName",
-"lastName", "dateOfBirth", "address1", "city", "state", "zipCode", "phone","email"];
+"lastName", "maritalStatus", "gender", "dateOfBirth", "address1", "city", "state", "zipCode", "phone","email"];
 
 var optionalFieldIDs = ["address2"];
 
@@ -33,37 +32,43 @@ function resetElements(){
 
 }
 
+function markRadio(elementName){
+  var element = document.getElementsByName(elementName);
+  var isChecked = false;
 
-function validateZipCode(element){
-  result = false;
-  let zipCodeRegex = /(^\d{5}-\d{4})|(^\d{9})|(^\d{5})/;
-  let zipCodeRegexNineDigit = /(^\d{9})/;
-
-  length = element.value.length;
-  regex = new RegExp(zipCodeRegex);
-
-  if(regex.test(element.value)){
-
-    if(length == 10 || length == 5){
-      result = true;
-    }else if(length == 9 && zipCodeRegexNineDigit.test(element.value)){
-      result = true;
-      element.value = element.value.slice(0,5) + "-" + element.value.slice(5,9);
+  for(var i = 0; i < element.length; i++){
+    if(element[i].checked){
+      isChecked = true;
+      break;
     }
-
   }
 
-  return result;
+  if(isChecked){
+    hideElement(elementName + "Error");
+  }
+  else{
+    showElement(elementName + "Error");
+  }
 }
 
 
 function showElement(elementName){
-  document.getElementById(elementName).classList.remove("hide");
+  var element = document.getElementById(elementName);
+
+  if(element.classList.contains("hide")){
+    element.classList.remove("hide");
+  }
+
 
 }
 
 function hideElement(elementName){
-  document.getElementById(elementName).classList.add("hide");
+  var element = document.getElementById(elementName);
+
+  if(!element.classList.contains("hide")){
+    element.classList.add("hide");
+  }
+
 
 }
 
@@ -84,6 +89,33 @@ function markInvalidElement(element){
 
 }
 
+//Updates the error states on each item
+function updateErrors(errorList){
+  errorList.forEach(function(item){
+    if(item == "gender" || item == "maritalStatus"){
+      markRadio(item);
+      return;
+    }
+    else{
+      markInvalidElement(document.getElementById(item));
+      showElement(item + "Error");
+    }
+  });
+
+  requiredFieldIDs.forEach(function(item) {
+      if(!errorList.includes(item)){
+        if(item == "gender" || item == "maritalStatus"){
+          markRadio(item);
+          return;
+        }
+        else{
+          markValidElement(document.getElementById(item));
+          hideElement(item + "Error");
+      }
+    }
+  });
+
+}
 
 //Submit form
 async function sendForm(){
@@ -98,10 +130,19 @@ async function sendForm(){
   let result = await response.json();
 
   if(result.status == "ERROR"){
-
+    updateErrors(result.error);
   }
   else{
     window.location.replace("./confirmation.php?id=" + result.id);
   }
 
 }
+
+function init(){
+  document.getElementById("submit").addEventListener("click", function(){
+      sendForm();
+
+  });
+}
+
+init();

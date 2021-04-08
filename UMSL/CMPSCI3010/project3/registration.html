@@ -20,49 +20,49 @@
           <p><a href="registration.html">Registration</a></p>
           </div>
             <div id="body" class="col-xs-12 col-sm-12 col-md-9 col-lg-10">
-              <form class="row">
+              <form id="registrationForm" class="row">
             <div id="content1" class="col-xs-12 col-sm-12 col-md-12 col-lg-6">
                 <p class="h5">User Information</p>
                 <span class="redText">*&nbsp;<span id="userNameError" class="error hide">Required: from 6-50 characters</span></span>
-                <input type="text" class="form-control" id="userName" name="User Name" placeholder="User Name" required><br>
+                <input type="text" class="form-control" id="userName" name="userName" placeholder="User Name"><br>
                 <span class="redText">*&nbsp;<span id="passwordError" class="error hide">Required: from 8-50 characters, one digit, one letter, one special character</span></span>
-                <input type="password" class="form-control" id="password" name="Password" placeholder="Password"><br>
+                <input type="password" class="form-control" id="password" name="password" placeholder="Password"><br>
                 <span class="redText">*&nbsp;<span id="confirmPasswordError" class="error hide">Required: must match password</span></span>
-                <input type="password" class="form-control" id="confirmPassword" name="Confirm Password" placeholder="Confirm Password"><br>
+                <input type="password" class="form-control" id="confirmPassword" name="confirmPassword" placeholder="Confirm Password"><br>
                 <span class="redText">*&nbsp;<span id="firstNameError" class="error hide">Required: from 1-50 characters</span></span>
-                <input type="text" class="form-control" type="text" id="firstName" name="First Name" placeholder="First Name"><br>
+                <input type="text" class="form-control" type="text" id="firstName" name="firstName" placeholder="First Name"><br>
                 <span class="redText">*&nbsp;<span id="lastNameError" class="hide">Required: from 1-50 characters</span></span>
-                <input type="text" class="form-control" id="lastName" name="Last Name" placeholder="Last Name"><br>
+                <input type="text" class="form-control" id="lastName" name="lastName" placeholder="Last Name"><br>
                 <p class="h5">Gender<span class="redText">*</span></p>
                 <p><span id="genderError" class="hide redText error">Required: must select an option</span></p>
-                <p><input type="radio" class="form-check-input" id="male" name="gender" value="male" required>
+                <p><input type="radio" class="form-check-input" id="male" name="gender" value="male">
                 <label for="male" class="form-check-label">Male</label>
-                <input type="radio" class="form-check-input" id="female" name="gender" value="female" required>
+                <input type="radio" class="form-check-input" id="female" name="gender" value="female">
                 <label for="female" class="form-check-label">Female</label>
-                <input type="radio" class="form-check-input" id="other" name="gender" value="other" required>
+                <input type="radio" class="form-check-input" id="other" name="gender" value="other">
                 <label for="other" class="form-check-label">Other</label></p>
               <p class="h5">Marital Status<span class="redText">*</span></p>
-              <p><span id="statusError" class="redText error hide">Required: must select an option</span></p>
-              <p><input type="radio" class="form-check-input" id="married" name="maritalStatus" value="married" required>
+              <p><span id="maritalStatusError" class="redText error hide">Required: must select an option</span></p>
+              <p><input type="radio" class="form-check-input" id="married" name="maritalStatus" value="married">
               <label for="married">Married</label>
-              <input type="radio" class="form-check-input" id="single" name="maritalStatus" value="single" required>
+              <input type="radio" class="form-check-input" id="single" name="maritalStatus" value="single">
               <label for="single" class="form-check-label">Single</label></p>
 
               <p class="h5">Date of Birth<span class="redText">*</span></p>
               <p><span id="dateOfBirthError" class="hide redText error">Required: mm/dd/yyyy. Cannot be in the future</span></p>
-              <p><input type="date" class="form-contol" id="dateOfBirth" placeholder="Password"></p>
+              <p><input type="date" class="form-contol" id="dateOfBirth" name="dateOfBirth" placeholder="Password"></p>
             </div>
             <div id="content2" class="col-xs-12 col-sm-12 col-md-12 col-lg-6">
               <p class="h5">Contact Information</p>
               <span class="redText">*</span>
-              <span id="address1Error" class="hide">Required: from 1-100 characters</span>
-              <input type="text" class="form-control" id="address1" placeholder="Address 1"><br>
-                <span id="address2Error" class="hide">Optional: from 1-100 characters</span>
-              <input type="text" class="form-control" id="address2" placeholder="Address 2"><br>
+              <span id="address1Error" class="hide error redText">Required: from 1-100 characters</span>
+              <input type="text" class="form-control" id="address1" name="address1" placeholder="Address 1"><br>
+                <span id="address2Error" class="hide error redText">Optional: from 1-100 characters</span>
+              <input type="text" class="form-control" id="address2" name="address2" placeholder="Address 2"><br>
               <span class="redText">*&nbsp;  <span id="cityError" class="hide error">Required: from 1-50 characters</span></span>
-              <input type="text" class="form-control" id="city" placeholder="City"><br>
+              <input type="text" class="form-control" id="city" name="city" placeholder="City"><br>
               <span class="redText">*<span id="stateError" class="hide error">Required: Must select a state</span></span>
-              <select id="state" class="form-select">
+              <select id="state" name="state" class="form-select">
                 <option selected>Choose State...</option>
                 <option value="AL">Alabama</option>
 	              <option value="AK">Alaska</option>
@@ -117,11 +117,11 @@
 	              <option value="WY">Wyoming</option>
               </select><br>
               <span class="redText">*&nbsp;<span id="zipCodeError" class="hide error">Required: 5 or 10 digits(xxxxx-xxxx).</span></span>
-              <input type="text" id="zipCode" class="form-control" placeholder="ZIP code"><br>
+              <input type="text" id="zipCode" name="zipCode" class="form-control" placeholder="ZIP code"><br>
               <span class="redText">*&nbsp;<span id="phoneError" class="hide error">Required: 10 digits (xxx-xxx-xxxx)</span></span>
-              <input type="text" id="phone" class="form-control" placeholder="Phone Number"><br>
-              <span class="redText">*&nbsp;<span id="emailError" class="hide">Required: format: x@xx.xx</li></span>
-              <input type="email" id="email" class="form-control" placeholder="Email Address"><br>
+              <input type="text" id="phone" name="phone" class="form-control" placeholder="Phone Number"><br>
+              <span class="redText">*&nbsp;<span id="emailError" class="hide error">Required: format: x@xx.xx</li></span>
+              <input type="email" id="email" name="email" class="form-control" placeholder="Email Address"><br>
 
             </div>
             <div id="sendForm" class="row">

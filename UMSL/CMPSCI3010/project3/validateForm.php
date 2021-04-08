@@ -112,8 +112,15 @@ function isValidEmail($email){
 
 //validates date of Birth
 function isValidDateOfBirth($dob){
+  $isValid = false;
   $regex = "/(^\d{4}-\d{2}-\d{2})/";
-  return preg_match($regex, $dob);
+
+  if(preg_match($regex, $dob) && ($dob < date("Y-m-d"))){
+    $isValid = true;
+    $dateValue = substr($dob,5,2)."/".substr($dob,8,2)."/".substr($dob,0,4);
+    $_POST['dateOfBirth'] = $dateValue;
+  }
+  return $isValid;
 }
 
 //validates phone Number
@@ -146,6 +153,11 @@ function isValidZipCode($zipCode){
   if(($length == 5 || $length == 9 || $length == 10) &&
   (preg_match($zipCodeRegex, $zipCode))){
     $isValid = true;
+
+    if($length == 9){
+      $zipCode = substr($zipCode,0,5)."-".substr($zipCode,5,4);
+      $_POST['zipCode'] = $zipCode;
+    }
   }
 
   return $isValid;
@@ -154,6 +166,8 @@ function isValidZipCode($zipCode){
 
 function isValidState($state){
   $isValid = false;
+  global $stateList;
+
   if(array_key_exists($state, $stateList) && validateLength($state, 1,52)){
     $isValid = true;
   }
@@ -166,9 +180,18 @@ function isValidState($state){
 function validateRequiredFields(){
   $errorFields = null;
   global $required_fields;
+  global $stateList;
 
     foreach($required_fields as $field){
       $isValid = false;
+      if(!isset($_POST[$field])){
+        if($errorFields == null){
+          $errorFields = array();
+        }
+        $errorFields[] = $field;
+        continue;
+      }
+
       $fieldValue = trim($_POST[$field]);
 
       if($field == "address1"){
@@ -185,6 +208,7 @@ function validateRequiredFields(){
       elseif ($field == "zipCode") {
         if(isValidZipCode($fieldValue)){
           $isValid = true;
+          $fieldValue = $_POST[$field];
         }
       }
       elseif ($field == "phone") {
@@ -198,11 +222,20 @@ function validateRequiredFields(){
           $isValid = true;
         }
       }
+      elseif($field == "confirmPassword"){
+        if(isValidConfirmPassword($fieldValue)){
+          $isValid = true;
+        }
+      }
       elseif($field == "email"){
         $isValid = isValidEmail($fieldValue);
       }
       elseif($field == "dateOfBirth"){
-        $isValid = isValidDateOfBirth($fieldValue);
+        if(isValidDateOfBirth($fieldValue)){
+          $fieldValue = $_POST[$field];
+          $isValid = true;
+        }
+
       }
       else {
         if(validateLength($fieldValue, 1, 50)){
@@ -229,16 +262,16 @@ function validateRequiredFields(){
 function validateOptionalFields(){
   global $optional_fields;
   $errors = null;
-  foreach($optio$optional_fields as $field){
-    if(isset$_POST[$field]){
+  foreach($optional_fields as $field){
+    if(isset($_POST[$field])){
       if(!validateLength($_POST[$field],1,100)){
         if($errors == null){
           $errors = array();
         }
-        $errors[$field];
+        $errors[] = $field;
       }
       else{
-        $_POST[$field] = sanitizeInput($_POST[$field])
+        $_POST[$field] = sanitizeInput($_POST[$field]);
       }
     }
   }
@@ -266,6 +299,8 @@ function validateForm(){
     session_start();
     $result['status'] = "OK";
     $result['id'] = session_id();
+    unset($_POST['password']);
+    unset($_POST['confirmPassword']);
     $_SESSION = $_POST;
   }
   else{

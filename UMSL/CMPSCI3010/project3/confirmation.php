@@ -41,11 +41,10 @@
                 <p class="h5">Contact Information</p>
                 <p><ul>
                   <li>Address 1:&nbsp;<?php echo $_SESSION['address1'] ?></li>
-                  <li>Address 2:&nbsp;<?php
+                  <?php
                   if(isset($_SESSION['address2'])){
-                    echo $_SESSION['address2'];
+                    echo "<li>Address 2:&nbsp;".$_SESSION['address2']."</li>";
                   } ?>
-                  </li>
                   <li>City:&nbsp;<?php echo $_SESSION['city'] ?></li>
                   <li>State:&nbsp;<?php echo $_SESSION['state'] ?></li>
                   <li>Zip Code:&nbsp;<?php echo $_SESSION['zipCode'] ?></li>
