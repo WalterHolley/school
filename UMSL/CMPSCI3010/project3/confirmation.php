@@ -1,7 +1,11 @@
 <!DOCTYPE html>
 <?php
   session_id($_GET['id']);
-  session_start();
+  $started = session_start();
+
+  if(!isset($_SESSION['userName'])){
+    header('Location: index.html');
+  }
  ?>
 <html lang="en-us">
   <head>
@@ -25,7 +29,7 @@
           </div>
             <div id="body" class="col-xs-12 col-sm-12 col-md-9 col-lg-10">
               <div><p class="h5">Registration Confirmation</p></div>
-              <form id="registrationForm" class="row">
+              <div class="row">
             <div id="content1" class="col-xs-12 col-sm-12 col-md-12 col-lg-6">
                 <p class="h5">User Information</p>
                 <p><ul>
@@ -53,6 +57,9 @@
                 </ul></p>
 
         </div>
+      </div>
+      </div>
+    </div>
         <div id="footer" class="row">
           <div id="links1" class="col-xs-12 col-sm-12 col-md-4">
             <p class="h6">Developer Documentation</p>

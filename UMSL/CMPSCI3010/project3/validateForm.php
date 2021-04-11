@@ -2,7 +2,7 @@
 
 //requied field name list
 $required_fields = array("userName", "password", "confirmPassword","firstName", "lastName", "gender",
-"maritalStatus", "dateOfBirth","address1", "state", "city", "zipCode", "phone", "email");
+"maritalStatus", "dateOfBirth","address1", "address2", "state", "city", "zipCode", "phone", "email");
 
 //optional field name list
 $optional_fields = array("address2");
@@ -175,9 +175,8 @@ function isValidState($state){
   return $isValid;
 }
 
-//validates required fields
 //returns array of fields that are invalid
-function validateRequiredFields(){
+function validateFields(){
   $errorFields = null;
   global $required_fields;
   global $stateList;
@@ -196,6 +195,9 @@ function validateRequiredFields(){
 
       if($field == "address1"){
         $isValid = validateLength($fieldValue, 1, 100);
+      }
+      if($field == "address2"){
+        $isValid = validateLength($fieldValue, 0, 100);
       }
       elseif ($field == "state") {
         $isValid = false;
@@ -287,12 +289,7 @@ function sanitizeInput($fieldValue){
 function validateForm(){
   $errorFields = null;
   $result = array();
-  $errorFields = validateRequiredFields();
-  $optionalFields = validateOptionalFields();
-
-  if($optionalFields !== null){
-    $errorFields[] = $optionalFields;
-  }
+  $errorFields = validateFields();
 
   //when all requirements are met, store values in session, and redirect to confirmation page.
   if($errorFields == null){

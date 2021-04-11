@@ -1,8 +1,6 @@
 
-var requiredFieldIDs = ["userName", "password", "confirmPassword", "firstName",
-"lastName", "maritalStatus", "gender", "dateOfBirth", "address1", "city", "state", "zipCode", "phone","email"];
-
-var optionalFieldIDs = ["address2"];
+var fieldIDs = ["userName", "password", "confirmPassword", "firstName",
+"lastName", "maritalStatus", "gender", "dateOfBirth", "address1", "address2", "city", "state", "zipCode", "phone","email"];
 
 
 function resetElements(){
@@ -13,8 +11,8 @@ function resetElements(){
 
 
   //clear required fields
-  for(i = 0; i < requiredFieldIDs.length; i++){
-    element = document.getElementById(requiredFieldIDs[i]);
+  for(i = 0; i < fieldIDs.length; i++){
+    element = document.getElementById(fieldIDs[i]);
     element.value = '';
     element.classList.remove("is-valid");
     element.classList.remove("is-invalid");
@@ -102,7 +100,7 @@ function updateErrors(errorList){
     }
   });
 
-  requiredFieldIDs.forEach(function(item) {
+  fieldIDs.forEach(function(item) {
       if(!errorList.includes(item)){
         if(item == "gender" || item == "maritalStatus"){
           markRadio(item);
