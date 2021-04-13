@@ -5,16 +5,16 @@ import java.util.Stack;
 
 public class Project1 {
 	
-	private static BigInteger[][] baseMatrix = {{new BigInteger("1"),new BigInteger("1")},
-			{new BigInteger("1"), new BigInteger("0")}};
+	private static BigInteger[][] baseMatrix = {{new BigInteger("0"),new BigInteger("1")},
+			{new BigInteger("1"), new BigInteger("1")}};
 	
 	private static BigInteger[][] placeHolder;
 
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
 		
-		System.out.println(linearFibonacci(6).toString());
-		System.out.println(logarithmicFibonacci(6).toString());
+		System.out.println(linearFibonacci(9).toString());
+		System.out.println(logarithmicFibonacci(9).toString());
 
 	}
 	
@@ -72,10 +72,12 @@ public class Project1 {
 				}
 						
 				matrixList.push(getMatrixPower(baseMatrix, targetPower));
+				//clear placeholder
+				placeHolder = null;
 			}
 			
 			
-			result = getMatrixAnswer(matrixList)[0][0];
+			result = getMatrixAnswer(matrixList)[0][1];
 		}
 		
 		return result;
