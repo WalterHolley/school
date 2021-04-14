@@ -5,16 +5,15 @@ import java.util.Stack;
 
 public class Project1 {
 	
+	//Default matrix for logarithmic algorithm
 	private static BigInteger[][] baseMatrix = {{new BigInteger("0"),new BigInteger("1")},
 			{new BigInteger("1"), new BigInteger("1")}};
 	
 	private static BigInteger[][] placeHolder;
 
 	public static void main(String[] args) {
-		// TODO Auto-generated method stub
-		
-		System.out.println(linearFibonacci(9).toString());
-		System.out.println(logarithmicFibonacci(9).toString());
+
+		Test();
 
 	}
 	
@@ -44,9 +43,13 @@ public class Project1 {
 		return bigInt;
 	}
 	
+	/**
+	 * Logarithmic implementation of fibonacci sequence
+	 * @param n position of fibonacci sequence
+	 * @return BigInteger of value at n position of sequence
+	 */
 	public static BigInteger logarithmicFibonacci(int n) {
-		BigInteger result;
-		BigInteger[][] matrixResult;
+		BigInteger result = null;
 		Stack<BigInteger[][]> matrixList = new Stack<BigInteger[][]>();
 		String binaryString = Integer.toBinaryString(n);
 		int targetPower = 0;
@@ -76,13 +79,21 @@ public class Project1 {
 				placeHolder = null;
 			}
 			
+			if(result == null) {
+				result = getMatrixAnswer(matrixList)[0][1];
+			}
 			
-			result = getMatrixAnswer(matrixList)[0][1];
 		}
 		
 		return result;
 	}
 	
+	/**
+	 * Raises a given matrix by the given power
+	 * @param matrix The matrix to raise
+	 * @param power exponent of matrix
+	 * @return 2 dimensional BigInteger array representation of a matrix
+	 */
 	private static BigInteger[][] getMatrixPower(BigInteger[][] matrix, int power){
 		BigInteger[][] result;
 		
@@ -121,6 +132,11 @@ public class Project1 {
 		
 	}
 	
+	/**
+	 * Multiplies matrices in a list and returns the result
+	 * @param matrixList
+	 * @return 2 dimensional BigInteger array representation of a matrix
+	 */
 	private static BigInteger[][] getMatrixAnswer(Stack<BigInteger[][]> matrixList) {
 		BigInteger[][] result;
 
@@ -132,6 +148,93 @@ public class Project1 {
 		
 		
 		return matrixList.pop();
+	}
+	
+	/**
+	 * Calculates the average value for an array
+	 * of long values
+	 * @param values
+	 * @return average of all values in long array
+	 */
+	private static long average(long[] values) {
+		long result = 0;
+		if(values.length > 0) {
+			for(int i = 0; i < values.length; i++) {
+				result += values[i];
+			}
+			
+			result = result / values.length;
+		}
+		
+		return result;
+	}
+	
+	public static void Test() {
+		long[] linearAlgorithmTimes = new long[6];
+		long[] logAlgorithmTimes = new long[6];
+		BigInteger[] linearResults = new BigInteger[6];
+		BigInteger[] logResults = new BigInteger[6];
+		
+		int[] problemSizes = {8,16,32,(int)Math.pow(2, 10),(int)Math.pow(2, 12),(int)Math.pow(2, 15) };
+		
+		//get Test Results
+		for(int i = 0; i < linearAlgorithmTimes.length; i++) {
+			long startTime = System.nanoTime();
+			linearResults[i] = linearFibonacci(problemSizes[i]);
+			long endTime = System.nanoTime();
+			linearAlgorithmTimes[i] = endTime - startTime;
+			
+			startTime = System.nanoTime();
+			logResults[i] = logarithmicFibonacci(problemSizes[i]);
+			endTime = System.nanoTime();
+			logAlgorithmTimes[i] = endTime - startTime;
+		}
+		
+		System.out.println("=====FIBONACCI ALGORITHM TEST=====");
+		
+		System.out.print("In this program, we're testing the execution time \n"
+				+ "of two different fibonacci sequence implementations. \n"
+				+ "One with a linear O(n) time  complexity, another with \n"
+				+ "logarithmic O(logn) time complexity.\n \n");
+		
+		System.out.println("Lets look at a few small requests for numbers \n"
+				+ "in early positions of the fibonacci sequence.");
+		
+		for(int i = 0; i <= 2; i++) {
+			System.out.println(String.format("===TRIAL %d===\n", i + 1));
+			System.out.println(String.format("Fibonacci Sequence Position: %d", problemSizes[i]));
+			System.out.println(String.format("Linear Algorithm Answer: %s", linearResults[i].toString()));
+			System.out.println(String.format("Logarithmic Algorithm Answer: %s\n", logResults[i].toString()));
+			System.out.println(String.format("Linear Algorithm time: %d nanoseconds", linearAlgorithmTimes[i]));
+			System.out.println(String.format("Logarithmic Algorithm time: %d nanoseconds", logAlgorithmTimes[i]));
+			System.out.print("\n\n");
+			
+			
+		}
+		
+		System.out.println("Now, lets look at a few larger requests for numbers \n"
+				+ "in later positions of the fibonacci sequence.");
+		
+		for(int i = 3; i <= 5; i++) {
+			System.out.println(String.format("===TRIAL %d===\n", i + 1));
+			System.out.println(String.format("Fibonacci Sequence Position: %d", problemSizes[i]));
+			System.out.println(String.format("Linear Algorithm Answer: %s", linearResults[i].toString()));
+			System.out.println(String.format("Logarithmic Algorithm Answer: %s\n", logResults[i].toString()));
+			System.out.println(String.format("Linear Algorithm time: %d nanoseconds", linearAlgorithmTimes[i]));
+			System.out.println(String.format("Logarithmic Algorithm time: %d nanoseconds", logAlgorithmTimes[i]));
+			System.out.print("\n\n");
+			
+			
+		}
+		
+		System.out.println("===RESULTS===");
+		System.out.println(String.format("Average linear algorithm time: %d nanoseconds", average(linearAlgorithmTimes)));
+		System.out.println(String.format("Average logarithmic algorithm time: %d nanoseconds", average(logAlgorithmTimes)));
+		System.out.print("\n\n");
+		System.out.println("While the linear algorithm worked well in earlier positions, the \n"
+				+ "logarithmic function proved more efficient as the datasets grew larger.\n"
+				+ "Overall, the logarithmic algorithm has the better execution time.");
+		
 	}
 
 }
