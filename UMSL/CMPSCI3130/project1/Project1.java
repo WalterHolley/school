@@ -1,5 +1,13 @@
 package com.umsl.cmpsci3130;
-
+/*
+ * PROJECT 1 - Algorithm Analysis by Walter Holley III
+ * CMP SCI 3130 - Univ. of Missouri - St. Louis
+ * This project implements two fibonacci sequence algorithms; one linear, and one logarithmic.
+ * The linear implementation uses the standard addition formula for fibonacci sequences,
+ * while the logarithmic implementation uses a matrix multiplication algorithm, as
+ * well an implementation of repeated squaring to expedite the calculations.
+ * 
+ */
 import java.math.BigInteger;
 import java.util.Stack;
 
@@ -51,6 +59,9 @@ public class Project1 {
 	public static BigInteger logarithmicFibonacci(int n) {
 		BigInteger result = null;
 		Stack<BigInteger[][]> matrixList = new Stack<BigInteger[][]>();
+		
+		//iterating through each number is not necessary.
+		//The binary string will tell us which powers we need to calculate 
 		String binaryString = Integer.toBinaryString(n);
 		int targetPower = 0;
 		
