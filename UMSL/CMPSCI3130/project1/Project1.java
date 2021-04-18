@@ -59,6 +59,7 @@ public class Project1 {
 	public static BigInteger logarithmicFibonacci(int n) {
 		BigInteger result = null;
 		Stack<BigInteger[][]> matrixList = new Stack<BigInteger[][]>();
+		BigInteger[][] matrix = null;
 		
 		//iterating through each number is not necessary.
 		//The binary string will tell us which powers we need to calculate 
@@ -72,26 +73,20 @@ public class Project1 {
 			result = new BigInteger("1");
 		}
 		else {
-			for(int i = binaryString.length() - 1; i >= 0; i--) {
+			if(n % 2 > 0) {
+				n = n - 1;
+				matrix = getMatrixPower(baseMatrix, n);
+				placeHolder = null;
+				matrix = multiplyMatrices(matrix, baseMatrix);
 				
-				if(binaryString.charAt(i) == '0') {
-					continue;
-				}
-				else if(binaryString.charAt(i) == '1' && i == (binaryString.length() - 1)) {
-					matrixList.push(baseMatrix);
-					continue;
-				}
-				else {
-					targetPower = (int) Math.pow(2, (binaryString.length() - 1 - i));
-				}
-						
-				matrixList.push(getMatrixPower(baseMatrix, targetPower));
-				//clear placeholder
+			}
+			else {
+				matrix = getMatrixPower(baseMatrix, n);
 				placeHolder = null;
 			}
-			
+
 			if(result == null) {
-				result = getMatrixAnswer(matrixList)[0][1];
+				result = matrix[0][1];
 			}
 			
 		}
