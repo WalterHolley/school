@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="./styles/bootstrap.min.css">
+    <link rel="stylesheet" href="./styles/index.css">
+    <link rel="stylesheet" href="./styles/registration.css">
+    <title>Project 1 for CMPSCI3010 - Registration</title>
+  </head>
+  <body>
+  <div id="pageBody" class="container-fluid">
+          <div id="header" class="row">
+            <p class="h3">Web Based Beginnings: Computer Science 3010</p>
+            </div>
+        <div id="content" class="row content">
+        <div id="menu" class="col-xs-12 col-sm-12 col-md-3 col-lg-2">
+          <p><a href="index.html">Home</a></p>
+          <p><a href="animation.html">Animations</a></p>
+          <p><a href="registration.html">Registration</a></p>
+          </div>
+            <div id="body" class="col-xs-12 col-sm-12 col-md-9 col-lg-10">
+              <form id="registrationForm" class="row">
+            <div id="content1" class="col-xs-12 col-sm-12 col-md-12 col-lg-6">
+                <p class="h5">User Information</p>
+                <span class="redText">*&nbsp;<span id="userNameError" class="error hide">Required: from 6-50 characters</span></span>
+                <input type="text" class="form-control" id="userName" name="userName" placeholder="User Name"><br>
+                <span class="redText">*&nbsp;<span id="passwordError" class="error hide">Required: from 8-50 characters, one digit, one letter, one special character</span></span>
+                <input type="password" class="form-control" id="password" name="password" placeholder="Password"><br>
+                <span class="redText">*&nbsp;<span id="confirmPasswordError" class="error hide">Required: must match password</span></span>
+                <input type="password" class="form-control" id="confirmPassword" name="confirmPassword" placeholder="Confirm Password"><br>
+                <span class="redText">*&nbsp;<span id="firstNameError" class="error hide">Required: from 1-50 characters</span></span>
+                <input type="text" class="form-control" type="text" id="firstName" name="firstName" placeholder="First Name"><br>
+                <span class="redText">*&nbsp;<span id="lastNameError" class="hide error">Required: from 1-50 characters</span></span>
+                <input type="text" class="form-control" id="lastName" name="lastName" placeholder="Last Name"><br>
+                <p class="h5">Gender<span class="redText">*</span></p>
+                <p><span id="genderError" class="hide redText error">Required: must select an option</span></p>
+                <p><input type="radio" class="form-check-input" id="male" name="gender" value="male">
+                <label for="male" class="form-check-label">Male</label>
+                <input type="radio" class="form-check-input" id="female" name="gender" value="female">
+                <label for="female" class="form-check-label">Female</label>
+                <input type="radio" class="form-check-input" id="other" name="gender" value="other">
+                <label for="other" class="form-check-label">Other</label></p>
+              <p class="h5">Marital Status<span class="redText">*</span></p>
+              <p><span id="maritalStatusError" class="redText error hide">Required: must select an option</span></p>
+              <p><input type="radio" class="form-check-input" id="married" name="maritalStatus" value="married">
+              <label for="married">Married</label>
+              <input type="radio" class="form-check-input" id="single" name="maritalStatus" value="single">
+              <label for="single" class="form-check-label">Single</label></p>
+
+              <p class="h5">Date of Birth<span class="redText">*</span></p>
+              <p><span id="dateOfBirthError" class="hide redText error">Required: mm/dd/yyyy. Cannot be in the future</span></p>
+              <p><input type="date" class="form-contol" id="dateOfBirth" name="dateOfBirth" placeholder="Password"></p>
+            </div>
+            <div id="content2" class="col-xs-12 col-sm-12 col-md-12 col-lg-6">
+              <p class="h5">Contact Information</p>
+              <span class="redText">*</span>
+              <span id="address1Error" class="hide error redText">Required: from 1-100 characters</span>
+              <input type="text" class="form-control" id="address1" name="address1" placeholder="Address 1"><br>
+                <span id="address2Error" class="hide error redText">Optional: from 1-100 characters</span>
+              <input type="text" class="form-control" id="address2" name="address2" placeholder="Address 2"><br>
+              <span class="redText">*&nbsp;  <span id="cityError" class="hide error">Required: from 1-50 characters</span></span>
+              <input type="text" class="form-control" id="city" name="city" placeholder="City"><br>
+              <span class="redText">*<span id="stateError" class="hide error">Required: Must select a state</span></span>
+              <select id="state" name="state" class="form-select">
+                <option selected>Choose State...</option>
+                <option value="AL">Alabama</option>
+	              <option value="AK">Alaska</option>
+	              <option value="AZ">Arizona</option>
+	              <option value="AR">Arkansas</option>
+	              <option value="CA">California</option>
+	              <option value="CO">Colorado</option>
+	              <option value="CT">Connecticut</option>
+	              <option value="DE">Delaware</option>
+	              <option value="DC">District Of Columbia</option>
+	              <option value="FL">Florida</option>
+	              <option value="GA">Georgia</option>
+	              <option value="HI">Hawaii</option>
+	              <option value="ID">Idaho</option>
+	              <option value="IL">Illinois</option>
+	              <option value="IN">Indiana</option>
+	              <option value="IA">Iowa</option>
+	              <option value="KS">Kansas</option>
+	              <option value="KY">Kentucky</option>
+	              <option value="LA">Louisiana</option>
+	              <option value="ME">Maine</option>
+	              <option value="MD">Maryland</option>
+	              <option value="MA">Massachusetts</option>
+	              <option value="MI">Michigan</option>
+	              <option value="MN">Minnesota</option>
+	              <option value="MS">Mississippi</option>
+	              <option value="MO">Missouri</option>
+	              <option value="MT">Montana</option>
+	              <option value="NE">Nebraska</option>
+	              <option value="NV">Nevada</option>
+	              <option value="NH">New Hampshire</option>
+	              <option value="NJ">New Jersey</option>
+	              <option value="NM">New Mexico</option>
+	              <option value="NY">New York</option>
+	              <option value="NC">North Carolina</option>
+	              <option value="ND">North Dakota</option>
+	              <option value="OH">Ohio</option>
+	              <option value="OK">Oklahoma</option>
+	              <option value="OR">Oregon</option>
+	              <option value="PA">Pennsylvania</option>
+	              <option value="RI">Rhode Island</option>
+	              <option value="SC">South Carolina</option>
+	              <option value="SD">South Dakota</option>
+	              <option value="TN">Tennessee</option>
+	              <option value="TX">Texas</option>
+	              <option value="UT">Utah</option>
+	              <option value="VT">Vermont</option>
+	              <option value="VA">Virginia</option>
+	              <option value="WA">Washington</option>
+	              <option value="WV">West Virginia</option>
+	              <option value="WI">Wisconsin</option>
+	              <option value="WY">Wyoming</option>
+              </select><br>
+              <span class="redText">*&nbsp;<span id="zipCodeError" class="hide error">Required: 5 or 10 digits(xxxxx-xxxx).</span></span>
+              <input type="text" id="zipCode" name="zipCode" class="form-control" placeholder="ZIP code"><br>
+              <span class="redText">*&nbsp;<span id="phoneError" class="hide error">Required: 10 digits (xxx-xxx-xxxx)</span></span>
+              <input type="text" id="phone" name="phone" class="form-control" placeholder="Phone Number"><br>
+              <span class="redText">*&nbsp;<span id="emailError" class="hide error">Required: format: x@xx.xx</li></span>
+              <input type="email" id="email" name="email" class="form-control" placeholder="Email Address"><br>
+
+            </div>
+            <div id="sendForm" class="row">
+              <div class="col-6">
+                <input type="button" id="submit" value="Submit">
+                </div>
+                <div class="col-6">
+                  <input type="button" id="reset" value="Reset">
+                  </div>
+              </div>
+            </form>
+          </div>
+        </div>
+        <div id="footer" class="row">
+          <div id="links1" class="col-xs-12 col-sm-12 col-md-4">
+            <p class="h6">Developer Documentation</p>
+            <p><small><a href="https://docs.microsoft.com/en-us/dotnet/csharp/" target="_blank">Microsoft C# Documentation</a></small></p>
+            <p><small><a href="https://getbootstrap.com/docs/4.0/getting-started/introduction/" target="_blank">Bootstrap 4 Documentation</a></small></p>
+            <p><small><a href="https://W3Schools.com" target="_blank">W3Schools</a></small></p>
+          </div>
+          <div id="links2" class="col-xs-12 col-sm-12 col-md-4">
+            <p class="h6">Personal Interests</p>
+            <p><small><a href="https://news.ycombinator.com/" target="_blank">HackerNews</a></small></p>
+            <p><small><a href="https://github.com/walterholley" target="_blank">Github Repository</a></small></p>
+            <p><small><a href="https://www.guiltygear.com/" target="_blank">Guilty Gear</a></small></p>
+          </div>
+          <div id="links3" class="col-xs-12 col-sm-12 col-md-4">
+            <p class="h6">Developer Tools</p>
+            <p><small><a href="https://atom.io/" target="_blank">Atom</a></small></p>
+            <p><small><a href="https://www.mamp.info/" target="_blank">MAMP</a></small></p>
+            <p><small><a href="https://github.com/" target="_blank">Github</a></small></p>
+          </div>
+          </div>
+      </div>
+      <script src="./js/formValidation.js"></script>
+  </body>
+</html>
+</!DOCTYPE html>

@@ -1,0 +1,25 @@
+
+h4 {
+  text-align: center;
+}
+
+div#sendForm span {
+  display: block;
+  width: 200px;
+}
+
+input#submit {
+  float: right;
+}
+
+.redText{
+  color: #f51616;
+}
+
+.error{
+  font-size: 10px;
+}
+
+.hide{
+  display: none;
+}
