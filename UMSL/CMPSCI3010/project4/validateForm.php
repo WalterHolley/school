@@ -10,7 +10,7 @@ $optional_fields = array("address2");
 //database information
 $db_host = "localhost";
 $db_user = "root";
-$db_pwd = "";
+$db_pwd = "root";
 $db = "project";
 $db_port = "8889";
 
@@ -124,8 +124,8 @@ function isValidDateOfBirth($dob){
 
   if(preg_match($regex, $dob) && ($dob < date("Y-m-d"))){
     $isValid = true;
-    $dateValue = substr($dob,5,2)."/".substr($dob,8,2)."/".substr($dob,0,4);
-    $_POST['dateOfBirth'] = $dateValue;
+    //$dateValue = substr($dob,5,2)."/".substr($dob,8,2)."/".substr($dob,0,4);
+    $_POST['dateOfBirth'] = $dob;
   }
   return $isValid;
 }
@@ -300,40 +300,66 @@ function validateForm(){
 
   //when all requirements are met, store values in session, and redirect to confirmation page.
   if($errorFields == null){
-    session_start();
-    $result['status'] = "OK";
-    $result['id'] = session_id();
-    unset($_POST['password']);
-    unset($_POST['confirmPassword']);
-    $_SESSION = $_POST;
+    $id = addRegistration();
+    if($id !== -1){
+      $result['status'] = "OK";
+      $result['code'] = 200;
+      $result['id'] = $id;
+    }
+    else{
+      $result['status'] = "ERROR";
+      $result['code'] = 500;
+      $result['error'] = "Internal Server Error";
+    }
+
   }
   else{
     $result['status'] = "ERROR";
+    $result['code'] = 400;
     $result['error'] = $errorFields;
   }
   return $result;
 
 
 }
-
+//Inserts registration record into the database
 function addRegistration(){
   global $db_host;
   global $db_user;
   global $db_pwd;
   global $db;
+  $id = -1;
 
-  $sql = new mysqli(
+  $sqlConnection = new mysqli(
     $db_host,
     $db_user,
     $db_pwd,
     $db
   );
 
-  if($sql->connect_error){
-
+  if($sqlConnection->connect_error){
+    error_log($sqlConnection->error);
   }else{
+    $sqlInsert = $sqlConnection->prepare("INSERT INTO registration (userName, password, firstName, lastName, address1, address2,
+    city, state, zipCode, phone, email, gender, maritalStatus, dateOfBirth)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
+    $sqlInsert->bind_param("ssssssssssssss", $_POST['userName'], $_POST['password'], $_POST['firstName'],
+    $_POST['lastName'], $_POST['address1'], $_POST['address2'], $_POST['city'], $_POST['state'],
+    $_POST['zipCode'], $_POST['phone'], $_POST['email'], $_POST['gender'], $_POST['maritalStatus'],
+    $_POST['dateOfBirth']);
+
+    if($sqlInsert->execute() === TRUE){
+      $id = $sqlConnection->insert_id;
+    }
+    else{
+      //handle error
+      error_log($sqlConnection->error);
+    }
+    $sqlConnection->close();
   }
+
+  return $id;
 }
 
  ?>
