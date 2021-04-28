@@ -7,10 +7,11 @@ $required_fields = array("userName", "password", "confirmPassword","firstName", 
 //optional field name list
 $optional_fields = array("address2");
 
+//NOTE:The password has been set to blank.
 //database information
 $db_host = "localhost";
 $db_user = "root";
-$db_pwd = "root";
+$db_pwd = "";
 $db = "project";
 $db_port = "8889";
 

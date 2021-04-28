@@ -77,7 +77,7 @@
                <p><ul>
                  <li>Address 1:&nbsp;<?php echo $result['address1'] ?></li>
                  <?php
-                 if(isset($result['address2'])){
+                 if(isset($result['address2']) && $result['address2'] !== null && $result['address2'] !== ""){
                    echo "<li>Address 2:&nbsp;".$result['address2']."</li>";
                  } ?>
                  <li>City:&nbsp;<?php echo $result['city'] ?></li>
