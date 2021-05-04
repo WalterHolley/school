@@ -1,7 +1,6 @@
 package com.umsl.cmpsci3130;
 
 import java.math.BigInteger;
-import java.util.HashMap;
 import java.util.Stack;
 
 public class Project2 {
@@ -144,6 +143,7 @@ public class Project2 {
 		private static BigInteger[][] getMatrixPower(BigInteger[][] matrix, int power){
 			BigInteger[][] result;
 			
+			
 			if( power == 1) {
 				result = matrix;
 			}
@@ -151,8 +151,12 @@ public class Project2 {
 				result = placeHolder;
 			}
 			else {
+				
 				matrix = getMatrixPower(matrix, power / 2);
 				result = multiplyMatrices(matrix, matrix);
+				if(power % 2 > 0) {
+					result = multiplyMatrices(baseMatrix, result);
+				}
 				placeHolder = result;
 			}
 			
@@ -207,7 +211,7 @@ public class Project2 {
 			BigInteger[] logResults = new BigInteger[6];
 			BigInteger[] logBinExpResults = new BigInteger[6];
 			
-			int[] problemSizes = {8,15,32,(int)Math.pow(2, 10),(int)Math.pow(3, 12),(int)Math.pow(2, 15) };
+			int[] problemSizes = {8,15,32,(int)Math.pow(2, 10),(int)Math.pow(3, 9),(int)Math.pow(2, 15) };
 			
 			//get Test Results
 			for(int i = 0; i < linearAlgorithmTimes.length; i++) {
@@ -275,7 +279,8 @@ public class Project2 {
 			System.out.print("\n\n");
 			System.out.println("While the linear algorithm worked well in earlier positions, the \n"
 					+ "logarithmic function proved more efficient as the datasets grew larger.\n"
-					+ "Overall, the logarithmic algorithm has the better execution time.");
+					+ "However, as the datasets grew even larger, the binary exponent process \n"
+					+ "in combination with the logarithmic algorithm has the better execution time.");
 			
 		}
 
