@@ -1,6 +1,18 @@
 public class HCN {
-
+    /**
+     * CMP SCI 4500
+     * HOMEWORK 1 - HCN Assignment.
+     * January, 2022
+     * Takes an integer from a user, and provides the greatest High Composite
+     * Number(HCN) closest to that integer
+     * 
+     * @author Walter Holley III
+     * 
+     */
+    // Max integer limit for application
     private static final int NUM_LIMIT = 10000000;
+
+    private static final String SELECTION_ERROR = "You've made an invalid selection.  Try again.";
 
     public static void main(String[] args) {
         menu();
@@ -31,17 +43,33 @@ public class HCN {
                 case 2:
                     break;
                 default:
-                    System.out.println("You've made an invalid selection.  Try again.");
+                    System.out.println(SELECTION_ERROR);
             }
         }
 
     }
 
+    /**
+     * Retrieves a number within the specified number limit
+     * for evaluation
+     */
     private static void getNumber() {
-        boolean numRetrieved = false;
+        int numRetrieved = 0;
 
-        while (!numRetrieved) {
-            System.out.println();
+        while (numRetrieved < 1 || numRetrieved > NUM_LIMIT) {
+            System.out.println("Enter a number between 1 and " + NUM_LIMIT + ".");
+            try {
+                numRetrieved = Integer.parseInt(System.console().readLine());
+
+                if (numRetrieved < 1 || numRetrieved > NUM_LIMIT) {
+                    throw new NumberFormatException("Invalid Selection");
+                } else {
+                    // perform HCN Process
+                }
+
+            } catch (NumberFormatException ex) {
+                System.out.println(SELECTION_ERROR);
+            }
 
         }
     }
