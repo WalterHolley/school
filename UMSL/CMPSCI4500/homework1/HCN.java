@@ -2,6 +2,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 
+import javax.lang.model.util.ElementScanner14;
+
 public class HCN {
     /**
      * CMP SCI 4500
@@ -30,7 +32,6 @@ public class HCN {
      */
     private static void init() {
         HCN_LIST = getStaticHCNList();
-        System.out.println(HCN_LIST.size());
     }
 
     /**
@@ -80,20 +81,31 @@ public class HCN {
                     throw new NumberFormatException("Invalid Selection");
                 } else {
                     // perform HCN Process
-                    int result = findHCN(numRetrieved);
+                    int[] result = findHCN(numRetrieved);
 
-                    if (numRetrieved == result)
+                    if (Arrays.asList(result).contains(numRetrieved))
                         System.out.println(numRetrieved + " is a Highly composite number, and has a total of "
                                 + HCN_LIST.get(numRetrieved).toString() + " divisors.");
                     else
-                        System.out.println(numRetrieved + " is not a Highly composite number.  The closest HCN is "
-                                + result + ", which has " + HCN_LIST.get(result).toString() + " divisors.");
+                    printNotHCNMessage(result, numRetrieved); 
                 }
 
             } catch (NumberFormatException ex) {
                 System.out.println(SELECTION_ERROR);
             }
 
+        }
+    }
+
+    /**
+     * Writes the HCN not found message to the console.
+     * @param numList list of closest HCN values in collection
+     * @param target the number submitted for HCN search
+     */
+    private static void printNotHCNMessage(int[] numList, int target){
+        System.out.println(target + " is not a Highly Composite Number.  The closest HCNs are:");
+        for(int i = 0; i < numList.length; i++){
+            System.out.println(numList[i] + " which has " + HCN_LIST.get(numList[i]).toString() + " divisors.");
         }
     }
 
@@ -130,11 +142,12 @@ public class HCN {
      * @param number the number to begin searching with
      * @return int of HCN
      */
-    private static int findHCN(int number) {
-        int result = number;
-        System.out.println(HCN_LIST.size());
+    private static int[] findHCN(int number) {
+        int[] result = null;
+
         if (!HCN_LIST.containsKey(number)) {
             Integer[] keyArray = Arrays.copyOf(HCN_LIST.keySet().toArray(), HCN_LIST.size(), Integer[].class);
+            Arrays.sort(keyArray);
 
             int size = keyArray.length;
 
@@ -154,19 +167,32 @@ public class HCN {
      * @param target      the number the seach wants to get closest to
      * @return closest integer to the target
      */
-    private static int searchArray(Integer[] values, int lowerIndex, int upperIndex, int target) {
-        int totalRecords = upperIndex - lowerIndex;
-        int result = target;
-        if (totalRecords > 1) {
-            // get middle entry
-            int middle = upperIndex - (totalRecords / 2);
-            int candidate = values[middle];
-            if (candidate > target)
-                result = searchArray(values, middle, upperIndex, target);
+    private static int[] searchArray(Integer[] values, int lowerIndex, int upperIndex, int target) {
+        int totalRecords = upperIndex - lowerIndex + 1;
+        int[] result;
+        
+        if(target < values[values.length - 1]){
+            if (totalRecords > 2) {
+                // get middle index
+                int middle = upperIndex - ((upperIndex - lowerIndex) / 2);  
+
+                //recurse into search
+                if (values[middle] > target)
+                    result = searchArray(values, lowerIndex, middle, target);
+                else
+                    result = searchArray(values, middle, upperIndex, target);
+            } //compare last two indicies. one or both may be selected
+            else if(target - values[lowerIndex] < values[upperIndex] - target)
+                result = new int[]{values[lowerIndex]};
+            else if(target - values[lowerIndex] == values[upperIndex] - target)
+                result = new int[]{values[lowerIndex], values[upperIndex]};
             else
-                result = searchArray(values, lowerIndex, middle, target);
-        } else
-            result = values[lowerIndex + 1];
+                result = new int[]{values[upperIndex]};
+
+        }
+        else
+            result = new int[]{values[upperIndex]};
+        
 
         return result;
     }
