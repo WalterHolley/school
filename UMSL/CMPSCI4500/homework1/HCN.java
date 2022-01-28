@@ -2,7 +2,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 
-import javax.lang.model.util.ElementScanner14;
 
 public class HCN {
     /**
@@ -140,7 +139,7 @@ public class HCN {
      * Returns the closest number that is an HCN
      * 
      * @param number the number to begin searching with
-     * @return int of HCN
+     * @return int[] of HCNs
      */
     private static int[] findHCN(int number) {
         int[] result = null;
@@ -165,7 +164,7 @@ public class HCN {
      * @param lowerIndex  the lowerbound index of the search
      * @param upperIndex  the upperbound index of the search
      * @param target      the number the seach wants to get closest to
-     * @return closest integer to the target
+     * @return closest integer(s) to the target
      */
     private static int[] searchArray(Integer[] values, int lowerIndex, int upperIndex, int target) {
         int totalRecords = upperIndex - lowerIndex + 1;
@@ -200,8 +199,7 @@ public class HCN {
     /**
      * Generates a hashmap containing Highly Composite Numbers
      * 
-     * @param numLimit the max value to evaluate(this value will be evaluated as
-     *                 well)
+     * @param numLimit the max value to evaluate(this value will be evaluated as well)
      * @return Hashmap of HCNs. Key is the HCN, value is the divisor
      */
     private static HashMap<Integer, Integer> getHCNList(int numLimit) {
