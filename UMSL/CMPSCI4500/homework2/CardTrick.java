@@ -101,7 +101,9 @@ public class CardTrick {
      * 3 rows of 7 cards
      * @return two dim string array representing card piles
      */
-    private static string[][] dealCards(){
+    private static String[][] dealCards(){
+
+        return new String[0][0];
 
     }
 
