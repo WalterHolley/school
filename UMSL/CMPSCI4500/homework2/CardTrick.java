@@ -102,7 +102,15 @@ public class CardTrick {
      */
     private static String[][] dealCards(){
 
-        return new String[0][0];
+        String[][] cardGroups = new String[3][7];
+
+        for(int i = 0; i < cardsInUse.size(); i++){
+            cardGroups[0][i] = cardsInUse.get(i);
+            cardGroups[1][i+1] = cardsInUse.get(i + 1);
+            cardGroups[2][i+2] = cardsInUse.get(i + 2);
+            i += 2;
+        }
+        return cardGroups;
 
     }
 
