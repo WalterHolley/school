@@ -153,6 +153,8 @@ public class HCN {
             result = searchArray(keyArray, 0, size - 1, number);
 
         }
+        else
+            result = new int[]{HCN_LIST.get(number)};
 
         return result;
     }
