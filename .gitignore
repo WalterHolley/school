@@ -17,3 +17,4 @@ UMSL/CMPSCI2750/project3/calc
 .vscode/settings.json
 /.idea/
 *.iml
+/UMSL/.metadata/
