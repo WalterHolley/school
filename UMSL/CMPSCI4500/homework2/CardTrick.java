@@ -21,7 +21,7 @@ public class CardTrick {
     //The list of cards to use for the trick
     private static List<String> cardsInUse;
 
-    public static void main(){
+    public static void main(String[] args){
         menu();
     }
 
