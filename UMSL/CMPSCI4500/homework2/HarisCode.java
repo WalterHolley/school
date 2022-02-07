@@ -1,31 +1,7 @@
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Random;
-
-//Run this application using the Java setting at onlinegdb.com
-/**
-     * CMP SCI 4500
-     * HOMEWORK 2 - Card Trick Assignment.
-     * February, 2022
-     * Performs a card trick for the user.  Re-arranges
-     * a series of cards face up, and reveals the card chosen by the user.
-     * @author Walter Holley III
-     
- */
-public class CardTrick {
-    
-    //Represents a full deck of cards
-    private static List<String> cardCollection;
-
-    //The list of cards to use for the trick
-    private static List<String> cardsInUse;
-
-
-
-
-
+public class HarisCode {
     public static void main(String[] args){
+        initCardList();
+
         menu();
     }
 
@@ -36,48 +12,78 @@ public class CardTrick {
         initCardList();
     }
 
-    //*****USER EXPERIENCE*****//
-    
+    private static void printPile(String[][] pile)
+    {
+        for(int i= 0 ; i< 3; i++)
+        {
+            System.out.print("Pile " + (i+1) + " : ") ;
+            for(int j= 0 ; j< 7; j++)
+            {
+                if(j == 6)
+                {
+                    System.out.println(pile[i][j]);
+                }
+                else
+                {
+                    System.out.print(pile[i][j] + "   ");
+                }
+            }
+        }
+    }
+    //**USER EXPERIENCE**//
+
     /**
      * Primary menu loop.  This is where
      * the user experience starts
      */
     private static void menu(){
-
+        inputObject = new Scanner(System.in) ;
         while(mainMenu()){
+
+            // Printing cards
+            System.out.println("Cards List : " + cardsInUse) ;
             //ask user to choose a card
+            System.out.print("Select One Card : ") ;
+            String cardName = inputObject.next() ;
 
             //shuffle card back into deck
-            placeCard("cardFace", 0);
+            placeCard(cardName, 3);
             //show new card pile face-up
             //get card arrays to show
-            dealCards();
+            printPile(dealCards());
 
             //ask user to choose pile(first time: select 1,2, or 3)
+            System.out.print("Choose pile : ") ;
+            int pileN = inputObject.nextInt() ;
             //cut the cards
-            cutGroup(0);
+            cutGroup(pileN);
 
             //show new card pile face-up
             //get card arrays to show
-            dealCards();
+            printPile(dealCards());
 
             //ask user to choose pile(second time: select 1,2, or 3)
-             //cut the cards
-             cutGroup(0);
+            //cut the cards
+            System.out.print("Choose pile : ") ;
+            pileN = inputObject.nextInt() ;
+            cutGroup(pileN);
 
             //show new card pile face-up
             //get card arrays to show
-            dealCards();
+            printPile(dealCards());
 
             //ask user to choose pile(third time: select 1,2, or 3)
-             //cut the cards
-             cutGroup(0);
-            
+            //cut the cards
+            System.out.print("Choose pile : ") ;
+            pileN = inputObject.nextInt() ;
+            cutGroup(pileN);
+
             //show new card pile face-up
-             //get card arrays to show
-            dealCards();
+            //get card arrays to show
+            printPile(dealCards());
 
             //reveal chosen card
+            System.out.println("Your Chosen Card : " + cardName) ;
         }
     }
 
@@ -87,34 +93,40 @@ public class CardTrick {
      * @return false if user chooses to exit
      */
     private static boolean mainMenu(){
-        
-        if(true)
+        inputObject = new Scanner(System.in) ;
+        System.out.print("You Want to Perform Card Trick or want to exit.. Choose 1 to play and 0 for exit: ");
+        int choice = inputObject.nextInt() ;
+        if(choice == 1)
+        {
             init();
-        return false; 
+            return true ;
+        }
+        else
+        {
+            return false;
+        }
     }
 
 
-
-
-//******CARD OPERATIONS*****//
+//***CARD OPERATIONS**//
 
     /**
-     * Deals the cards. Deals by placing each card 
+     * Deals the cards. Deals by placing each card
      * into one of three different piles. creating
      * 3 rows of 7 cards
      * @return two dim string array representing card piles
      */
     private static String[][] dealCards(){
-
-        String[][] cardGroups = new String[3][7];
-
-        for(int i = 0; i < cardsInUse.size(); i++){
-            cardGroups[0][i] = cardsInUse.get(i);
-            cardGroups[1][i+1] = cardsInUse.get(i + 1);
-            cardGroups[2][i+2] = cardsInUse.get(i + 2);
-            i += 2;
+        String[][] pile = new String [3][7];
+        Random rng = new Random();
+        for(int i= 0 ; i< 3; i++)
+        {
+            for(int j= 0 ; j< 7; j++)
+            {
+                pile[i][j] = cardsInUse.get(rng.nextInt(21));
+            }
         }
-        return cardGroups;
+        return pile;
 
     }
 
@@ -124,16 +136,18 @@ public class CardTrick {
      * @throws IllegalArgumentException when group parameter is not 1, 2, or 3
      */
     private static void cutGroup(int group) throws IllegalArgumentException{
-        
+
         if( group < 1 || group > 3)
             throw new IllegalArgumentException("Invalid Group Selection");
         else{
             int startIndex = 7 * (group - 1);
             Random rng = new Random();
             List<String> topGroup = new ArrayList<String>();
-
+            List<String> usedCards = new ArrayList<String>();
+            usedCards.addAll(cardsInUse) ;
+            cardsInUse.removeAll(usedCards);
             //Get group to place in middle
-            List<String>middleGroup = cardsInUse.subList(startIndex, startIndex + 6);
+            List<String>middleGroup = usedCards.subList(startIndex, startIndex + 6);
             cardsInUse.removeAll(middleGroup);
 
             //decide which pile to place on top
@@ -141,25 +155,25 @@ public class CardTrick {
                 startIndex = 0;
             else
                 startIndex = 7;
-            
-            topGroup = cardsInUse.subList(startIndex, startIndex + 6);
+            topGroup = usedCards.subList(startIndex, startIndex + 6);
             cardsInUse.removeAll(topGroup);
 
             //place piles
+            cardsInUse.addAll(usedCards) ;
             cardsInUse.addAll(middleGroup);
             cardsInUse.addAll(topGroup);
         }
     }
 
     /**
-     * 
+     *
      * @param cardKey The card you wish to insert
      * @param position the integer position to insert the card into
-     * @throws IllegalArgumentException when cardKey doesn't exist, or position is 
+     * @throws IllegalArgumentException when cardKey doesn't exist, or position is
      * less than 1 or greater than 20
      */
     private static void placeCard(String cardKey, int position) throws IllegalArgumentException{
-        
+
         if(!cardsInUse.contains(cardKey))
             throw new IllegalArgumentException("Card not found");
         else if(position < 1 || position > 20)
@@ -186,7 +200,6 @@ public class CardTrick {
         cardCollection.addAll(Arrays.asList(diamonds));
         cardCollection.addAll(Arrays.asList(clubs));
         cardCollection.addAll(Arrays.asList(spades));
-
         //Randomly select cards from deck. add to usage pile, remove card from deck
         while(cardsInUse.size() < 21){
             Random rng = new Random();
@@ -196,8 +209,10 @@ public class CardTrick {
             cardsInUse.add(cardCollection.get(randVal));
             cardCollection.remove(randVal);
         }
-    
-        
+
+
     }
+
+}
 
 }
