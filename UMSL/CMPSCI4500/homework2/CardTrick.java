@@ -2,6 +2,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
+import java.util.Scanner;
 
 //Run this application using the Java setting at onlinegdb.com
 /**
@@ -21,6 +22,9 @@ public class CardTrick {
     //The list of cards to use for the trick
     private static List<String> cardsInUse;
 
+    //Scanner for accepting input from console
+    private static Scanner inputObject;
+
 
 
 
@@ -36,6 +40,25 @@ public class CardTrick {
         initCardList();
     }
 
+    private static void printPile(String[][] pile)
+    {
+        for(int i= 0 ; i< 3; i++)
+        {
+            System.out.print("Pile " + (i+1) + " : ") ;
+            for(int j= 0 ; j< 7; j++)
+            {
+                if(j == 6)
+                {
+                    System.out.println(pile[i][j]);
+                }
+                else
+                {
+                    System.out.print(pile[i][j] + "   ");
+                }
+            }
+        }
+    }
+
     //*****USER EXPERIENCE*****//
     
     /**
@@ -44,40 +67,53 @@ public class CardTrick {
      */
     private static void menu(){
 
+        inputObject = new Scanner(System.in) ;
         while(mainMenu()){
+
+            // Printing cards
+            System.out.println("Cards List : " + cardsInUse) ;
             //ask user to choose a card
+            System.out.print("Select One Card : ") ;
+            String cardName = inputObject.next() ;
 
             //shuffle card back into deck
-            placeCard("cardFace", 0);
+            placeCard(cardName, 3);
             //show new card pile face-up
             //get card arrays to show
-            dealCards();
+            printPile(dealCards());
 
             //ask user to choose pile(first time: select 1,2, or 3)
+            System.out.print("Choose pile : ") ;
+            int pileN = inputObject.nextInt() ;
             //cut the cards
-            cutGroup(0);
+            cutGroup(pileN);
 
             //show new card pile face-up
             //get card arrays to show
-            dealCards();
+            printPile(dealCards());
 
             //ask user to choose pile(second time: select 1,2, or 3)
-             //cut the cards
-             cutGroup(0);
+            //cut the cards
+            System.out.print("Choose pile : ") ;
+            pileN = inputObject.nextInt() ;
+            cutGroup(pileN);
 
             //show new card pile face-up
             //get card arrays to show
-            dealCards();
+            printPile(dealCards());
 
             //ask user to choose pile(third time: select 1,2, or 3)
-             //cut the cards
-             cutGroup(0);
-            
+            //cut the cards
+            System.out.print("Choose pile : ") ;
+            pileN = inputObject.nextInt() ;
+            cutGroup(pileN);
+
             //show new card pile face-up
-             //get card arrays to show
-            dealCards();
+            //get card arrays to show
+            printPile(dealCards());
 
             //reveal chosen card
+            System.out.println("Your Chosen Card : " + cardName) ;
         }
     }
 
@@ -88,9 +124,18 @@ public class CardTrick {
      */
     private static boolean mainMenu(){
         
-        if(true)
+        inputObject = new Scanner(System.in) ;
+        System.out.print("You Want to Perform Card Trick or want to exit.. Choose 1 to play and 0 for exit: ");
+        int choice = inputObject.nextInt() ;
+        if(choice == 1)
+        {
             init();
-        return false; 
+            return true ;
+        }
+        else
+        {
+            return false;
+        }
     }
 
 

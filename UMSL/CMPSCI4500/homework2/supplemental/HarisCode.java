@@ -1,9 +1,25 @@
+package supplemental;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Random;
+import java.util.Scanner;
+
 public class HarisCode {
-    public static void main(String[] args){
+
+        //Represents a full deck of cards
+        private static List<String> cardCollection;
+
+        //The list of cards to use for the trick
+        private static List<String> cardsInUse;
+    
+        //Scanner for accepting input from console
+        private static Scanner inputObject;
+   /* public static void main(String[] args){
         initCardList();
 
         menu();
-    }
+    }*/
 
     /**
      * Initializes elements needed for the application
@@ -212,7 +228,5 @@ public class HarisCode {
 
 
     }
-
-}
 
 }
