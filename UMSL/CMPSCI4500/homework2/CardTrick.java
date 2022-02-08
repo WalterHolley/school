@@ -76,7 +76,7 @@ public class CardTrick {
             System.out.print("Select One Card : ") ;
             String cardName = inputObject.next() ;
 
-            //shuffle card back into deck
+            // ask user to shuffle card back into deck
             placeCard(cardName, 3);
             //show new card pile face-up
             //get card arrays to show
@@ -152,12 +152,14 @@ public class CardTrick {
     private static String[][] dealCards(){
 
         String[][] cardGroups = new String[3][7];
+        int column = 0;
 
         for(int i = 0; i < cardsInUse.size(); i++){
-            cardGroups[0][i] = cardsInUse.get(i);
-            cardGroups[1][i+1] = cardsInUse.get(i + 1);
-            cardGroups[2][i+2] = cardsInUse.get(i + 2);
+            cardGroups[0][column] = cardsInUse.get(i);
+            cardGroups[1][column] = cardsInUse.get(i + 1);
+            cardGroups[2][column] = cardsInUse.get(i + 2);
             i += 2;
+            column++;
         }
         return cardGroups;
 
@@ -176,10 +178,11 @@ public class CardTrick {
             int startIndex = 7 * (group - 1);
             Random rng = new Random();
             List<String> topGroup = new ArrayList<String>();
+            List<String> bottomGroup = new ArrayList<String>();
+            List<String> newCardList = new ArrayList<String>();
 
             //Get group to place in middle
-            List<String>middleGroup = cardsInUse.subList(startIndex, startIndex + 6);
-            cardsInUse.removeAll(middleGroup);
+            List<String>middleGroup = cardsInUse.subList(startIndex, startIndex + 7);
 
             //decide which pile to place on top
             if(rng.nextInt(1) > 0)
@@ -187,12 +190,23 @@ public class CardTrick {
             else
                 startIndex = 7;
             
-            topGroup = cardsInUse.subList(startIndex, startIndex + 6);
-            cardsInUse.removeAll(topGroup);
+            topGroup = cardsInUse.subList(startIndex, startIndex + 7);
+
+            //get bottom group
+            if(startIndex == 0)
+                startIndex = 7;
+            else
+                startIndex = 0;
+            
+            bottomGroup = cardsInUse.subList(startIndex, startIndex + 7);
 
             //place piles
-            cardsInUse.addAll(middleGroup);
-            cardsInUse.addAll(topGroup);
+            newCardList.addAll(bottomGroup);
+            newCardList.addAll(middleGroup);
+            newCardList.addAll(topGroup);
+
+            
+            cardsInUse = newCardList;
         }
     }
 
