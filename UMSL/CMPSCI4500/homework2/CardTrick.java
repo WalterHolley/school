@@ -1,5 +1,6 @@
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.InputMismatchException;
 import java.util.List;
 import java.util.Random;
 import java.util.Scanner;
@@ -126,22 +127,29 @@ public class CardTrick {
         System.out.println("Place the card back in the deck");
         
         while(selecting){
-            System.out.println("Enter a number between 1 and 20(inclusive): ");
+            System.out.println("Enter a number between 1 and 21(inclusive): ");
 
             try{
                 int spaceNumber = inputObject.nextInt();
                 
-                if(spaceNumber < 1 || spaceNumber > 20){
+                if(spaceNumber < 1 || spaceNumber > 21){
                     throw new Exception("Invalid Selection. Please Try Again");
                 }
                 else{
+                    spaceNumber--;
                     placeCard(userCard, spaceNumber);
                     selecting = false;
                 }
             }
+            catch(InputMismatchException ex){
+                System.out.println("ERROR: Invalid Selection.  Please Try Again");
+                inputObject.nextLine();
+            }
             catch(Exception ex){
                 System.out.println("ERROR: " + ex.getMessage());
+                
             }
+            
 
         }
     }
@@ -181,9 +189,17 @@ public class CardTrick {
      */
     private static boolean mainMenu(){
         
-        inputObject = new Scanner(System.in) ;
+        //inputObject = new Scanner(System.in) ;
+        int choice = 0;
+
         System.out.print("You Want to Perform Card Trick or want to exit.. Choose 1 to play or any key to exit: ");
-        int choice = inputObject.nextInt() ;
+        try{
+            choice = inputObject.nextInt();
+        }
+        catch(Exception ex){
+            //perform no action
+        }
+        
         if(choice == 1)
         {
             init();
@@ -237,25 +253,41 @@ public class CardTrick {
             List<String> topGroup = new ArrayList<String>();
             List<String> bottomGroup = new ArrayList<String>();
             List<String> newCardList = new ArrayList<String>();
+            int leftRight = rng.nextInt(1);
 
             //Get group to place in middle
             List<String>middleGroup = cardsInUse.subList(startIndex, startIndex + 7);
 
-            //decide which pile to place on top
-            if(rng.nextInt(1) > 0)
-                startIndex = 0;
-            else
-                startIndex = 7;
-            
-            topGroup = cardsInUse.subList(startIndex, startIndex + 7);
-
-            //get bottom group
-            if(startIndex == 0)
-                startIndex = 7;
-            else
-                startIndex = 0;
-            
-            bottomGroup = cardsInUse.subList(startIndex, startIndex + 7);
+            //decide which piles to place on top and bottom.
+            // chose the right pile for top if 1
+            //otherwise left
+            if(leftRight == 1)
+                if(startIndex == 7){
+                    topGroup = cardsInUse.subList(startIndex + 7, startIndex + 14);
+                    bottomGroup = cardsInUse.subList(startIndex - 7, startIndex);
+                }                  
+                else if(startIndex == 0){
+                    topGroup = cardsInUse.subList(startIndex + 7, startIndex + 14);
+                    bottomGroup = cardsInUse.subList(startIndex + 14 , startIndex + 21);
+                }    
+                else{
+                    topGroup = cardsInUse.subList(startIndex + 7, startIndex + 14);
+                    bottomGroup = cardsInUse.subList(startIndex + 14 , startIndex + 21);
+                }                  
+            else{
+                if(startIndex == 7){
+                    topGroup = cardsInUse.subList(startIndex - 7, startIndex);
+                    bottomGroup = cardsInUse.subList(startIndex + 7, startIndex + 14);
+                }
+                else if(startIndex == 0){
+                    topGroup = cardsInUse.subList(startIndex + 14, startIndex + 21);
+                    bottomGroup = cardsInUse.subList(startIndex + 7, startIndex + 14);
+                }
+                else{
+                    topGroup = cardsInUse.subList(startIndex - 7, startIndex);
+                    bottomGroup = cardsInUse.subList(startIndex - 14, startIndex - 7);
+                }
+            }
 
             //place piles
             newCardList.addAll(bottomGroup);
@@ -278,7 +310,7 @@ public class CardTrick {
         
         if(!cardsInUse.contains(cardKey))
             throw new IllegalArgumentException("Card not found");
-        else if(position < 1 || position > 20)
+        else if(position < 0 || position > 20)
             throw new IllegalArgumentException("Invalid Card Position");
         else{
             cardsInUse.remove(cardsInUse.indexOf(cardKey));
