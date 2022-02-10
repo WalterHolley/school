@@ -38,6 +38,7 @@ public class CardTrick {
      * Initializes elements needed for the application
      */
     private static void init(){
+        userCard = null;
         initCardList();
     }
 
@@ -60,8 +61,7 @@ public class CardTrick {
         }
     }
 
-    //*****USER EXPERIENCE*****//
-    
+    //*****USER EXPERIENCE*****//  
     /**
      * Primary menu loop.  This is where
      * the user experience starts
@@ -126,7 +126,7 @@ public class CardTrick {
         boolean selecting = true;
 
         while(selecting){
-            System.out.print("Select One Card : ") ;
+            System.out.print("Select One Card(ex. 10C, 9H): ") ;
 
             try{
                 String cardName = inputObject.next() ;
@@ -140,7 +140,7 @@ public class CardTrick {
                 }
             }
             catch(Exception ex){
-
+                System.out.println("ERROR: " + ex.getMessage());
             }
             
         }
@@ -154,7 +154,7 @@ public class CardTrick {
     private static boolean mainMenu(){
         
         inputObject = new Scanner(System.in) ;
-        System.out.print("You Want to Perform Card Trick or want to exit.. Choose 1 to play and 0 for exit: ");
+        System.out.print("You Want to Perform Card Trick or want to exit.. Choose 1 to play or any key to exit: ");
         int choice = inputObject.nextInt() ;
         if(choice == 1)
         {
