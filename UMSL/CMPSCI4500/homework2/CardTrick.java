@@ -77,7 +77,7 @@ public class CardTrick {
             selectCard();
 
             // ask user to shuffle card back into deck
-            placeCard(userCard, 3);
+            placeCardInDeck();
             //show new card pile face-up
             //get card arrays to show
             printPile(dealCards());
@@ -118,8 +118,36 @@ public class CardTrick {
     }
 
     /**
+     * Asks the user to place the card they've selected
+     * back into the deck.
+     */
+    public static void placeCardInDeck(){
+        boolean selecting = true;
+        System.out.println("Place the card back in the deck");
+        
+        while(selecting){
+            System.out.println("Enter a number between 1 and 20(inclusive): ");
+
+            try{
+                int spaceNumber = inputObject.nextInt();
+                
+                if(spaceNumber < 1 || spaceNumber > 20){
+                    throw new Exception("Invalid Selection. Please Try Again");
+                }
+                else{
+                    placeCard(userCard, spaceNumber);
+                    selecting = false;
+                }
+            }
+            catch(Exception ex){
+                System.out.println("ERROR: " + ex.getMessage());
+            }
+
+        }
+    }
+
+    /**
      * Prompts a user to select a card.
-     * @return
      */
     private static void selectCard(){
 
