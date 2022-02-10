@@ -11,7 +11,7 @@ import java.util.Scanner;
      * February, 2022
      * Performs a card trick for the user.  Re-arranges
      * a series of cards face up, and reveals the card chosen by the user.
-     * @author Walter Holley III
+     * @author Walter Holley III, Haris
      
  */
 public class CardTrick {
@@ -24,6 +24,7 @@ public class CardTrick {
 
     //Scanner for accepting input from console
     private static Scanner inputObject;
+    private static String userCard;
 
 
 
@@ -73,11 +74,10 @@ public class CardTrick {
             // Printing cards
             System.out.println("Cards List : " + cardsInUse) ;
             //ask user to choose a card
-            System.out.print("Select One Card : ") ;
-            String cardName = inputObject.next() ;
+            selectCard();
 
             // ask user to shuffle card back into deck
-            placeCard(cardName, 3);
+            placeCard(userCard, 3);
             //show new card pile face-up
             //get card arrays to show
             printPile(dealCards());
@@ -113,7 +113,36 @@ public class CardTrick {
             printPile(dealCards());
 
             //reveal chosen card
-            System.out.println("Your Chosen Card : " + cardName) ;
+            System.out.println("Your Chosen Card : " + userCard) ;
+        }
+    }
+
+    /**
+     * Prompts a user to select a card.
+     * @return
+     */
+    private static void selectCard(){
+
+        boolean selecting = true;
+
+        while(selecting){
+            System.out.print("Select One Card : ") ;
+
+            try{
+                String cardName = inputObject.next() ;
+                
+                if(!cardsInUse.contains(cardName.toUpperCase())){
+                    throw new Exception("Card Not Found. Please Try Again");
+                }
+                else{
+                    userCard = cardName;
+                    selecting = false;
+                }
+            }
+            catch(Exception ex){
+
+            }
+            
         }
     }
 
