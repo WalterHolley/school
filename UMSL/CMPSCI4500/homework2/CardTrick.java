@@ -1,3 +1,4 @@
+//Run this application using the Java setting at onlinegdb.com
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.InputMismatchException;
@@ -5,9 +6,6 @@ import java.util.List;
 import java.util.Random;
 import java.util.Scanner;
 
-import javax.lang.model.util.ElementScanner14;
-
-//Run this application using the Java setting at onlinegdb.com
 /**
      * CMP SCI 4500
      * HOMEWORK 2 - Card Trick Assignment.
@@ -73,6 +71,7 @@ public class CardTrick {
 
         inputObject = new Scanner(System.in) ;
         boolean running  = false;
+        int gameCount = 0;
         running = mainMenu();
         while(running){
 
@@ -119,7 +118,15 @@ public class CardTrick {
 
             //Ask to play again
             running = playAgain();
+            
+            gameCount++;
         }
+
+        if(gameCount > 0){
+            System.out.println("Thanks for playing!");
+            System.out.println("Game Count: " + gameCount);
+        }
+        
     }
 
     /**
