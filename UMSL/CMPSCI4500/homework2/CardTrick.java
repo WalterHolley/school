@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Random;
 import java.util.Scanner;
 
+import javax.lang.model.util.ElementScanner14;
+
 //Run this application using the Java setting at onlinegdb.com
 /**
      * CMP SCI 4500
@@ -70,7 +72,9 @@ public class CardTrick {
     private static void menu(){
 
         inputObject = new Scanner(System.in) ;
-        while(mainMenu()){
+        boolean running  = false;
+        running = mainMenu();
+        while(running){
 
             // Printing cards
             System.out.println("Cards List : " + cardsInUse) ;
@@ -84,8 +88,7 @@ public class CardTrick {
             printPile(dealCards());
 
             //ask user to choose pile(first time: select 1,2, or 3)
-            System.out.print("Choose pile : ") ;
-            int pileN = inputObject.nextInt() ;
+            int pileN = chooseCardPile();
             //cut the cards
             cutGroup(pileN);
 
@@ -95,8 +98,7 @@ public class CardTrick {
 
             //ask user to choose pile(second time: select 1,2, or 3)
             //cut the cards
-            System.out.print("Choose pile : ") ;
-            pileN = inputObject.nextInt() ;
+            pileN = chooseCardPile();
             cutGroup(pileN);
 
             //show new card pile face-up
@@ -105,8 +107,7 @@ public class CardTrick {
 
             //ask user to choose pile(third time: select 1,2, or 3)
             //cut the cards
-            System.out.print("Choose pile : ") ;
-            pileN = inputObject.nextInt() ;
+            pileN = chooseCardPile();
             cutGroup(pileN);
 
             //show new card pile face-up
@@ -114,15 +115,84 @@ public class CardTrick {
             printPile(dealCards());
 
             //reveal chosen card
-            System.out.println("Your Chosen Card : " + userCard) ;
+            System.out.println("Your Chosen Card : " + userCard.toUpperCase()) ;
+
+            //Ask to play again
+            running = playAgain();
         }
     }
 
     /**
+     * Asks the user if they would like to perform the trick again
+     * @return True if the user wishes to perform the trick again.
+     */
+    private static boolean playAgain(){
+        boolean result = false;
+        boolean asking = true;
+
+        while(asking){
+            try{
+
+                System.out.print("Would you like to play again(y/n)? ");
+                String response = inputObject.next();
+
+                if( response.toLowerCase().equals("y")){
+                    asking = false;
+                    result = true;
+                }
+                else if(response.toLowerCase().equals("n")){
+                    asking = false;
+                }
+                else{
+                    throw new InputMismatchException();
+                }
+
+            }
+            catch(InputMismatchException ex){
+                System.out.println("Error:  Input can only be Y, y, n, or N.  Please try again");
+            }
+           
+
+        }
+        return result;
+    }
+
+    /**
+     * Lets the user chose which card pile their selected
+     * card is located in.  
+     * @return integer indicating which pile the card is stored in.
+     */
+    private static int chooseCardPile(){
+        int pileN = 0;
+        boolean selecting = true;
+
+        while(selecting){
+            try{
+                System.out.print("Choose pile : ");
+                pileN = inputObject.nextInt();
+    
+                if(pileN < 1 || pileN > 3)
+                    throw new InputMismatchException();
+                else
+                    selecting = false;
+    
+    
+            }
+            catch(InputMismatchException ex){
+                System.out.println("Number must be from 1 to 3(inclusive).  Try again");
+            }
+            catch(Exception ex){
+                System.out.println("Number must be from 1 to 3(inclusive).  Try again");
+            }
+        }
+        
+        return pileN;
+    }
+    /**
      * Asks the user to place the card they've selected
      * back into the deck.
      */
-    public static void placeCardInDeck(){
+    private static void placeCardInDeck(){
         boolean selecting = true;
         System.out.println("Place the card back in the deck");
         
@@ -308,13 +378,13 @@ public class CardTrick {
      */
     private static void placeCard(String cardKey, int position) throws IllegalArgumentException{
         
-        if(!cardsInUse.contains(cardKey))
+        if(!cardsInUse.contains(cardKey.toUpperCase()))
             throw new IllegalArgumentException("Card not found");
         else if(position < 0 || position > 20)
             throw new IllegalArgumentException("Invalid Card Position");
         else{
-            cardsInUse.remove(cardsInUse.indexOf(cardKey));
-            cardsInUse.add(position, cardKey);
+            cardsInUse.remove(cardsInUse.indexOf(cardKey.toUpperCase()));
+            cardsInUse.add(position, cardKey.toUpperCase());
         }
 
     }
