@@ -14,7 +14,7 @@ import javax.lang.model.util.ElementScanner14;
      * February, 2022
      * Performs a card trick for the user.  Re-arranges
      * a series of cards face up, and reveals the card chosen by the user.
-     * @author Walter Holley III, Haris
+     * @author Walter Holley III, Haris Bihorac
      
  */
 public class CardTrick {
