@@ -18,3 +18,6 @@ UMSL/CMPSCI2750/project3/calc
 /.idea/
 *.iml
 /UMSL/.metadata/
+.vscode/c_cpp_properties.json
+.vscode/launch.json
+UMSL/CMPSCI4250/project1/build/Debug/outDebug.exe
