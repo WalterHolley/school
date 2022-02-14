@@ -11,13 +11,14 @@
 
 #include <stdio.h>
 #include <ctype.h>
+#include <string.h>
 
 /* Global declarations */
 /* Variables */
 
 int charClass;
 char lexeme[100];
-char reservedWords_arr[1][3] = {'int'};
+char reservedWords_arr[1][3] = {"int"};
 char nextChar;
 int lexLen;
 int token;
@@ -95,7 +96,7 @@ void getNonBlank(){
  * @brief looks up operators and parentheses,
  * and returns the token
  * 
- * @param ch character sent for alaysis
+ * @param ch character sent for analaysis
  * @return int token value
  */
 int lookup(char ch){
@@ -156,7 +157,9 @@ int isReserved(){
     int result = 0;
 
     if(lexLen == 3){
-        
+
+        if(strncmp(lexeme, reservedWords_arr[0], 3) == 0)
+            result = 1;
     }
     return result;
 }
