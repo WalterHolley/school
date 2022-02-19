@@ -1,4 +1,6 @@
 //Run this application using the Java setting at onlinegdb.com
+//No external files are required for this application
+//primeList is a global list for maintaining prime numbers
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -47,10 +49,10 @@ public class HappyNumbers{
         upperBound = askForNumber(lowerBound);
 
         //init prime numbers
-        initPrimes(lowerBound);
+        initPrimes(upperBound);
 
         //get happy primes
-        int[] results = getHappyPrimes(lowerBound, upperBound);
+        int[] results = getHappyPrimes(lowerBound);
         
         //display results
         switch(results.length){
@@ -63,7 +65,7 @@ public class HappyNumbers{
                 break;
             case 2:
                 printHappyPrimes(results, lowerBound, upperBound);
-                System.out.printf("The number of digits between the two happy primes is %d.\n", results[1] - results[0]);
+                System.out.printf("The number of digits between the two happy primes is %d.\n", results[1] - results[0] - 1);
                 break;              
             default:
                 printHappyPrimes(results, lowerBound, upperBound);
@@ -126,7 +128,7 @@ public class HappyNumbers{
 
         //create gap list, determine sum, min, max of gaps
         for(int i = 0; i < totalGaps; i++){
-            gapList.add(i, resultList.get(i+1) - resultList.get(i));
+            gapList.add(i, resultList.get(i+1) - resultList.get(i) - 1);
             sum += gapList.get(i);
             if(gapList.get(i) > max)
                 max = gapList.get(i);
@@ -198,12 +200,17 @@ public class HappyNumbers{
 
     /**
      * initializes the prime number list
-     * @param lowerBound
+     * @param upperBound find primes up to this number
+     * (inclusive)
      */
-    private static void initPrimes(int lowerBound){
+    private static void initPrimes(int upperBound){
 
-        if(lowerBound > 2){
-            for(int i = 2; i <= lowerBound; i++){
+        if(primeList == null){
+            primeList = new ArrayList<Integer>();
+            primeList.add(2);
+        }
+        if(upperBound > 2){
+            for(int i = 3; i <= upperBound; i++){
                 isPrime(i);
             }
         }
@@ -218,22 +225,20 @@ public class HappyNumbers{
         boolean result = false;
         if(num > 1){
 
-            if(primeList == null){
-                primeList = new ArrayList<Integer>();
-                primeList.add(2);
-            }
             if(primeList.contains(num)){
                 result = true;
             }
             else{
+                int limit = (int)Math.sqrt(num);
                 for(int i = 0; i < primeList.size(); i++){
-                    if(num % primeList.get(i) == 0)
-                        break;
-                    if(i + 1 == primeList.size()){
-                        primeList.add(num);
+                    if(primeList.get(i) > limit){
                         result = true;
+                        primeList.add(num);
+                        break;
                     }
                         
+                    if(num % primeList.get(i) == 0)
+                        break;
                 }
             }
         }
@@ -271,20 +276,7 @@ public class HappyNumbers{
         return result;
     }
 
-    /**
-     * Determines if number is 
-     * both happy and prime
-     * @param num the value to analyze
-     * @return True if happy prime
-     */
-    private static boolean isHappyPrime(int num){
-        boolean result = false;
-
-        if(isPrime(num) && isHappyNumber(num))
-            result = true;
-
-        return result;
-    }
+    
 
     /**
      * Searches for happy prime numbers within
@@ -293,12 +285,14 @@ public class HappyNumbers{
      * @param upperBoud the highest number of the range.  included.
      * @return array of happy primes found within range.
      */
-    private static int[] getHappyPrimes(int loweBound, int upperBound){
+    private static int[] getHappyPrimes(int lowerBound){
         List<Integer> happyPrimes = new ArrayList<Integer>();
 
-        for(int i = loweBound; i <= upperBound; i++){
-            if(isHappyPrime(i))
-                happyPrimes.add(i);
+        for(int i = 0; i < primeList.size(); i++){
+            if(primeList.get(i) < lowerBound)
+                continue;
+            if(isHappyNumber(primeList.get(i)))
+                happyPrimes.add(primeList.get(i));
         }
 
         return happyPrimes.stream().mapToInt(i->i).toArray();
