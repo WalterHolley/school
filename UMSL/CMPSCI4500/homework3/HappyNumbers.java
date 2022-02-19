@@ -1,10 +1,11 @@
 //Run this application using the Java setting at onlinegdb.com
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.InputMismatchException;
 import java.util.List;
 import java.util.Scanner;
+import java.util.stream.Collectors;
 
 /**
  * CMP SCI 4500
@@ -39,14 +40,19 @@ public class HappyNumbers{
         int lowerBound = 0;
         int upperBound = 0;
 
-        
+        //get lower and upperbound
         System.out.println("Enter a lowerbound");
         lowerBound = askForNumber(1);
         System.out.println("Enter an upperbound");
         upperBound = askForNumber(lowerBound);
 
-        int[] results = getHappyPrimes(loweBound, upperBound);
+        //init prime numbers
+        initPrimes(lowerBound);
+
+        //get happy primes
+        int[] results = getHappyPrimes(lowerBound, upperBound);
         
+        //display results
         switch(results.length){
 
             case 0:
@@ -61,7 +67,7 @@ public class HappyNumbers{
                 break;              
             default:
                 printHappyPrimes(results, lowerBound, upperBound);
-                multiResults(results);
+                printMultiResults(results);
                 break;
         }
 
@@ -83,9 +89,9 @@ public class HappyNumbers{
         int count = 0;
 
         if(happyPrimes.length == 1)
-            System.out.printf("There is %d happy prime between %d and &d(inclusive).  It is:\n", happyPrimes.length, lowerBound, upperBound);
+            System.out.printf("There is %d happy prime between %d and %d(inclusive).  It is:\n", happyPrimes.length, lowerBound, upperBound);
         else
-            System.out.printf("There are %d happy primes between %d and &d(inclusive).  They are:\n", happyPrimes.length, lowerBound, upperBound);
+            System.out.printf("There are %d happy primes between %d and %d(inclusive).  They are:\n", happyPrimes.length, lowerBound, upperBound);
         
         for(int i = 0; i < happyPrimes.length; i++){
             System.out.print(happyPrimes[i]);
@@ -107,19 +113,19 @@ public class HappyNumbers{
      * prime results
      * @param happyPrimes array of happy primes found
      */
-    private static void multiResults(int[] happyPrimes){
+    private static void printMultiResults(int[] happyPrimes){
         int totalGaps = happyPrimes.length - 1;
         List<Integer> gapList = new ArrayList<Integer>(totalGaps);
-        List<Integer> resultList = Arrays.asList(happyPrimes);
+        List<Integer> resultList = Arrays.stream(happyPrimes).boxed().collect(Collectors.toList());
         int sum = 0;
         int median = 0;
         int average = 0;
         int min = 0;
         int max = 0;
-        resultList.sort();
+        resultList.sort(Comparator.naturalOrder());
 
         //create gap list, determine sum, min, max of gaps
-        for(int i = 0; i <= totalGaps; i++){
+        for(int i = 0; i < totalGaps; i++){
             gapList.add(i, resultList.get(i+1) - resultList.get(i));
             sum += gapList.get(i);
             if(gapList.get(i) > max)
@@ -139,11 +145,11 @@ public class HappyNumbers{
             System.out.printf("%d - %d: %d\n",resultList.get(i), resultList.get(i + 1), gapList.get(i));
         }
 
-        gapList.sort();
+        gapList.sort(Comparator.naturalOrder());
 
         //median gap
         if(gapList.size() % 2 == 0){
-            int size = gapList.size();
+            int size = gapList.size() / 2;
             median = (gapList.get(size) + gapList.get(size - 1)) / 2;
         }
         else
@@ -191,6 +197,19 @@ public class HappyNumbers{
     }
 
     /**
+     * initializes the prime number list
+     * @param lowerBound
+     */
+    private static void initPrimes(int lowerBound){
+
+        if(lowerBound > 2){
+            for(int i = 2; i <= lowerBound; i++){
+                isPrime(i);
+            }
+        }
+    }
+
+    /**
      * Determines if the given integer is a prime number
      * @param num the number to check
      * @return True if prime number
@@ -210,8 +229,11 @@ public class HappyNumbers{
                 for(int i = 0; i < primeList.size(); i++){
                     if(num % primeList.get(i) == 0)
                         break;
-                    if(i + 1 == primeList.size())
+                    if(i + 1 == primeList.size()){
+                        primeList.add(num);
                         result = true;
+                    }
+                        
                 }
             }
         }
@@ -227,17 +249,21 @@ public class HappyNumbers{
     private static boolean isHappyNumber(int num){
         boolean result = false;
         char[] intArray = Integer.toString(num).toCharArray();
+        int val = 0;
         
         //for base 10, we can iterate a maximum of 8 times before the cycle repeats
         for(int i = 1; i <= 8; i++){
-            int val = 0;
+            
             for(int c = 0; c < intArray.length; c++){
-                val += (Integer.parseInt(intArray[c])^2);
+                int parsedVal = Integer.parseInt(String.valueOf(intArray[c]));
+                val += Math.pow(parsedVal,2);
             }
             if(val == 1){
                 result = true;
                 break;
             }
+            else
+                intArray = Integer.toString(val).toCharArray();
                 
             val = 0;
         }
@@ -275,6 +301,6 @@ public class HappyNumbers{
                 happyPrimes.add(i);
         }
 
-        return happyPrimes.toArray();
+        return happyPrimes.stream().mapToInt(i->i).toArray();
     }
 }
