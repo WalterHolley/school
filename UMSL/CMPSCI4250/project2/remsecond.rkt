@@ -6,4 +6,4 @@
     [(= 2 length list1) (car list1)]
     [(> 2 length list1) (car list 1) (cddr list1)  ]
     
-)))
+))))
