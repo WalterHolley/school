@@ -1,12 +1,9 @@
 #lang racket
-;takes in a list, and removes the second element
-;from the list.  If there are less than two
-;elements in the list, nothing is returned
-(provide rem_second)
 
-(define (rem_second items)
-    (if (>= 2 (length items))
-        (remove (second items) items)
-        (list )
-    )
-)
+(define (rem_second list1)
+(list(
+    (cond 
+    [(= 2 length list1) (car list1)]
+    [(> 2 length list1) (car list 1) (cddr list1)  ]
+    
+))))
