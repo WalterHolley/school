@@ -8,13 +8,16 @@
  ))
 
 
-(define (my_union list1 list2)(
+(define (my_union list1 list2)
     (cond 
-        [(null? list1) list2]
         [(null? list2) list1]
-        [(membership (car list1) list2)
-            (my_union (cdr list1) list2)]
-        [else (my_union(cons(car(list1) list2)(cdr list2)))]
-        
+        [(membership (car list2) list1) (my_union list1 (cdr list2))]
+        [else (my_union (cons (car list2) list1) (cdr list2))]      
     )
-))
+)
+
+(define testList1 (list 1 2 3 4 5))
+(define testList2 (list 5 6 7 5 8 9))
+
+(my_union testList1 testList2) ;should return (9 8 7 6 1 2 3 4 5)
+(my_union testList1 testList1) ;should return (1 2 3 4 5)
