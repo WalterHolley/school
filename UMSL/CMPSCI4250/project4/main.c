@@ -38,7 +38,6 @@ void f2(){
 
     n++;
 
-    //TODO: review ARI calculations
         printf("Call #%d at %x\n", n, &test);
         printf("AR Size #%d is %d \n", n, addr - (long)&test);
         printf("Stack Size #%d is %d \n\n", n, n * (addr - (long)&test) );
