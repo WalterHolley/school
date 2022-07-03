@@ -3,8 +3,8 @@ package com.umsl.cmpsci4732;
 import java.nio.charset.StandardCharsets;
 
 public class Vigenere {
-    private static final int MINIMUM_ALLOWED_ASCII_VALUE = (int)'a';
-    private static final int MAX_ALLOWED_ASCII_VALUE = (int)'z';
+    private static final int MINIMUM_ALLOWED_ASCII_VALUE = 'a';
+    private static final int MAX_ALLOWED_ASCII_VALUE = 'z';
     private static final int MAX_UNIQUE_CHARACTERS = 26;
     /**
      * Tests a given string to determine if it can be
@@ -60,6 +60,51 @@ public class Vigenere {
             result = null;
 
         return result;
+    }
+
+    /**
+     * Decrypts an encoded vigenere cipher message
+     * @param cipherText The encoded message
+     * @param key the key used to encrypt the message
+     * @return String of the plaintext message
+     */
+    public static String decrypt(String cipherText, String key){
+        String result = "";
+        int keyCount = 0;
+
+        //Checks for valid strings, then encrypt
+        if(isVigenereText(cipherText) && isVigenereText(key)){
+
+            for(int i = 0; i < cipherText.length(); i++){
+                //encrypt character
+                result += decryptChar(cipherText.charAt(i), key.charAt(keyCount));
+
+                keyCount++;
+                if(keyCount >= key.length())
+                    keyCount = 0;
+            }
+        }
+        else
+            result = null;
+
+        return result;
+    }
+
+    /**
+     * Decrypts an encrypted character back to its plaintext form
+     * @param cipherChar The encoded character
+     * @param keyChar The corresponding key character it was encrypted against
+     * @return the plaintext result
+     */
+    private static char decryptChar(char cipherChar, char keyChar) {
+        int keyASCII = keyChar;
+        int cipherASCII = cipherChar;
+        int keyOffset = keyASCII - MINIMUM_ALLOWED_ASCII_VALUE;
+        int cipherOffset = cipherASCII - MINIMUM_ALLOWED_ASCII_VALUE;
+        int decCharOffset = (cipherOffset - keyOffset) % MAX_UNIQUE_CHARACTERS;
+        int plainCharASCII = (decCharOffset >= 0? MINIMUM_ALLOWED_ASCII_VALUE + decCharOffset: decCharOffset + MAX_ALLOWED_ASCII_VALUE + 1);
+
+        return (char)plainCharASCII;
     }
 
     /**
