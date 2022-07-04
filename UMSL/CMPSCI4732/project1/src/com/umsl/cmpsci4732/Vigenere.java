@@ -176,10 +176,9 @@ public class Vigenere {
      * @return the plaintext result
      */
     private static char decryptChar(char cipherChar, char keyChar) {
-        int keyASCII = keyChar;
-        int cipherASCII = cipherChar;
-        int keyOffset = keyASCII - MINIMUM_ALLOWED_ASCII_VALUE;
-        int cipherOffset = cipherASCII - MINIMUM_ALLOWED_ASCII_VALUE;
+
+        int keyOffset = keyChar - MINIMUM_ALLOWED_ASCII_VALUE;
+        int cipherOffset = cipherChar - MINIMUM_ALLOWED_ASCII_VALUE;
         int decCharOffset = (cipherOffset - keyOffset) % MAX_UNIQUE_CHARACTERS;
         int plainCharASCII = (decCharOffset >= 0? MINIMUM_ALLOWED_ASCII_VALUE + decCharOffset: decCharOffset + MAX_ALLOWED_ASCII_VALUE + 1);
 
@@ -193,10 +192,9 @@ public class Vigenere {
      * @return the encoded character
      */
     private static char encryptChar(char plainChar, char keyChar){
-        int keyASCII = (int)keyChar;
-        int plainASCII = (int)plainChar;
-        int keyOffset = keyASCII - MINIMUM_ALLOWED_ASCII_VALUE;
-        int plainOffest = plainASCII - MINIMUM_ALLOWED_ASCII_VALUE;
+
+        int keyOffset = keyChar - MINIMUM_ALLOWED_ASCII_VALUE;
+        int plainOffest = plainChar - MINIMUM_ALLOWED_ASCII_VALUE;
         int encCharOffest = (keyOffset + plainOffest) % MAX_UNIQUE_CHARACTERS;
         int encCharASCII = MINIMUM_ALLOWED_ASCII_VALUE + encCharOffest;
 

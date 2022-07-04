@@ -144,7 +144,7 @@ public class Main {
     private static void doBruteForce(){
         String cipherText;
         String partialPlainText;
-        int keySize = Integer.MIN_VALUE;
+        int keySize;
 
         cipherText = askForText(ENCRYPTED_MESSAGE_QUESTION);
 
@@ -152,7 +152,7 @@ public class Main {
             partialPlainText = askForText("Provide a portion of the unencrypted message:");
 
             if(Vigenere.isVigenereText(partialPlainText) && partialPlainText != null && !partialPlainText.isEmpty()){
-                keySize = askForNumber("Enter the maximum size for the key. Use whole numbers greater than zero:");
+                keySize = askForNumber();
 
                 //check key size
                 if(keySize > 0){
@@ -193,11 +193,10 @@ public class Main {
 
     /**
      * Asks for a whole number from the user
-     * @param questionText The question shown to the user
      * @return The number given by the user.  Returns the minimum value integer if
      * nothing was selected
      */
-    private static int askForNumber(String questionText){
+    private static int askForNumber(){
         int input = Integer.MIN_VALUE;
         boolean tryAgain = false;
 
@@ -205,7 +204,7 @@ public class Main {
 
         do {
             //get input from user
-            System.out.println(questionText);
+            System.out.println("Enter the maximum size for the key. Use whole numbers greater than zero:");
             try{
                 input = consoleReader.nextInt();
 
@@ -216,6 +215,7 @@ public class Main {
                 System.out.println("The input should be a whole number.  No special or alpha characters. No Spaces.  Greater than zero.");
                 tryAgain = yesOrNoResponse(TRY_AGAIN_MESSAGE);
             }
+            consoleReader.nextLine();
 
 
         }while(tryAgain);
