@@ -1,9 +1,6 @@
 package com.umsl.cmpsci4732;
 
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 
 public class Vigenere {
     private static final int MINIMUM_ALLOWED_ASCII_VALUE = 'a';
@@ -20,7 +17,7 @@ public class Vigenere {
 
         message = message.toLowerCase();
 
-        if(message != null && !message.isEmpty()){
+        if(!message.isEmpty()){
 
             //ensure characters of message do not fall out of the desired ascii range
             for (char c: message.toCharArray()
@@ -44,7 +41,7 @@ public class Vigenere {
      * @return String of the encrypted message
      */
     public static String encrypt(String plainTextMessage, String key){
-        String result = "";
+        StringBuilder result = new StringBuilder();
         int keyCount = 0;
 
         //Checks for valid strings, then encrypt
@@ -52,7 +49,7 @@ public class Vigenere {
 
             for(int i = 0; i < plainTextMessage.length(); i++){
                 //encrypt character
-                result += encryptChar(plainTextMessage.charAt(i), key.charAt(keyCount));
+                result.append(encryptChar(plainTextMessage.charAt(i), key.charAt(keyCount)));
 
                 keyCount++;
                 if(keyCount >= key.length())
@@ -62,7 +59,8 @@ public class Vigenere {
         else
             result = null;
 
-        return result;
+        assert result != null;
+        return result.toString();
     }
 
     /**
@@ -72,7 +70,7 @@ public class Vigenere {
      * @return String of the plaintext message
      */
     public static String decrypt(String cipherText, String key){
-        String result = "";
+        StringBuilder result = new StringBuilder();
         int keyCount = 0;
 
         //Checks for valid strings, then encrypt
@@ -80,7 +78,7 @@ public class Vigenere {
 
             for(int i = 0; i < cipherText.length(); i++){
                 //encrypt character
-                result += decryptChar(cipherText.charAt(i), key.charAt(keyCount));
+                result.append(decryptChar(cipherText.charAt(i), key.charAt(keyCount)));
 
                 keyCount++;
                 if(keyCount >= key.length())
@@ -90,14 +88,21 @@ public class Vigenere {
         else
             result = null;
 
-        return result;
+        return result.toString();
     }
 
+    /**
+     * Performs brute force analysis on a given message
+     * @param cipherMessage the encrypted message to analyze
+     * @param partialPlainMessage some known plain text portion of the message
+     * @param keySize the size of the key to use for analysis
+     * @return Hashmap of keys and their messages that contain the partial plain text
+     */
     public static HashMap<String, String> bruteForceDecrypt(String cipherMessage, String partialPlainMessage, int keySize){
         String testKey = createKey(keySize, false);
         String finalKey = createKey(keySize, true);
-        String testMessage = "";
-        HashMap<String, String> possibleResults = new HashMap<String, String>();
+        String testMessage;
+        HashMap<String, String> possibleResults = new HashMap<>();
         boolean keysExhausted = false;
 
         while(!keysExhausted){
@@ -108,13 +113,11 @@ public class Vigenere {
                 possibleResults.put(testKey, testMessage);
 
             //check for final key
-            if(testKey == finalKey)
+            if(testKey.equals(finalKey))
                 keysExhausted = true;
             else
                 testKey = iterateKey(testKey);
-
         }
-
 
         return possibleResults;
     }
@@ -126,14 +129,14 @@ public class Vigenere {
      * @return a string of lowercase 'a' or 'z' of the given length
      */
     private static String createKey(int size, boolean makeFinalKey){
-        String result = "";
+        StringBuilder result = new StringBuilder();
         for(int i = 0; i < size; i++){
             if(makeFinalKey)
-                result += "z";
+                result.append("z");
             else
-                result += "a";
+                result.append("a");
         }
-        return result;
+        return result.toString();
     }
 
     /**
@@ -143,20 +146,20 @@ public class Vigenere {
      */
     private static String iterateKey(String key){
         for (int i = key.length() - 1; i >= 0; i--){
-            int value = (int)key.charAt(i);
+            int value = key.charAt(i);
 
             //check for end of iteration
             if(value == MAX_ALLOWED_ASCII_VALUE){
                 value = MINIMUM_ALLOWED_ASCII_VALUE;
                char[] newKey = key.toCharArray();
                newKey[i] = (char)value;
-               key = newKey.toString();
+               key = new String(newKey);
             }
             else{
                 value++;
                 char[] newKey = key.toCharArray();
                 newKey[i] = (char)value;
-                key = newKey.toString();
+                key = new String(newKey);
                 break;
             }
 

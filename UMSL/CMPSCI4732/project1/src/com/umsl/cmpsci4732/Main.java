@@ -1,5 +1,6 @@
 package com.umsl.cmpsci4732;
 
+import java.util.HashMap;
 import java.util.InputMismatchException;
 import java.util.Scanner;
 
@@ -19,6 +20,9 @@ public class Main {
     private static final String INVALID_SELECTION_MESSAGE = "Invalid selection";
     private static final String ENCRYPTED_MESSAGE_QUESTION = "Please provide the encrypted message text.  Letters only.  No numbers, no special characters:";
     private static final String KEY_MESSAGE_QUESTION = "Provide a key for your message.  Letters only. No numbers, no special characters";
+    private static final String CIPHERTEXT_ERROR = "There was a problem with your ciphertext input.  Please make sure the text is valid";
+    private static final String MESSAGE_KEY_ERROR = "There was a problem with your message key input.  Please make sure the text is valid";
+    private static final String PLAINTEXT_ERROR = "There was a problem with your plain text input.  Please make sure the text is valid";
     private static Scanner consoleReader;
 
     public static void main(String[] args){
@@ -37,6 +41,7 @@ public class Main {
 
             try {
                 int selection = consoleReader.nextInt();
+                consoleReader.nextLine();
 
                 switch(selection) {
                     case 1:
@@ -91,7 +96,11 @@ public class Main {
                 System.out.println("Encrypted Message: " + Vigenere.encrypt(plainText, messageKey));
                 System.out.println();
             }
+            else
+                System.out.println(MESSAGE_KEY_ERROR);
         }
+        else
+            System.out.println(PLAINTEXT_ERROR);
 
 
 
@@ -117,13 +126,13 @@ public class Main {
             if(messageKey != null && !messageKey.isEmpty()){
                 System.out.println("Decrypted Message: " + Vigenere.decrypt(cipherText, messageKey));
             }
-            else{
-                System.out.println("There was a problem with your message key input.  Please make sure the text is valid");
-            }
+            else
+                System.out.println(MESSAGE_KEY_ERROR);
+
         }
-        else{
-            System.out.println("There was a problem with your ciphertext input.  Please make sure the text is valid");
-        }
+        else
+            System.out.println(CIPHERTEXT_ERROR);
+
     }
 
     /**
@@ -135,13 +144,83 @@ public class Main {
     private static void doBruteForce(){
         String cipherText;
         String partialPlainText;
+        int keySize = Integer.MIN_VALUE;
 
         cipherText = askForText(ENCRYPTED_MESSAGE_QUESTION);
 
         if(Vigenere.isVigenereText(cipherText) && cipherText != null && !cipherText.isEmpty()){
             partialPlainText = askForText("Provide a portion of the unencrypted message:");
 
+            if(Vigenere.isVigenereText(partialPlainText) && partialPlainText != null && !partialPlainText.isEmpty()){
+                keySize = askForNumber("Enter the maximum size for the key. Use whole numbers greater than zero:");
+
+                //check key size
+                if(keySize > 0){
+
+                    //perform brute force analysis
+                    for(int i = 1; i <= keySize; i++){
+                        HashMap<String, String> results = Vigenere.bruteForceDecrypt(cipherText,partialPlainText, i);
+
+                        //show results
+                        if(results.size() > 0){
+                            System.out.println("Results for keysize: " + i);
+                            for (String k: results.keySet()) {
+                                System.out.printf("Key: %s ==> %s \n",k, results.get(k));
+                            }
+
+                        }
+                        else{
+                            System.out.println("No results found for Key Size " + i);
+
+                        }
+
+                        //ask to continue analysis
+                        if(!yesOrNoResponse("Would you like to continue analysis? "))
+                            break;
+                    }
+
+                }
+                else
+                    System.out.println("Keysize is invalid");
+            }
+            else
+                System.out.println(PLAINTEXT_ERROR);
         }
+        else
+            System.out.println(CIPHERTEXT_ERROR);
+    }
+
+
+    /**
+     * Asks for a whole number from the user
+     * @param questionText The question shown to the user
+     * @return The number given by the user.  Returns the minimum value integer if
+     * nothing was selected
+     */
+    private static int askForNumber(String questionText){
+        int input = Integer.MIN_VALUE;
+        boolean tryAgain = false;
+
+        consoleReader.nextLine();
+
+        do {
+            //get input from user
+            System.out.println(questionText);
+            try{
+                input = consoleReader.nextInt();
+
+                if(input <= 0)
+                    throw new IllegalArgumentException("Number less than or equal to zero");
+            }
+            catch (Exception ex){
+                System.out.println("The input should be a whole number.  No special or alpha characters. No Spaces.  Greater than zero.");
+                tryAgain = yesOrNoResponse(TRY_AGAIN_MESSAGE);
+            }
+
+
+        }while(tryAgain);
+
+        return input;
     }
 
     /**
@@ -155,11 +234,13 @@ public class Main {
         String input;
         boolean tryAgain;
 
-        consoleReader.nextLine();
+
+
 
         do {
             //get input from user
             System.out.println(questionText);
+
             input = consoleReader.nextLine();
 
             //Strip all whitespaces from entries
