@@ -1,6 +1,9 @@
 package com.umsl.cmpsci4732;
 
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 
 public class Vigenere {
     private static final int MINIMUM_ALLOWED_ASCII_VALUE = 'a';
@@ -88,6 +91,79 @@ public class Vigenere {
             result = null;
 
         return result;
+    }
+
+    public static HashMap<String, String> bruteForceDecrypt(String cipherMessage, String partialPlainMessage, int keySize){
+        String testKey = createKey(keySize, false);
+        String finalKey = createKey(keySize, true);
+        String testMessage = "";
+        HashMap<String, String> possibleResults = new HashMap<String, String>();
+        boolean keysExhausted = false;
+
+        while(!keysExhausted){
+            testMessage = decrypt(cipherMessage,testKey);
+
+            //sample string found
+            if(testMessage.contains(partialPlainMessage))
+                possibleResults.put(testKey, testMessage);
+
+            //check for final key
+            if(testKey == finalKey)
+                keysExhausted = true;
+            else
+                testKey = iterateKey(testKey);
+
+        }
+
+
+        return possibleResults;
+    }
+
+    /**
+     * Creates a basic encryption key
+     * @param size The expected size of the key
+     * @param makeFinalKey if true, produces the final key of the given length
+     * @return a string of lowercase 'a' or 'z' of the given length
+     */
+    private static String createKey(int size, boolean makeFinalKey){
+        String result = "";
+        for(int i = 0; i < size; i++){
+            if(makeFinalKey)
+                result += "z";
+            else
+                result += "a";
+        }
+        return result;
+    }
+
+    /**
+     * Advances the given key by one position.  count is base 26(a-z)
+     * @param key the key to iterate
+     * @return string of the iterated result
+     */
+    private static String iterateKey(String key){
+        for (int i = key.length() - 1; i >= 0; i--){
+            int value = (int)key.charAt(i);
+
+            //check for end of iteration
+            if(value == MAX_ALLOWED_ASCII_VALUE){
+                value = MINIMUM_ALLOWED_ASCII_VALUE;
+               char[] newKey = key.toCharArray();
+               newKey[i] = (char)value;
+               key = newKey.toString();
+            }
+            else{
+                value++;
+                char[] newKey = key.toCharArray();
+                newKey[i] = (char)value;
+                key = newKey.toString();
+                break;
+            }
+
+
+        }
+
+        return key;
     }
 
     /**
