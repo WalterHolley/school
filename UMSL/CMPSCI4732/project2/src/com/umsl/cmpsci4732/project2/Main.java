@@ -12,14 +12,26 @@ import java.security.SecureRandom;
 
 public class Main {
 
-
+    private static Settings settings = new Settings();
 
     public static void main(String[] args) {
-	    init();
+	    if(init()){
+
+        }
+        else {
+            System.out.println("The program stopped unexpectedly");
+        }
 
         System.out.println("Exiting Program");
     }
 
+    /**
+     * Initializes the application.
+     * Creates files and object neccessary
+     * for program to funtion
+     * @return true if initialization completed
+     * successfully.  otherwise false.
+     */
     private static boolean init(){
         File f = new File(Constants.KEYSTORE_FILE_NAME);
         boolean result = true;
@@ -50,16 +62,19 @@ public class Main {
             }
             catch (KeyStoreException ex){
                 System.out.println("There was a problem initializing security for the program");
+                result = false;
             }
             catch (FileNotFoundException ex){
                 System.out.println("There was a problem creating the keystore  file");
+                result = false;
             }
             catch (Exception ex){
                 System.out.println("There was a problem initializing the program");
+                result = false;
             }
-
-
         }
+
+        settings = new Settings();
 
         return result;
 
@@ -67,6 +82,5 @@ public class Main {
 
     //UX for file reading
     //UX for updating settings
-    //UX for adding settings
-    //UX for removing settings
+
 }
