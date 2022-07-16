@@ -6,14 +6,14 @@ import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.*;
+import java.nio.file.Files;
 import java.security.*;
 import java.security.cert.CertificateException;
-import java.text.FieldPosition;
 import java.util.HashMap;
 
 public class Settings {
     private static final String CONFIG_FILE_NAME = "settings.cfg";
-    private HashMap<String, Object> configFile;
+    private HashMap<String, Object> configMap;
 
 
     public Settings(){
@@ -21,23 +21,23 @@ public class Settings {
     }
 
     public void setDogName(String dogName){
-        configFile.put("DogName", dogName);
+        configMap.put("DogName", dogName);
     }
 
     public void setAge(int age){
-        configFile.put("Age", age);
+        configMap.put("Age", age);
     }
 
     public void setWeight(float weight){
-        configFile.put("Weight", weight);
+        configMap.put("Weight", weight);
     }
 
     public String getDogName(){
-        return (String)configFile.get("DogName");
+        return (String) configMap.get("DogName");
     }
 
     public Integer getAge(){
-        return (Integer) configFile.get("Age");
+        return (Integer) configMap.get("Age");
     }
 
     /**
@@ -45,24 +45,47 @@ public class Settings {
      * @return float of the dog's weight
      */
     public float getWeight(){
-        return (float) configFile.get("Weight");
+        return (float) configMap.get("Weight");
     }
 
     //TODO: load settings
     private void loadConfig(){
+        File file = new File(CONFIG_FILE_NAME);
+        try{
+            if(file.exists()){
 
+                byte[] configFile = Files.readAllBytes(file.toPath());
+                byte[] configObject = decrypt(configFile);
+
+                ObjectInputStream objectStream = new ObjectInputStream(new ByteArrayInputStream(configObject));
+                configMap = (HashMap<String, Object>) objectStream.readObject();
+
+
+
+            }
+        } catch (FileNotFoundException e) {
+            //TODO: handle exception message
+            e.printStackTrace();
+        } catch (IOException e) {
+            //TODO: Handle Exception message
+            e.printStackTrace();
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
     }
 
-    //TODO: save settings
+    /**
+     * Save the configuration file to disk
+     */
     private void saveConfig() {
 
-        if(!configFile.isEmpty() && configFile != null){
+        if(!configMap.isEmpty() && configMap != null){
 
             try {
                 //convert object to byte array
                 ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
                 ObjectOutputStream outputStream = new ObjectOutputStream(byteStream);
-                outputStream.writeObject(configFile);
+                outputStream.writeObject(configMap);
 
                 //save to file
                  FileOutputStream fileOutputStream = new FileOutputStream(CONFIG_FILE_NAME);
@@ -79,6 +102,60 @@ public class Settings {
         }
     }
 
+    /**
+     * Decrypts a DESede encrypted object
+     * @param encryptedByteArray The encrypted byte array
+     * @return the decrytped byte array
+     */
+    private byte[] decrypt(byte[] encryptedByteArray){
+        byte[] result = null;
+
+        try{
+            //load keystore
+            KeyStore ks = KeyStore.getInstance(Constants.KEYSTORE_TYPE);
+            ks.load(new FileInputStream(Constants.KEYSTORE_FILE_NAME), Constants.KEYSTORE_PASSWORD.toCharArray());
+
+            //get key
+            KeyStore.ProtectionParameter pwd = new KeyStore.PasswordProtection(Constants.KEYSTORE_PASSWORD.toCharArray());
+            Key ksKey = ks.getKey(Constants.KEYSTORE_ALIAS, Constants.KEYSTORE_PASSWORD.toCharArray());
+            SecretKeySpec key = new SecretKeySpec(ksKey.getEncoded(), ksKey.getAlgorithm());
+
+            //setup cipher
+            Cipher cipher = Cipher.getInstance(Constants.CIPHER_INSTANCE);
+            cipher.init(Cipher.DECRYPT_MODE, key);
+
+            result = cipher.doFinal(encryptedByteArray);
+
+        } catch (UnrecoverableKeyException e) {
+            e.printStackTrace();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (NoSuchPaddingException e) {
+            e.printStackTrace();
+        } catch (CertificateException e) {
+            e.printStackTrace();
+        } catch (KeyStoreException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        } catch (InvalidKeyException e) {
+            e.printStackTrace();
+        } catch (IllegalBlockSizeException e) {
+            e.printStackTrace();
+        } catch (BadPaddingException e) {
+            e.printStackTrace();
+        }
+
+        return result;
+    }
+
+    /**
+     * Encrypt the given content
+     * @param byteArray An array of bytes to encrypt
+     * @return the encrypyted bytes
+     */
     private byte[] encrypt(byte[] byteArray){
 
         byte[] result = null;
@@ -144,13 +221,14 @@ public class Settings {
 
         //load settings
         if(f.exists()){
+            loadConfig();
 
         }//create settings
         else{
-            configFile = new HashMap<>();
-            configFile.put("DogName", "Kookie");
-            configFile.put("Age", 4);
-            configFile.put("Weight", 50.2);
+            configMap = new HashMap<>();
+            configMap.put("DogName", "Kookie");
+            configMap.put("Age", 4);
+            configMap.put("Weight", 50.2);
 
             saveConfig();
         }

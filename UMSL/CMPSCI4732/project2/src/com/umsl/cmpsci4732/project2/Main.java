@@ -72,6 +72,9 @@ public class Main {
                 result = false;
             }
         }
+        else{
+            settings = new Settings();
+        }
 
 
 
