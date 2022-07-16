@@ -12,11 +12,11 @@ import java.security.SecureRandom;
 
 public class Main {
 
-    private static Settings settings = new Settings();
+    private static Settings settings;
 
     public static void main(String[] args) {
 	    if(init()){
-
+            settings = new Settings();
         }
         else {
             System.out.println("The program stopped unexpectedly");
@@ -40,24 +40,23 @@ public class Main {
         if(!f.exists()){
             try{
                 //create keystore
-                KeyStore ks = KeyStore.getInstance(KeyStore.getDefaultType());
+                KeyStore ks = KeyStore.getInstance(Constants.KEYSTORE_TYPE);
                 SecureRandom random = new SecureRandom();
-
-                //save keystore
-                FileOutputStream fo = new FileOutputStream(Constants.KEYSTORE_FILE_NAME);
-                ks.store(fo, Constants.KEYSTORE_PASSWORD.toCharArray());
-                ks.load(new FileInputStream(Constants.KEYSTORE_FILE_NAME), Constants.KEYSTORE_PASSWORD.toCharArray());
-
+                ks.load(null, null);
 
                 //create key
-                KeyGenerator generator = KeyGenerator.getInstance("AES");
-                generator.init(256, random);
+                KeyGenerator generator = KeyGenerator.getInstance(Constants.KEYGEN_INSTANCE);
+                generator.init(168, random);
                 SecretKey key = generator.generateKey();
 
                 KeyStore.SecretKeyEntry entry = new KeyStore.SecretKeyEntry(key);
                 KeyStore.ProtectionParameter pwd = new KeyStore.PasswordProtection(Constants.KEYSTORE_PASSWORD.toCharArray());
                 ks.setEntry(Constants.KEYSTORE_ALIAS, entry, pwd);
+
+                //save keystore
                 ks.store(new FileOutputStream(Constants.KEYSTORE_FILE_NAME), Constants.KEYSTORE_PASSWORD.toCharArray());
+                settings = new Settings();
+
 
             }
             catch (KeyStoreException ex){
@@ -74,7 +73,7 @@ public class Main {
             }
         }
 
-        settings = new Settings();
+
 
         return result;
 
