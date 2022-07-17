@@ -22,7 +22,7 @@ public class Security {
     }
 
     public byte[] encrypt(byte[] plainBytes){
-        byte[] result = null;
+        byte[] result;
 
         result = translate(plainBytes,false);
         return  result;
@@ -34,14 +34,16 @@ public class Security {
      * @return byte array ofthe decrypted bytes
      */
     public byte[] decrypt(byte[] cipherBytes){
-        byte[] result = null;
+        byte[] result;
         result = translate(cipherBytes, true);
         return  result;
     }
 
     /**
-     * Retrieves keystore
-     * @return
+     * Retrieves keystore for the application,
+     * otherwise creates a new one if it doesn't
+     * exist
+     * @return The keystore for the settings file
      */
     private KeyStore getKeystore(){
 
@@ -63,13 +65,13 @@ public class Security {
             }
 
         } catch (CertificateException e) {
-            e.printStackTrace();
+            System.out.println("There was a problem: " + e.getMessage());
         } catch (KeyStoreException e) {
-            e.printStackTrace();
+            System.out.println("There was a problem with the keystore: " + e.getMessage());
         } catch (IOException e) {
-            e.printStackTrace();
+            System.out.println("There was a problem with the keystore file: " + e.getMessage());
         } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
+            System.out.println("There was a problem with the keystore algorithm: " + e.getMessage());
         }
 
         return  ks;
@@ -99,7 +101,8 @@ public class Security {
 
     /**
      * Retrieves the key from the existing keystore
-     * @return
+     * @return Secret key object containing the private
+     * key
      */
     private SecretKey getKey(){
         SecretKeySpec key = null;
@@ -110,14 +113,11 @@ public class Security {
             key = new SecretKeySpec(ksKey.getEncoded(), ksKey.getAlgorithm());
 
         } catch (UnrecoverableKeyException e) {
-            //TODO: create better exception message
-            e.printStackTrace();
+            System.out.println("There was a problem with the key: " + e.getMessage());
         } catch (KeyStoreException e) {
-            //TODO: create better exception message
-            e.printStackTrace();
+            System.out.println("There was a problem with the keystore: " + e.getMessage());
         } catch (NoSuchAlgorithmException e) {
-            //TODO: create better exception message
-            e.printStackTrace();
+            System.out.println("There was a problem with the key algorithm: " + e.getMessage());
         }
 
 
@@ -126,8 +126,8 @@ public class Security {
 
     /**
      * Adds a key to the given keystore
-     * @param ks
-     * @param key
+     * @param ks The keystore to add the key to
+     * @param key The secret key to be added
      */
     private void addKey(KeyStore ks, SecretKey key){
 
@@ -163,21 +163,16 @@ public class Security {
             result = cipher.doFinal(byteArray);
         }
         catch (NoSuchPaddingException e) {
-            //TODO: provide exception message
-            e.printStackTrace();
+            System.out.println("There was a problem with the translation padding: " + e.getMessage());
         }
         catch (NoSuchAlgorithmException e) {
-            //TODO: provide exception message
-            e.printStackTrace();
+            System.out.println("There was a problem with the translation algorithm: " + e.getMessage());
         }  catch (InvalidKeyException e) {
-            //TODO: provide exception message
-            e.printStackTrace();
+            System.out.println("There was a problem with the message credentials: " + e.getMessage());
         } catch (IllegalBlockSizeException e) {
-            //TODO: provide exception message
-            e.printStackTrace();
+            System.out.println("There was a problem with the message size " + e.getMessage());
         } catch (BadPaddingException e) {
-            //TODO: provide exception message
-            e.printStackTrace();
+            System.out.println("There was a problem padding the message: " + e.getMessage());
         }
 
         return result;
