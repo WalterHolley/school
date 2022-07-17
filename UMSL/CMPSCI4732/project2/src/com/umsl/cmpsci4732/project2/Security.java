@@ -49,9 +49,11 @@ public class Security {
         File file  = new File(KEYSTORE_FILE_NAME);
 
         try{
+            ks = KeyStore.getInstance(KEYSTORE_TYPE);
+
             if(!file.exists()){
                 //create keystore
-                ks = KeyStore.getInstance(KEYSTORE_TYPE);
+
                 ks.load(null, null);
                 addKey(ks, createKey());
                 ks.store(new FileOutputStream(KEYSTORE_FILE_NAME), KEYSTORE_PASSWORD.toCharArray());

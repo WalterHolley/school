@@ -7,12 +7,16 @@ public class Main {
 
     public static void main(String[] args) {
         init();
+
+        /*
         boolean appRunning = true;
 
         while (appRunning) {
 
 
         }
+        */
+
 
         System.out.println("Exiting Program");
     }
