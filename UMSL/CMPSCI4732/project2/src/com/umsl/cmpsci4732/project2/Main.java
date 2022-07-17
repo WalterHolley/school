@@ -26,7 +26,6 @@ public class Main {
 
             try{
                 int selection = consoleReader.nextInt();
-                consoleReader.nextLine();
 
                 switch(selection) {
                     case 1:
@@ -101,12 +100,11 @@ public class Main {
             System.out.println("********************");
             System.out.println("1 >>>> Change dog's name");
             System.out.println("2 >>>> Change dog's age");
-            System.out.println("3 >>>> Change dog's height");
+            System.out.println("3 >>>> Change dog's weight");
             System.out.println("4 >>>> Back(commits changes)");
 
             try{
                 int selection = consoleReader.nextInt();
-                consoleReader.nextLine();
 
                 switch(selection) {
                     case 1:
@@ -157,7 +155,6 @@ public class Main {
         int input = Integer.MIN_VALUE;
         boolean tryAgain = false;
 
-        consoleReader.nextLine();
 
         do {
             //get input from user
@@ -170,6 +167,7 @@ public class Main {
             }
             catch (Exception ex){
                 System.out.println("The input should be a whole number.  No special or alpha characters. No Spaces.  Greater than zero.");
+                consoleReader.nextLine();
                 tryAgain = yesOrNoResponse(TRY_AGAIN_MESSAGE);
             }
             consoleReader.nextLine();
@@ -188,8 +186,6 @@ public class Main {
         float input = -1;
         boolean tryAgain = false;
 
-        consoleReader.nextLine();
-
         do {
             //get input from user
             System.out.println("Update the dog's weight.  Enter a positive number, greater than zero: ");
@@ -201,7 +197,7 @@ public class Main {
                 consoleReader.nextLine();
             }
             catch (Exception ex){
-                System.out.println("The input should be a whole number.  No special or alpha characters. No Spaces.  Greater than zero.");
+                System.out.println("The input should be a number.  No special or alpha characters. No Spaces.  Greater than zero.");
                 consoleReader.nextLine();
                 tryAgain = yesOrNoResponse(TRY_AGAIN_MESSAGE);
             }
