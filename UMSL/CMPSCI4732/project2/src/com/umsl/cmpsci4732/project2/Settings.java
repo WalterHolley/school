@@ -22,7 +22,7 @@ public class Settings {
         configMap.put("Age", age);
     }
 
-    public void setWeight(float weight){
+    public void setWeight(double weight){
         configMap.put("Weight", weight);
     }
 
@@ -38,11 +38,14 @@ public class Settings {
      * Returns the weight of the dod
      * @return float of the dog's weight
      */
-    public float getWeight(){
-        return (float) configMap.get("Weight");
+    public double getWeight(){
+        return (double) configMap.get("Weight");
     }
 
-    //TODO: load settings
+    /**
+     * Retrieve settings from file, otherwise create
+     * default settings
+     */
     private void loadConfig(){
         File file = new File(CONFIG_FILE_NAME);
         try{
@@ -58,21 +61,19 @@ public class Settings {
 
             }
         } catch (FileNotFoundException e) {
-            //TODO: handle exception message
-            e.printStackTrace();
+            System.out.println("There was a problem loading the configuration file:" + e.getMessage());
         } catch (IOException e) {
-            //TODO: Handle Exception message
-            e.printStackTrace();
+            System.out.println("There was a problem loading the configuration file:" + e.getMessage());
         } catch (ClassNotFoundException e) {
-            e.printStackTrace();
+            System.out.println("There was a problem translating the configuration file:" + e.getMessage());
         }
     }
 
     /**
-     * Save the configuration file to disk
+     * Save the configuration
      */
-    private void saveConfig() {
-
+    public boolean saveConfig() {
+        boolean result = false;
         if(!configMap.isEmpty() && configMap != null){
 
             try {
@@ -86,14 +87,17 @@ public class Settings {
                  fileOutputStream.write(security.encrypt(byteStream.toByteArray()));
                  fileOutputStream.close();
 
+                 result = true;
+
 
             } catch (IOException e) {
-                //TODO: provide exception message
-                e.printStackTrace();
+                System.out.println("There was a problem saving the configuration file:" + e.getMessage());
             }
 
 
         }
+
+        return result;
     }
 
 
