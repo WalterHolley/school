@@ -109,6 +109,7 @@ public class Main {
                 switch(selection) {
                     case 1:
                         //update dog name
+                        consoleReader.nextLine();
                         String newName = askForText("Enter the dog's new name");
                         if(newName != null && !newName.isEmpty())
                             settings.setDogName(newName);
