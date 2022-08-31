@@ -42,7 +42,7 @@ function main(){
     initVBuffers(gl);
 
     //set color for empty canvas
-    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+    gl.clearColor(0.850, 0.765, 0.765, 1.0);
 
     //clear canvas
     gl.clear(gl.COLOR_BUFFER_BIT);
