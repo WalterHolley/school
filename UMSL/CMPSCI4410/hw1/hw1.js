@@ -1,4 +1,7 @@
 //HW1.js
+//Walter Holley III
+//Fall 2022
+
 /*
 Creates a single, random triangle and
 draws it to an HTML canvas.
@@ -22,6 +25,7 @@ let FSHADER = `#version 300 es
     fragColor = vertColor;
   }`;
 
+//Main entrypoint of program.
 function main(){
   var canvas = document.getElementById("canvas");
   let gl = canvas.getContext("webgl2");
@@ -47,13 +51,14 @@ function main(){
     gl.drawArrays(gl.TRIANGLES, 0, 3);
 
   }
+}
 
   //Initializes the vertex buffer
   function initVBuffers(gl){
     //create triangle points and colors
     var triangleProperties = new Float32Array(15);
     for(var i = 0; i < 15; i++){
-      triangleProperties[i] = Math.random();
+      triangleProperties[i] = Math.random() * (1 - -1) + -1;
     }
 
     //create data buffer
@@ -79,4 +84,3 @@ function main(){
     gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
   }
-}
