@@ -9,10 +9,9 @@ The primary entry point of the program.  Reads input from the user, and
 parses that input into a tree structure.  Also acts as the user experience
 for the command line application
 */
-#include<iostream>
-#include<sstream>
+#include <iostream>
+#include <fstream>
 #include<string>
-#include <coni
 using namespace std;
 
 #define ESC 27
@@ -25,7 +24,21 @@ using namespace std;
  */
 bool processFile(string fileName)
 {
+    ifstream inputFile (fileName);
     bool fileProcessed = false;
+
+    if(inputFile.is_open())
+    {
+        string fileLine;
+        while(getline(inputFile, fileLine))
+        {
+            //parse words
+
+            //skip space, tab, newline, etc.
+
+            //add word to tree
+        }
+    }
 
     return fileProcessed;
 
@@ -45,38 +58,22 @@ bool processFile(string fileName)
  */
 void askForInput()
 {
-    bool getInput = true;
-    string input = "";
     string completeUserInput = "";
     char inputChar;
 
-    cout << "Enter the input you wish to process. You can end the process anytime by pushing the ESC key";
+    cout << "Enter the input you wish to process. You can end the process anytime by sending the EOF command";
     cout << "\n";
     
-    while(getInput)
+    while((inputChar = getchar()) != EOF)
     {
-        _getch
-
-        //check for escape key press
-        
-        if(input.find(ESC) != -1)
-        {
-            input += inputChar;
-        }
-        else
-        {
-            getInput = false;
-        }
-
+        completeUserInput += inputChar;
     }
 
-
-
     //add given input to the tree
-    cout << "Input from user: \n";
-    cout << input;
 
 }
+
+
 
 //MAIN ENTRY POINT OF PROGRAM
 int main(int argc, char *argv[])

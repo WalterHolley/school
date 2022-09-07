@@ -23,3 +23,6 @@ UMSL/CMPSCI2750/project3/calc
 UMSL/CMPSCI4250/project1/build/
 UMSL/CMPSCI2750/project3/build/Debug/outDebug.exe
 *.exe
+UMSL/CMPSCI4280/project0/main.dSYM/Contents/Resources/DWARF/main
+UMSL/CMPSCI4280/project0/main.dSYM/Contents/Info.plist
+.vscode/tasks.json
