@@ -16,6 +16,14 @@ using namespace std;
 
 #define ESC 27
 
+void readFromConsole(istream& input)
+{
+    while(input)
+    {
+        cout << char(input.get());
+    }
+}
+
 /**
  * @brief Reads a file provided by the application into the the tree
  * 
@@ -78,10 +86,26 @@ void askForInput()
 //MAIN ENTRY POINT OF PROGRAM
 int main(int argc, char *argv[])
 {
-    //if 0 arg counts, do user input UX
-    askForInput();
+   
 
-    //check for file
+    //check for file if argc == 1
+    if(argc == 1)
+    {
+        cout << "One argument \n";
+
+        cout << argv[0];
+    } //if 0 arg counts, do user input UX
+    else if(argc == 0)
+    {
+        
+        askForInput();
+    }
+    else
+    {
+        cout << argv;
+    }
+
+    //read from stdin if args > 1
 
     //load or handle file issues
 

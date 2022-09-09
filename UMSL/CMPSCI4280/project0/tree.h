@@ -11,5 +11,6 @@ enum PrintOrder
 };
 
 void add(string value );
-node getTree();
+//node getTree();
 void print();
+void setPrintOrder(PrintOrder order);
