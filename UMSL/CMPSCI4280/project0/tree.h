@@ -1,3 +1,5 @@
+#ifndef TREE_H
+#define TREE_H
 #include "node.h"
 #include <iostream>
 #include  <string>
@@ -10,7 +12,14 @@ enum PrintOrder
     PostOrder = 2
 };
 
-void add(string value );
-//node getTree();
-void print();
-void setPrintOrder(PrintOrder order);
+class Tree
+{
+    private:
+        PrintOrder printOrder;
+    public:
+        Tree();
+        void add(string value );
+        //node getTree();
+        void print();
+        void setPrintOrder(PrintOrder order);
+};

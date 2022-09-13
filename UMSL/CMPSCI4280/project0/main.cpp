@@ -11,10 +11,15 @@ for the command line application
 */
 #include <iostream>
 #include <fstream>
+//#include <unistd.h>
 #include<string>
+#include "tree.h"
 using namespace std;
 
 #define ESC 27
+
+//Tree to be used for application
+Tree tree;
 
 void readFromConsole(istream& input)
 {
@@ -81,33 +86,69 @@ void askForInput()
 
 }
 
+void buildTree(string content)
+    {
+        string delimeter = " ";
+        string token = "";
+        size_t position = 0;
+
+        //init tree
+        if(&tree == NULL)
+        {
+            tree = Tree();
+        }
+        
+         //split up input 
+        while((position = content.find(delimeter)) != string::npos)
+        {
+            token = content.substr(0,position);
+            content.erase(0, position + delimeter.length());
+            tree.add(token);
+        }   
+    }
+
 
 
 //MAIN ENTRY POINT OF PROGRAM
 int main(int argc, char *argv[])
 {
-   
-
-    //check for file if argc == 1
-    if(argc == 1)
+    //read file
+    if(argc > 1)
     {
-        cout << "One argument \n";
-
-        cout << argv[0];
-    } //if 0 arg counts, do user input UX
-    else if(argc == 0)
-    {
-        
-        askForInput();
-    }
+        cout << argv[1] << endl;
+        filebuf fb;
+        if(fb.open(argv[1], ios::in))
+        {
+            istream stream(&fb);
+            string line = "";
+            while (stream)
+            {
+                getline(stream, line);
+                buildTree(line);
+            }
+            
+        }
+    }  
     else
     {
-        cout << argv;
+        //check for input from stdin
+        if(cin.eof())
+        {
+            //read from keyboard
+            askForInput();
+        }
+        else
+        {
+            while(!cin.eof())
+            {
+                string line;
+                getline(cin, line);
+                cout << line << endl;
+            }
+        }
     }
 
-    //read from stdin if args > 1
-
-    //load or handle file issues
+    //continue if tree has been built
 
     //UX for printing order
     return 0;
