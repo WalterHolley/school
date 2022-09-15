@@ -9,3 +9,10 @@ struct node
     struct node* right;
         
 };
+
+enum PrintOrder
+{
+    InOrder = 0,
+    PreOrder = 1,
+    PostOrder = 2
+};

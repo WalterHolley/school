@@ -11,107 +11,21 @@ for the command line application
 */
 #include <iostream>
 #include <fstream>
-//#include <unistd.h>
 #include<string>
 #include "tree.h"
 using namespace std;
 
-#define ESC 27
-
 //Tree to be used for application
 Tree tree;
-
-void readFromConsole(istream& input)
-{
-    while(input)
-    {
-        cout << char(input.get());
-    }
-}
-
-/**
- * @brief Reads a file provided by the application into the the tree
- * 
- * @return true  = file reading was successful
- * @return false  = file reading failed
- */
-bool processFile(string fileName)
-{
-    ifstream inputFile (fileName);
-    bool fileProcessed = false;
-
-    if(inputFile.is_open())
-    {
-        string fileLine;
-        while(getline(inputFile, fileLine))
-        {
-            //parse words
-
-            //skip space, tab, newline, etc.
-
-            //add word to tree
-        }
-    }
-
-    return fileProcessed;
-
-}
-
- bool processUserInput(string input)
-{
-    bool inputProcessed = false;
-
-    return inputProcessed;
-
-}
-
-/**
- * @brief Reads input from user until the ESC key is pressed
- * passes collected input to the tree
- */
-void askForInput()
-{
-    string completeUserInput = "";
-    char inputChar;
-
-    cout << "Enter the input you wish to process. You can end the process anytime by sending the EOF command";
-    cout << "\n";
-    
-    while((inputChar = getchar()) != EOF)
-    {
-        completeUserInput += inputChar;
-    }
-
-    //add given input to the tree
-
-}
-
-void buildTree(string content)
-    {
-        string delimeter = " ";
-        string token = "";
-        size_t position = 0;
-
-        //init tree
-        if(&tree == NULL)
-        {
-            tree = Tree();
-        }
-        
-         //split up input 
-        while((position = content.find(delimeter)) != string::npos)
-        {
-            token = content.substr(0,position);
-            content.erase(0, position + delimeter.length());
-            tree.add(token);
-        }   
-    }
 
 
 
 //MAIN ENTRY POINT OF PROGRAM
 int main(int argc, char *argv[])
 {
+    //init tree
+    tree = Tree();
+
     //read file
     if(argc > 1)
     {
@@ -124,32 +38,29 @@ int main(int argc, char *argv[])
             while (stream)
             {
                 getline(stream, line);
-                buildTree(line);
+                tree.buildTree(line);
             }
             
+        }
+        else
+        {
+            cout << argv[1] << ": File not found"<< endl;
         }
     }  
     else
     {
         //check for input from stdin
-        if(cin.eof())
+        cout << "Stream / type input you wish to provide.  If typing, press enter after each line, and send the EOF command when done."<< endl;
+        while(!cin.eof())
         {
-            //read from keyboard
-            askForInput();
+            string line;
+            getline(cin, line);
+            tree.buildTree(line);
         }
-        else
-        {
-            while(!cin.eof())
-            {
-                string line;
-                getline(cin, line);
-                cout << line << endl;
-            }
-        }
+        tree.printPreOrder();
     }
 
     //continue if tree has been built
 
-    //UX for printing order
     return 0;
 }
