@@ -6,12 +6,44 @@ using namespace std;
 
 //*****HELPER FUNCTIONS*******//
 
-void printNode(node* Node, int depth)
+void printNode(node* Node, int depth, FILE* outputFile)
 {
-    printf("%*c%d:%-9s ",depth*2,' ',depth,Node->value.c_str());
-    printf("\n");
+    
+    fprintf(outputFile, "%*c%.1s:%-9s", depth*2, ' ', Node->value.c_str(), Node->value.c_str());
+    fprintf(outputFile, "\n");
 }
 
+/**
+ * @brief deletes a node and its children
+ * from memory
+ * @param Node the node to clean up 
+ */
+void cleanup(node* Node)
+{
+    if(Node->left)
+    {
+        cleanup(Node->left);
+    }
+
+    if(Node->right)
+    {
+        cleanup(Node->right);
+    }
+
+    if(Node->center)
+    {
+        cleanup(Node->center);
+    }
+
+    delete Node;
+}
+
+/**
+ * @brief Inserts a given value into the next
+ * available location in the tree.
+ * @param value the value to insert
+ * @param Node the node to start the search from
+ */
 void addValueToNode(string value, node* Node)
 {
     node* nextNode;
@@ -65,60 +97,60 @@ void addValueToNode(string value, node* Node)
  * @param Node the node to process
  * @param depth the current depth of the tree
  */
-void doPreOrder(node* Node, int depth)
+void doPreOrder(node* Node, int depth, FILE* outputFile)
 {
     if(!Node->value.empty())
     {
-        printNode(Node, depth);
+        printNode(Node, depth, outputFile);
     }
 
     if(Node->left)
     {
-        doPreOrder(Node->left, depth + 1);
+        doPreOrder(Node->left, depth + 1, outputFile);
     }
 
     if(Node->center)
     {
-        doPreOrder(Node->center, depth + 1);
+        doPreOrder(Node->center, depth + 1, outputFile);
     }
 
     if(Node->right)
     {
-        doPreOrder(Node->right, depth + 1);
+        doPreOrder(Node->right, depth + 1, outputFile);
     }
 }
 
 /**
- * @brief prints the tree in pre-order
+ * @brief prints the tree in in-order
  * fashion
  * @param Node the node to process 
  * @param depth the depth of the node
  */
-void doInOrder(node* Node, int depth)
+void doInOrder(node* Node, int depth, FILE* outputFile)
 {
     
     //process left
     if(Node->left)
     {
-        doPreOrder(Node->left, depth + 1);
+        doInOrder(Node->left, depth + 1, outputFile);
     }
 
     //process root
     if(!Node->value.empty())
     {
-        printNode(Node, depth);
+        printNode(Node, depth, outputFile);
     }
 
     //process center
     if(Node->center)
     {
-        doPreOrder(Node->center, depth + 1);
+        doInOrder(Node->center, depth + 1, outputFile);
     }
 
     //process right
     if(Node->right)
     {
-        doPreOrder(Node->right, depth + 1);
+        doInOrder(Node->right, depth + 1, outputFile);
     }
 }
 
@@ -128,55 +160,40 @@ void doInOrder(node* Node, int depth)
  * @param Node the node to be printed
  * @param depth depth of the node in the tree
  */
-void doPostOrder(node* Node, int depth)
+void doPostOrder(node* Node, int depth, FILE* outputFile)
 {
     //process left
     if(Node->left)
     {
-        doPreOrder(Node->left, depth + 1);
+        doPostOrder(Node->left, depth + 1, outputFile);
     }
 
     //process center
     if(Node->center)
     {
-        doPreOrder(Node->center, depth + 1);
+        doPostOrder(Node->center, depth + 1, outputFile);
     }
 
     //process right
     if(Node->right)
     {
-        doPreOrder(Node->right, depth + 1);
+        doPostOrder(Node->right, depth + 1, outputFile);
     }
 
     //process root
     if(!Node->value.empty())
     {
-        printNode(Node, depth);
+        printNode(Node, depth, outputFile);
     }
 }
 
-//*****CLASS FUNCTIONS*****//
-Tree::Tree()
-{
-    _parent = new node;
-}
-
-void Tree::printInOrder()
-{
-    doInOrder(_parent, 1);
-}
-
-void Tree::printPreOrder()
-{
-    doPreOrder(_parent, 1);
-}
-
-void Tree::printPostOrder()
-{
-    doPostOrder(_parent, 1);
-}
-
-void Tree::buildTree(string content)
+/**
+ * @brief parses strings into individual tokens
+ * which are then added to the tree
+ * @param content the string content to parse
+ * @param Node the location to begin searching for inserting content
+ */
+void parseContent(string content, node* Node)
 {
     string delimeter = " ";
     string token = "";
@@ -187,22 +204,157 @@ void Tree::buildTree(string content)
     {
         token = content.substr(0,position);
         content.erase(0, position + delimeter.length());
-        addValueToNode(token, _parent);
+        addValueToNode(token, Node);
     }
     //add final string if any
     if(!content.empty())
     {
-        addValueToNode(content, _parent);
+       addValueToNode(content, Node);
     } 
 }
 
-    /**
-     * @brief Gets the parent node of the tree
-     * 
-     * @return node* 
-     */
-    node* Tree::getParent()
+//*****CLASS FUNCTIONS*****//
+Tree::Tree()
+{
+    _parent = new node;
+}
+
+/**
+ * @brief Prints tree to a file using 
+ * in-order process
+ * 
+ * @param fileName name of file to write
+ */
+void Tree::printInOrder(string fileName)
+{
+       try
     {
-        return _parent;
+        FILE* outputFile;
+        if(_parent && (!_parent->value.empty()))
+        {
+            outputFile = fopen(fileName.c_str(), "w");
+            doInOrder(_parent, 1, outputFile);
+            fclose(outputFile);
+        }
+        else
+        {
+            cout << "The tree is empty" <<endl;
+        }
     }
+    catch(const std::exception& e)
+    {
+        cout << "There was a problem writing the postOrder file" <<endl;
+        std::cerr << e.what() << '\n';
+    }
+}
+
+void Tree::printPreOrder(string fileName)
+{
+       try
+    {
+        FILE* outputFile;
+        if(_parent && (!_parent->value.empty()))
+        {
+            outputFile = fopen(fileName.c_str(), "w");
+            doPreOrder(_parent, 1, outputFile);
+            fclose(outputFile);
+        }
+        else
+        {
+            cout << "The tree is empty" <<endl;
+        }
+    }
+    catch(const std::exception& e)
+    {
+        cout << "There was a problem writing the postOrder file" <<endl;
+        std::cerr << e.what() << '\n';
+    }
+}
+
+void Tree::printPostOrder(string fileName)
+{
+    try
+    {
+        FILE* outputFile;
+        if(_parent && (!_parent->value.empty()))
+        {
+            outputFile = fopen(fileName.c_str(), "w");
+            doPostOrder(_parent, 1, outputFile);
+            fclose(outputFile);
+        }
+        else
+        {
+            cout << "The tree is empty" <<endl;
+        }
+    }
+    catch(const std::exception& e)
+    {
+        cout << "There was a problem writing the postOrder file" <<endl;
+        std::cerr << e.what() << '\n';
+    }
+}
+
+/**
+ * @brief Creates a binary tree from file content
+ * 
+ * @param fileName name of the file to read
+ * @returns true if content parsing is successful,
+ * otherwise false
+ */
+bool Tree::buildTree(string fileName)
+{
+    filebuf fb;
+    bool result = false;
+    if(fb.open(fileName, ios::in))
+    {
+        istream stream(&fb);
+        string line;
+        try
+        {
+            getline(stream, line);
+            while(stream)
+            {
+                parseContent(line, _parent);
+                getline(stream, line);
+                
+            }
+            fb.close();
+            result = true;
+        }
+        catch(const std::exception& e)
+        {
+            cout << "An error occurred while building the tree"<<endl;
+            std::cerr << e.what() << '\n';
+        } 
+    }
+    else
+    {
+        cout << fileName <<": File not found"<<endl;
+    }
+
+    return result;
+}
+
+/**
+* @brief Gets the parent node of the tree
+* 
+* @return node* 
+*/
+node* Tree::getParent()
+{
+    return _parent;
+}
+
+Tree::~Tree() 
+{
+    try{
+      // cleanup(_parent);
+       //_parent = NULL;
+    }
+    catch(const exception& e)
+    {
+
+    }
+    
+}
 

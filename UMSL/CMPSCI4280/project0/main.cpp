@@ -18,7 +18,93 @@ using namespace std;
 //Tree to be used for application
 Tree tree;
 
+const string OUTPUT_FILE_PREORDER = "output.preorder";
+const string OUTPUT_FILE_POSTORDER = "output.postorder";
+const string OUTPUT_FILE_INORDER = "output.inorder";
+const string TEMP_FILE = "temp.in";
+const string PRE_ORDER_EXTENSION = ".preorder";
+const string POST_ORDER_EXTENSION = ".postorder";
+const string IN_ORDER_EXTENSION = ".inorder";
 
+void cleanup()
+{
+    //Delete Temp File
+    remove(TEMP_FILE.c_str());  
+}
+
+
+void processFile(string fileName)
+{
+    if(tree.buildTree(fileName.c_str()))
+    {
+        
+        string inOrderFile;
+        string postOrderFile;
+        string preOrderFile;
+           
+        //inOrder file name
+        inOrderFile.append(fileName);
+        inOrderFile.append(IN_ORDER_EXTENSION);
+
+        //postOrder fileName
+        postOrderFile.append(fileName);
+        postOrderFile.append(POST_ORDER_EXTENSION);
+
+        //preOrder filename
+        preOrderFile.append(fileName);
+        preOrderFile.append(PRE_ORDER_EXTENSION);
+
+        //clear existing output files if any
+        remove(inOrderFile.c_str());
+        remove(preOrderFile.c_str());
+        remove(postOrderFile.c_str());
+
+        tree.printInOrder(fileName + IN_ORDER_EXTENSION);
+        tree.printPreOrder(fileName + PRE_ORDER_EXTENSION);
+        tree.printPostOrder(fileName + POST_ORDER_EXTENSION);
+    }
+    else
+    {
+        cout << "There was a problem building the tree."<<endl;
+    }
+    
+}
+
+void processTempFile()
+{
+    ofstream tempFile(TEMP_FILE);
+    //check for input from stdin
+    cout << "Stream / type input you wish to provide.  If typing, press enter after each line, and send the EOF command when done."<< endl;
+        
+    while(!cin.eof())
+    {
+        string line;
+        getline(cin, line);
+        tempFile << line;
+    }
+
+    tempFile.close();
+    if(tree.buildTree(TEMP_FILE))
+    {
+        //clear existing output files if any
+        remove(OUTPUT_FILE_INORDER.c_str());
+        remove(OUTPUT_FILE_POSTORDER.c_str());
+        remove(OUTPUT_FILE_PREORDER.c_str());
+
+        //process new files
+        tree.printInOrder(OUTPUT_FILE_INORDER);
+        tree.printPreOrder(OUTPUT_FILE_PREORDER);
+        tree.printPostOrder(OUTPUT_FILE_POSTORDER);
+    }
+    else
+    {
+        cout << "There was a problem building the tree."<<endl;
+    }
+
+    //cleanup temp file
+    remove(TEMP_FILE.c_str());
+    
+}
 
 //MAIN ENTRY POINT OF PROGRAM
 int main(int argc, char *argv[])
@@ -29,38 +115,13 @@ int main(int argc, char *argv[])
     //read file
     if(argc > 1)
     {
-        cout << argv[1] << endl;
-        filebuf fb;
-        if(fb.open(argv[1], ios::in))
-        {
-            istream stream(&fb);
-            string line = "";
-            while (stream)
-            {
-                getline(stream, line);
-                tree.buildTree(line);
-            }
-            
-        }
-        else
-        {
-            cout << argv[1] << ": File not found"<< endl;
-        }
+       processFile(argv[1]);
     }  
     else
     {
-        //check for input from stdin
-        cout << "Stream / type input you wish to provide.  If typing, press enter after each line, and send the EOF command when done."<< endl;
-        while(!cin.eof())
-        {
-            string line;
-            getline(cin, line);
-            tree.buildTree(line);
-        }
-        tree.printPreOrder();
+        //read stream
+        processTempFile();
     }
-
-    //continue if tree has been built
 
     return 0;
 }

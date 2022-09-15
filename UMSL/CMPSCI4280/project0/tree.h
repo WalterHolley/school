@@ -3,20 +3,21 @@
 
 #include "node.h"
 #include <iostream>
+#include <fstream>
 #include  <string>
 using std::string;
 
 class Tree
 {
     private:
-        PrintOrder printOrder;
         node* _parent;
     public:
         Tree();
-        void buildTree(string value);
-        void printInOrder();
-        void printPreOrder();
-        void printPostOrder();
+        bool buildTree(string fileName);
+        void printInOrder(string fileName);
+        void printPreOrder(string fileName);
+        void printPostOrder(string fileName);
+        ~Tree();
         node* getParent();
 };
 #endif
