@@ -80,7 +80,7 @@ void processTempFile()
     {
         string line;
         getline(cin, line);
-        tempFile << line;
+        tempFile << line <<endl;
     }
 
     tempFile.close();

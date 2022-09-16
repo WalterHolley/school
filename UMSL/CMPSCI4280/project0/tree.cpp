@@ -1,11 +1,21 @@
 #include "tree.h"
 #include<string>
+#include<algorithm>
+#include<cctype>
+#include<sstream>
 using namespace std;
 
 
 
 //*****HELPER FUNCTIONS*******//
 
+/**
+ * @brief Writes a node to a file
+ * 
+ * @param Node the node value to write
+ * @param depth the depth of the node in the binary tree
+ * @param outputFile the file to write to
+ */
 void printNode(node* Node, int depth, FILE* outputFile)
 {
     
@@ -195,22 +205,17 @@ void doPostOrder(node* Node, int depth, FILE* outputFile)
  */
 void parseContent(string content, node* Node)
 {
-    string delimeter = " ";
-    string token = "";
+    char delimeter = ' ';
+    string token;
     size_t position = 0;
-        
-    //split up input 
-    while((position = content.find(delimeter)) != string::npos)
+    stringstream stream(content);
+
+    //split up inputs
+    while(getline(stream, token, delimeter))
     {
-        token = content.substr(0,position);
-        content.erase(0, position + delimeter.length());
+        token.erase(remove_if(token.begin(), token.end(), ::isspace), token.end());
         addValueToNode(token, Node);
     }
-    //add final string if any
-    if(!content.empty())
-    {
-       addValueToNode(content, Node);
-    } 
 }
 
 //*****CLASS FUNCTIONS*****//
@@ -243,11 +248,16 @@ void Tree::printInOrder(string fileName)
     }
     catch(const std::exception& e)
     {
-        cout << "There was a problem writing the postOrder file" <<endl;
+        cout << "There was a problem writing the inOrder file" <<endl;
         std::cerr << e.what() << '\n';
     }
 }
 
+/**
+ * @brief Prints a pre-ordered binary tree
+ * to a file
+ * @param fileName name of the file to create 
+ */
 void Tree::printPreOrder(string fileName)
 {
        try
@@ -266,11 +276,16 @@ void Tree::printPreOrder(string fileName)
     }
     catch(const std::exception& e)
     {
-        cout << "There was a problem writing the postOrder file" <<endl;
+        cout << "There was a problem writing the preOrder file" <<endl;
         std::cerr << e.what() << '\n';
     }
 }
 
+/**
+ * @brief Prints a post-ordered binary
+ * tree to a file
+ * @param fileName name of the file to create 
+ */
 void Tree::printPostOrder(string fileName)
 {
     try
@@ -298,7 +313,7 @@ void Tree::printPostOrder(string fileName)
  * @brief Creates a binary tree from file content
  * 
  * @param fileName name of the file to read
- * @returns true if content parsing is successful,
+ * @return true if content parsing is successful,
  * otherwise false
  */
 bool Tree::buildTree(string fileName)
@@ -338,7 +353,7 @@ bool Tree::buildTree(string fileName)
 /**
 * @brief Gets the parent node of the tree
 * 
-* @return node* 
+* @return parent node of the binary tree 
 */
 node* Tree::getParent()
 {
