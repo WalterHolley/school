@@ -72,7 +72,7 @@ void processFile(string fileName)
 
 void processTempFile()
 {
-    ofstream tempFile(TEMP_FILE);
+    ofstream tempFile(TEMP_FILE.c_str());
     //check for input from stdin
     cout << "Stream / type input you wish to provide.  If typing, press enter after each line, and send the EOF command when done."<< endl;
         

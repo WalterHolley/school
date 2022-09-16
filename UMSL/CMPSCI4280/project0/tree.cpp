@@ -320,7 +320,7 @@ bool Tree::buildTree(string fileName)
 {
     filebuf fb;
     bool result = false;
-    if(fb.open(fileName, ios::in))
+    if(fb.open(fileName.c_str(), ios::in))
     {
         istream stream(&fb);
         string line;
