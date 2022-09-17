@@ -3,9 +3,11 @@
 #include<algorithm>
 #include<cctype>
 #include<sstream>
+#include<map>
 using namespace std;
 
-
+//Tracks valid node addresses
+map<node**, int> nodeMap;
 
 //*****HELPER FUNCTIONS*******//
 
@@ -54,49 +56,49 @@ void cleanup(node* Node)
  * @param value the value to insert
  * @param Node the node to start the search from
  */
-void addValueToNode(string value, node* Node)
+void addValueToNode(string newValue, node* Node)
 {
     node* nextNode;
     //add string value to empty node value
     if(Node->value.empty())
     {
-        Node->value = value;
+        Node->value = newValue;
     }
     else
     {
         char nodeChar = Node->value.at(0);
-        char valueChar = value.at(0);
+        char valueChar = newValue.at(0);
 
         //compare first character
         //left for lesser character
         if(valueChar < nodeChar)
         {
-            if(Node->left == NULL)
+            if(!Node->left)
             {
                 Node->left = new node;
+                nodeMap.insert({&Node->left, 1});
             }
-      
-            nextNode = Node->left;               
+            nextNode = Node->left;
         }//right for greater character
         else if(valueChar > nodeChar)
         {
-            if(Node->right == NULL)
+            if(!Node->right)
             {
                     Node->right = new node;
+                nodeMap.insert({&Node->right, 1});
             }
-          
             nextNode = Node->right;
         }//center for equal character
         else
         {
-            if(Node->center == NULL)
+            if(!Node->center)
             {
                 Node->center = new node;
+                nodeMap.insert({&Node->center, 1});
             }
-            
             nextNode = Node->center;
         }
-        addValueToNode(value, nextNode);
+        addValueToNode(newValue, nextNode);
     }  
 }
 
@@ -109,25 +111,29 @@ void addValueToNode(string value, node* Node)
  */
 void doPreOrder(node* Node, int depth, FILE* outputFile)
 {
-    if(!Node->value.empty())
+    if(nodeMap.find(&Node) != nodeMap.end())
     {
-        printNode(Node, depth, outputFile);
+        if(!Node->value.empty())
+        {
+            printNode(Node, depth, outputFile);
+        }
+
+        if(Node->left)
+        {
+            doPreOrder(Node->left, depth + 1, outputFile);
+        }
+
+        if(Node->center)
+        {
+            doPreOrder(Node->center, depth + 1, outputFile);
+        }
+
+        if(Node->right)
+        {
+            doPreOrder(Node->right, depth + 1, outputFile);
+        }
     }
 
-    if(Node->left)
-    {
-        doPreOrder(Node->left, depth + 1, outputFile);
-    }
-
-    if(Node->center)
-    {
-        doPreOrder(Node->center, depth + 1, outputFile);
-    }
-
-    if(Node->right)
-    {
-        doPreOrder(Node->right, depth + 1, outputFile);
-    }
 }
 
 /**
@@ -138,30 +144,41 @@ void doPreOrder(node* Node, int depth, FILE* outputFile)
  */
 void doInOrder(node* Node, int depth, FILE* outputFile)
 {
-    
-    //process left
-    if(Node->left)
+    //check for valid node address
+    if(nodeMap.find(&Node) != nodeMap.end())
     {
-        doInOrder(Node->left, depth + 1, outputFile);
+        //process left
+        if(Node->left)
+        {
+            doInOrder(Node->left, depth + 1, outputFile);
+        }
+
+
+
+        //process root
+        if(!Node->value.empty())
+        {
+            printNode(Node, depth, outputFile);
+        }
+
+        //process center
+        if(Node->center)
+        {
+            doInOrder(Node->center, depth + 1, outputFile);
+        }
+
+
+
+        //process right
+        if(Node->right)
+        {
+            doInOrder(Node->right, depth + 1, outputFile);
+        }
     }
 
-    //process root
-    if(!Node->value.empty())
-    {
-        printNode(Node, depth, outputFile);
-    }
 
-    //process center
-    if(Node->center)
-    {
-        doInOrder(Node->center, depth + 1, outputFile);
-    }
 
-    //process right
-    if(Node->right)
-    {
-        doInOrder(Node->right, depth + 1, outputFile);
-    }
+
 }
 
 /**
@@ -172,29 +189,33 @@ void doInOrder(node* Node, int depth, FILE* outputFile)
  */
 void doPostOrder(node* Node, int depth, FILE* outputFile)
 {
-    //process left
-    if(Node->left)
+    if(nodeMap.find(&Node) != nodeMap.end())
     {
-        doPostOrder(Node->left, depth + 1, outputFile);
+        //process left
+        if(Node->left)
+        {
+            doPostOrder(Node->left, depth + 1, outputFile);
+        }
+
+        //process center
+        if(Node->center)
+        {
+            doPostOrder(Node->center, depth + 1, outputFile);
+        }
+
+        //process right
+        if(Node->right)
+        {
+            doPostOrder(Node->right, depth + 1, outputFile);
+        }
+
+        //process root
+        if(!Node->value.empty())
+        {
+            printNode(Node, depth, outputFile);
+        }
     }
 
-    //process center
-    if(Node->center)
-    {
-        doPostOrder(Node->center, depth + 1, outputFile);
-    }
-
-    //process right
-    if(Node->right)
-    {
-        doPostOrder(Node->right, depth + 1, outputFile);
-    }
-
-    //process root
-    if(!Node->value.empty())
-    {
-        printNode(Node, depth, outputFile);
-    }
 }
 
 /**
@@ -333,6 +354,10 @@ bool Tree::buildTree(string fileName)
                 {
                     parseContent(line, _parent);
                     getline(stream, line);
+                }
+                else
+                {
+                    break;
                 }
                 
                 

@@ -1,8 +1,12 @@
 CC=g++
+EXEC=p0
 
 
-p0: tree.o main.cpp
-	$(CC) -g tree.o main.cpp -o p0
+p0: main.cpp tree.o
+	$(CC) tree.o main.cpp -o $(EXEC)
 
 tree.o: tree.h node.h tree.cpp
-	$(CC) tree.h node.h tree.cpp
+	$(CC) -g -c tree.cpp
+
+
+
