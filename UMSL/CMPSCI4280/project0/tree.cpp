@@ -7,7 +7,7 @@
 using namespace std;
 
 //Tracks valid node addresses
-map<node**, int> nodeMap;
+map<node*, int> nodeMap;
 
 //*****HELPER FUNCTIONS*******//
 
@@ -76,7 +76,7 @@ void addValueToNode(string newValue, node* Node)
             if(!Node->left)
             {
                 Node->left = new node;
-                nodeMap.insert({&Node->left, 1});
+                nodeMap.insert({Node->left, 1});
             }
             nextNode = Node->left;
         }//right for greater character
@@ -85,7 +85,7 @@ void addValueToNode(string newValue, node* Node)
             if(!Node->right)
             {
                     Node->right = new node;
-                nodeMap.insert({&Node->right, 1});
+                nodeMap.insert({Node->right, 1});
             }
             nextNode = Node->right;
         }//center for equal character
@@ -94,7 +94,7 @@ void addValueToNode(string newValue, node* Node)
             if(!Node->center)
             {
                 Node->center = new node;
-                nodeMap.insert({&Node->center, 1});
+                nodeMap.insert({Node->center, 1});
             }
             nextNode = Node->center;
         }
@@ -111,7 +111,7 @@ void addValueToNode(string newValue, node* Node)
  */
 void doPreOrder(node* Node, int depth, FILE* outputFile)
 {
-    if(nodeMap.find(&Node) != nodeMap.end())
+    if(nodeMap.find(Node) != nodeMap.end())
     {
         if(!Node->value.empty())
         {
@@ -145,7 +145,7 @@ void doPreOrder(node* Node, int depth, FILE* outputFile)
 void doInOrder(node* Node, int depth, FILE* outputFile)
 {
     //check for valid node address
-    if(nodeMap.find(&Node) != nodeMap.end())
+    if(nodeMap.find(Node) != nodeMap.end())
     {
         //process left
         if(Node->left)
@@ -189,7 +189,7 @@ void doInOrder(node* Node, int depth, FILE* outputFile)
  */
 void doPostOrder(node* Node, int depth, FILE* outputFile)
 {
-    if(nodeMap.find(&Node) != nodeMap.end())
+    if(nodeMap.find(Node) != nodeMap.end())
     {
         //process left
         if(Node->left)
@@ -357,6 +357,7 @@ bool Tree::buildTree(string fileName)
                 }
                 else
                 {
+                    nodeMap.insert({_parent, 1});
                     break;
                 }
                 
