@@ -329,8 +329,12 @@ bool Tree::buildTree(string fileName)
             getline(stream, line);
             while(stream)
             {
-                parseContent(line, _parent);
-                getline(stream, line);
+                if(!line.empty())
+                {
+                    parseContent(line, _parent);
+                    getline(stream, line);
+                }
+                
                 
             }
             fb.close();
