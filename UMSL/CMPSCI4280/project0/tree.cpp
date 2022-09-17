@@ -73,7 +73,7 @@ void addValueToNode(string newValue, node* Node)
         //left for lesser character
         if(valueChar < nodeChar)
         {
-            if(!Node->left)
+            if(!Node->left || (nodeMap.find(Node->left) == nodeMap.end()))
             {
                 Node->left = new node;
                 nodeMap.insert({Node->left, 1});
@@ -82,7 +82,7 @@ void addValueToNode(string newValue, node* Node)
         }//right for greater character
         else if(valueChar > nodeChar)
         {
-            if(!Node->right)
+            if(!Node->right || (nodeMap.find(Node->right) == nodeMap.end()))
             {
                     Node->right = new node;
                 nodeMap.insert({Node->right, 1});
@@ -91,7 +91,7 @@ void addValueToNode(string newValue, node* Node)
         }//center for equal character
         else
         {
-            if(!Node->center)
+            if(!Node->center || (nodeMap.find(Node->center) == nodeMap.end()))
             {
                 Node->center = new node;
                 nodeMap.insert({Node->center, 1});
@@ -357,12 +357,12 @@ bool Tree::buildTree(string fileName)
                 }
                 else
                 {
-                    nodeMap.insert({_parent, 1});
                     break;
                 }
                 
                 
             }
+            nodeMap.insert({_parent, 1});
             fb.close();
             result = true;
         }
