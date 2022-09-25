@@ -7,8 +7,9 @@ Primary js file for polygon generation, placement, scaling, and rotation.
 
 var VSHADER_SOURCE =`#version 300 es
    in vec4 a_Position;
+   uniform mat4 u_modelMatrix;
    void main() {     
-     gl_Position = a_Position;
+     gl_Position = u_modelMatrix * a_Position;
 }`;
 
 var FSHADER_SOURCE =`#version 300 es
@@ -19,19 +20,53 @@ var FSHADER_SOURCE =`#version 300 es
      cg_FragColor = u_Color;     
 }`;
 
+//Rotation angle
+let ROTATION_ANGLE = 45.0;
 //polygon properties array
 let polygons = [];
+let currentAngle = 0.0;
 
 function main(){
     var canvas = document.getElementById("canvas");
     var gl = canvas.getContext("webgl2");
 
     // Initialize shaders
-    initShaders(gl, VSHADER_SOURCE, FSHADER_SOURCE);
+   if(!initShaders(gl, VSHADER_SOURCE, FSHADER_SOURCE)){
+      console.log("There was a problem initializing the shader program");
+      return;
+   }
+    
 
     initVertexBuffers(gl);
 
-    draw(gl);
+    //get shader rotation Matrix4
+    var u_modelMatrix = gl.getUniformLocation(gl.program, 'u_modelMatrix');
+    if(!u_modelMatrix){
+       console.log("There was a problem with webgl2");
+       return;
+    }
+
+    //controls the timing for the animation
+    var timeTick = function(){
+       //update angle for rotation
+       draw(gl, u_modelMatrix);
+       requestAnimationFrame(timeTick, canvas);
+    }
+
+    timeTick();
+    
+}
+
+// Last time that this function was called
+var g_last = Date.now();
+function animate(angle) {
+  // Calculate the elapsed time
+  var now = Date.now();
+  var elapsed = now - g_last;
+  g_last = now;
+  // Update the current rotation angle (adjusted by the elapsed time)
+  var newAngle = angle + (ROTATION_ANGLE * elapsed) / 1000.0;
+  return newAngle %= 360;
 }
 
 //Polygon properties object
@@ -40,6 +75,10 @@ function Polygon(){
     this.color = [0,0,0];
     this.center = [0,0];
     this.offset = 0;
+    this.angle = 0;
+    this.matrix = 0;
+    this.scale = 1.0;
+    this.scaleUp = false;
 }
 
 //returns randomized Polygon attributes
@@ -47,8 +86,13 @@ function Polygon(){
 function randomPolygon(){
     let ranGon = new Polygon();
 
+    ranGon.matrix = new Matrix4();
     //vertices between 3 - 9(inclusive)
     ranGon.vertices = Math.round(Math.random() * (9 - 3) + 3);
+
+    //init angle
+    ranGon.angle = 360 / ranGon.vertices;
+
     
     ranGon.color = [Math.random(), Math.random(), Math.random()];
     
@@ -60,7 +104,7 @@ function randomPolygon(){
 }
 
 //Draws the polygon collection to the screen
-function draw(gl){
+function draw(gl, shaderModelMatrix){
     let a_Position = gl.getAttribLocation(gl.program, 'a_Position'); 
     let u_Color = gl.getUniformLocation(gl.program, 'u_Color');  
     const FSIZE = Float32Array.BYTES_PER_ELEMENT; // 4 bytes per float
@@ -69,67 +113,124 @@ function draw(gl){
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
     gl.clear(gl.COLOR_BUFFER_BIT);
 
+   
+
+
+    //update vertices positions
+    //let vertices = updateVertices();
+
+    //write new vertice data to vertex buffer
+    //updateVertexBuffer(vertices, gl);
+
     //set shape vertex attributes and color properties
-    for(i = 0; i < polygons.length; i++){
+    for(let i = 0; i < polygons.length; i++){
+         //update rotation angle
+        //polygons[i].angle = animate(polygons[i].angle);
+        let radians = (Math.PI * polygons[i].angle) / 180.0;
+
         gl.vertexAttribPointer(a_Position, 2, gl.FLOAT, false, 0, 
                             FSIZE*2*polygons[i].offset);
+        //gl.
         gl.enableVertexAttribArray(a_Position);
+
+        //update rotation
+        polygons[i].matrix.setRotate(1, polygons[i].center[0], polygons[i].center[1],1);
+        polygons[i].matrix.rotate(1,0,0,1);
+         //polygons[i].matrix.setRotate(polygons[i].angle,0,0,1);
+      
+
+         //update scaling
+         if(polygons[i].scaleUp){
+            polygons[i].scale += 0.005;
+            if(polygons[i].scale >= 1.0){
+               polygons[i].scaleUp = false;
+            }
+         }
+          else{
+             polygons[i].scale -= 0.005;
+             if(polygons[i].scale <= 0){
+                polygons[i].scaleUp = true;
+             }
+          }
+        
+        polygons[i].matrix.scale(polygons[i].scale,polygons[i].scale,1);
 
         //set color
         let color = polygons[i].color;
         gl.uniform4f(u_Color, color[0], color[1], color[2], 1.0);
-        
+
+        //set modelMatrix
+        gl.uniformMatrix4fv(shaderModelMatrix, false, polygons[i].matrix.elements);
+ 
         gl.drawArrays(gl.TRIANGLE_FAN, 0, polygons[i].vertices);
     }
 }
 
-//populate the vertice buffers
+//initializes the vertice buffer.  Run once
 function initVertexBuffers(gl){
-    let points = [];
-    let shapeCount = 20;
+   
+   let shapeCount = 1;
 
-    //set vertice information for each polygone
-    for(i = 0; i < shapeCount; i++){
-        polygons.push(randomPolygon());
+   //set vertice information for each polygon
+   for(i = 0; i < shapeCount; i++){
+       polygons.push(randomPolygon());
 
-        let angle = 360 / polygons[i].vertices;
-        //radian conversion
-        angle = (Math.PI * angle) / 180.0;
-        let radius = 0.15;
+       //additional vert count for center and final vertices
+       polygons[i].vertices += 2;
 
-        let centerX = polygons[i].center[0];
-        let centerY = polygons[i].center[1];
+       if(i > 0){
+           polygons[i].offset = polygons[i - 1].offset + polygons[i - 1].vertices;
+       }       
+   }
 
-        //center position
-        points.push(centerX);
-        points.push(centerY); 
+   let vertices = updateVertices();
+   updateVertexBuffer(vertices, gl);
 
-        // x-y positions for individual vertices
-        for(k = 0; k < polygons[i].vertices; k++){
-            let x = centerX + Math.cos(angle * k) * radius;
-            let y = centerY + Math.sin(angle * k) * radius;
-            points.push(x);
-            points.push(y);
-        }
+}
 
-        //final for end of polygon
-        points.push(centerX + radius);
-        points.push(centerY);
+//Creates a Float32Array of vertice information
+function updateVertices(){
+   let points = [];
+   
 
-        //update count for the new vertices
-        polygons[i].vertices = polygons[i].vertices + 2;
+   for(i = 0; i < polygons.length; i++){
 
-        if(i > 0){
-            polygons[i].offset = polygons[i - 1].offset + polygons[i - 1].vertices;
-        }
-        
-    }
+      //radian conversion  
+      let angle = (Math.PI * polygons[i].angle) / 180.0;
+      let radius = 0.15;
 
-    let vertices = new Float32Array(points);
-    var vertexBuffer = gl.createBuffer();
+      let centerX = polygons[i].center[0];
+      let centerY = polygons[i].center[1];
 
-    //bind to target
-      gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
-    //write data to buffer
-    gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+      //center position
+      points.push(centerX);
+      points.push(centerY); 
+
+      // x-y positions for shape vertices
+      for(k = 0; k < polygons[i].vertices - 2; k++){
+         let x = centerX + Math.cos(angle * k) * radius;
+         let y = centerY + Math.sin(angle * k) * radius;
+         points.push(x);
+         points.push(y);
+      }
+
+      //final for end of polygon
+      points.push(centerX + radius);
+      points.push(centerY);  
+   }
+
+   return new Float32Array(points);
+   
+   
+}
+
+//updates vertex buffer information
+function updateVertexBuffer(vertices, gl){
+   var vertexBuffer = gl.createBuffer();
+
+   //bind to target
+   gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+   //write data to buffer
+   gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+   
 }
