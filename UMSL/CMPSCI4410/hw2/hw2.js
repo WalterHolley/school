@@ -21,7 +21,9 @@ var FSHADER_SOURCE =`#version 300 es
 }`;
 
 //Rotation angle
-let ROTATION_ANGLE = 45.0;
+let ROTATION_ANGLE = 1.0;
+let ROTATION_SPEED = 1.0;
+ let shapeCount = 1; //number of polygons to draw
 //polygon properties array
 let polygons = [];
 let currentAngle = 0.0;
@@ -62,10 +64,10 @@ var g_last = Date.now();
 function animate(angle) {
   // Calculate the elapsed time
   var now = Date.now();
-  var elapsed = now - g_last;
+  var elapsed = (now - g_last) *  0.0001;
   g_last = now;
   // Update the current rotation angle (adjusted by the elapsed time)
-  var newAngle = angle + (ROTATION_ANGLE * elapsed) / 1000.0;
+  var newAngle = angle + (ROTATION_ANGLE * elapsed) * ROTATION_SPEED;
   return newAngle %= 360;
 }
 
@@ -130,14 +132,10 @@ function draw(gl, shaderModelMatrix){
 
         gl.vertexAttribPointer(a_Position, 2, gl.FLOAT, false, 0, 
                             FSIZE*2*polygons[i].offset);
-        //gl.
-        gl.enableVertexAttribArray(a_Position);
+        
 
-        //update rotation
-        polygons[i].matrix.setRotate(1, polygons[i].center[0], polygons[i].center[1],1);
-        polygons[i].matrix.rotate(1,0,0,1);
-         //polygons[i].matrix.setRotate(polygons[i].angle,0,0,1);
-      
+        //update angle
+        polygons[i].angle = ((polygons[i].angle + 1) % 360);
 
          //update scaling
          if(polygons[i].scaleUp){
@@ -152,9 +150,20 @@ function draw(gl, shaderModelMatrix){
                 polygons[i].scaleUp = true;
              }
           }
-        
-        polygons[i].matrix.scale(polygons[i].scale,polygons[i].scale,1);
+       let scale = polygons[i].scale;
+       let centerX = polygons[i].center[0];
+       let centerY = polygons[i].center[1];
 
+        gl.vertexAttrib4f(a_Position, centerX, centerY,1, 1.0)
+        gl.enableVertexAttribArray(a_Position);
+        
+        
+         polygons[i].matrix.setTranslate(centerX, centerY, 1);
+         polygons[i].matrix.setRotate(polygons[i].angle, 0, 0,1);
+         polygons[i].matrix.scale(polygons[i].scale,polygons[i].scale,1);
+         polygons[i].matrix.translate(centerX *-1, centerY * -1, 1);
+       
+        
         //set color
         let color = polygons[i].color;
         gl.uniform4f(u_Color, color[0], color[1], color[2], 1.0);
@@ -163,13 +172,14 @@ function draw(gl, shaderModelMatrix){
         gl.uniformMatrix4fv(shaderModelMatrix, false, polygons[i].matrix.elements);
  
         gl.drawArrays(gl.TRIANGLE_FAN, 0, polygons[i].vertices);
+
     }
 }
 
 //initializes the vertice buffer.  Run once
 function initVertexBuffers(gl){
    
-   let shapeCount = 1;
+  
 
    //set vertice information for each polygon
    for(i = 0; i < shapeCount; i++){
