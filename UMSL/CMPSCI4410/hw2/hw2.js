@@ -136,16 +136,13 @@ function draw(gl, shaderModelMatrix){
 
     //set shape vertex attributes and color properties
     for(let i = 0; i < polygons.length; i++){
-         //update rotation angle
-        //polygons[i].angle = animate(polygons[i].angle);
-        let radians = (Math.PI * polygons[i].angle) / 180.0;
 
         gl.vertexAttribPointer(a_Position, 2, gl.FLOAT, false, 0, 
                             FSIZE*2*polygons[i].offset);
+        gl.enableVertexAttribArray(a_Position);
         
 
-        //update angle
-        polygons[i].angle = ((polygons[i].angle + 1) % 360);
+
 
          //update scaling
          if(polygons[i].scaleUp){
@@ -164,27 +161,30 @@ function draw(gl, shaderModelMatrix){
        let scale = polygons[i].scale;
        let centerX = polygons[i].center[0];
        let centerY = polygons[i].center[1];
-       //let positionArray = new Float32Array([1, 0, 1.0, 1.0]);
+
+        //update angle
+        polygons[i].angle = ((polygons[i].angle + 1) % 360);
+         //update radians
+         let radians = (Math.PI * polygons[i].angle) / 180.0;
+
+
       
 
-       // gl.vertexAttrib4fv(a_Position, positionArray);
-        gl.enableVertexAttribArray(a_Position);
-        
-        
-         polygons[i].matrix.setTranslate(centerX, centerY, 1);
-         polygons[i].matrix.scale(polygons[i].scale,polygons[i].scale,1);
-         polygons[i].matrix.rotate(polygons[i].angle, 0, 0,1);
-         //polygons[i].matrix.setTranslate(centerX, centerY, 1);
+       //compute position matrix
+       polygons[i].matrix.setTranslate(centerX, centerY, 1);
        
+       polygons[i].matrix.rotate(polygons[i].angle,0,0,1);
+       polygons[i].matrix.scale(polygons[i].scale,polygons[i].scale,1);
+       //polygons[i].matrix.translate(centerX, centerY, 1);
         
-        //set color
-        let color = polygons[i].color;
-        gl.uniform4f(u_Color, color[0], color[1], color[2], 1.0);
+       //set color
+       let color = polygons[i].color;
+       gl.uniform4f(u_Color, color[0], color[1], color[2], 1.0);
 
-        //set modelMatrix
-        gl.uniformMatrix4fv(shaderModelMatrix, false, polygons[i].matrix.elements);
+       //set modelMatrix
+       gl.uniformMatrix4fv(shaderModelMatrix, false, polygons[i].matrix.elements);
  
-        gl.drawArrays(gl.TRIANGLE_FAN, 0, polygons[i].vertices);
+       gl.drawArrays(gl.TRIANGLE_FAN, 0, polygons[i].vertices);
 
     }
 }
