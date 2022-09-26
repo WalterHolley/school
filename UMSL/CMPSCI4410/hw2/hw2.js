@@ -178,7 +178,7 @@ function draw(gl, shaderModelMatrix){
        
        polygons[i].matrix.rotate(polygons[i].angle,0,0,1);
        polygons[i].matrix.scale(polygons[i].scale,polygons[i].scale,1);
-       //polygons[i].matrix.translate(centerX, centerY, 1);
+       //polygons[i].matrix.translate(-centerX, -centerY, 1);
         
        //set color
        let color = polygons[i].color;
