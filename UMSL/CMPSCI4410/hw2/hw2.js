@@ -82,6 +82,7 @@ function Polygon(){
     this.matrix = 0;
     this.scale = 1.0;
     this.scaleUp = false;
+    this.scaleRate = 0.0;
 }
 
 //returns randomized Polygon attributes
@@ -104,6 +105,8 @@ function randomPolygon(){
     else{
        ranGon.scaleUp = false;
     }
+
+    ranGon.scaleRate = Math.random() * 0.005;
 
     
     ranGon.color = [Math.random(), Math.random(), Math.random()];
@@ -146,13 +149,13 @@ function draw(gl, shaderModelMatrix){
 
          //update scaling
          if(polygons[i].scaleUp){
-            polygons[i].scale += 0.005;
+            polygons[i].scale += polygons[i].scaleRate;
             if(polygons[i].scale >= 1.0){
                polygons[i].scaleUp = false;
             }
          }
           else{
-             polygons[i].scale -= 0.005;
+             polygons[i].scale -= polygons[i].scaleRate;
              if(polygons[i].scale <= 0){
                 polygons[i].scaleUp = true;
              }
