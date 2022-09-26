@@ -23,10 +23,11 @@ var FSHADER_SOURCE =`#version 300 es
 //Rotation angle
 let ROTATION_ANGLE = 1.0;
 let ROTATION_SPEED = 1.0;
- let shapeCount = 1; //number of polygons to draw
+ let shapeCount = 20; //number of polygons to draw
 //polygon properties array
 let polygons = [];
 let currentAngle = 0.0;
+let radius = 0.15;
 
 function main(){
     var canvas = document.getElementById("canvas");
@@ -95,6 +96,15 @@ function randomPolygon(){
     //init angle
     ranGon.angle = 360 / ranGon.vertices;
 
+    //initial scale
+    ranGon.scale = Math.round(Math.random() * 1);
+    if(Math.random() >= 0.5){
+       ranGon.scaleUp = true;
+    }
+    else{
+       ranGon.scaleUp = false;
+    }
+
     
     ranGon.color = [Math.random(), Math.random(), Math.random()];
     
@@ -150,18 +160,21 @@ function draw(gl, shaderModelMatrix){
                 polygons[i].scaleUp = true;
              }
           }
+       
        let scale = polygons[i].scale;
        let centerX = polygons[i].center[0];
        let centerY = polygons[i].center[1];
+       //let positionArray = new Float32Array([1, 0, 1.0, 1.0]);
+      
 
-        gl.vertexAttrib4f(a_Position, centerX, centerY,1, 1.0)
+       // gl.vertexAttrib4fv(a_Position, positionArray);
         gl.enableVertexAttribArray(a_Position);
         
         
          polygons[i].matrix.setTranslate(centerX, centerY, 1);
-         polygons[i].matrix.setRotate(polygons[i].angle, 0, 0,1);
          polygons[i].matrix.scale(polygons[i].scale,polygons[i].scale,1);
-         polygons[i].matrix.translate(centerX *-1, centerY * -1, 1);
+         polygons[i].matrix.rotate(polygons[i].angle, 0, 0,1);
+         //polygons[i].matrix.setTranslate(centerX, centerY, 1);
        
         
         //set color
@@ -207,7 +220,7 @@ function updateVertices(){
 
       //radian conversion  
       let angle = (Math.PI * polygons[i].angle) / 180.0;
-      let radius = 0.15;
+    
 
       let centerX = polygons[i].center[0];
       let centerY = polygons[i].center[1];
