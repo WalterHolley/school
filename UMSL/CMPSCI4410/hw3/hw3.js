@@ -56,13 +56,14 @@ function drawPolygons(gl, modelMatrix, u_ModelMatrix) {
   let a_Position = gl.getAttribLocation(gl.program, 'a_Position'); 
   let u_Color = gl.getUniformLocation(gl.program, 'u_Color');  
   const FSIZE = Float32Array.BYTES_PER_ELEMENT; // 4 bytes per float
+  let scaleHeight = []; //store scale values from previous polygons;
 
   gl.clearColor(0.0, 0.0, 0.0, 1.0);
   gl.clear(gl.COLOR_BUFFER_BIT);    
 
   let maxD = PI;
   
-  for (let i = 0; i <= half; i++) { // draw all stars    
+  for (let i = -half; i <= half; i++) { // draw all stars    
 
     let x = i / half; // [-1, 1]
 	x *= maxD; // [-PI, PI]
@@ -71,12 +72,24 @@ function drawPolygons(gl, modelMatrix, u_ModelMatrix) {
 	let sy = Math.sin(-iTime * 2 + dist); // [-1, 1]
 
 	sy = 1.5 + sy; // [0.5, 2.5] make sure height stay positive
+	
 
 	let h = polygons[i+half].h;
+
+	modelMatrix.setIdentity();  // Set identity matrix
 	
-    modelMatrix.setIdentity();  // Set identity matrix
-    modelMatrix.translate(-0.9, h * 0.5 * sy - 0.6, 0); // make all bars align horizontally
-    modelMatrix.scale(1, sy, 1); // scaling up and down
+	
+	if(i <= 0){
+		scaleHeight.push(sy);
+		modelMatrix.translate(0, h * 0.5 * sy - 0.6, 0); // make all bars align horizontally
+	    modelMatrix.scale(1, sy, 1); // scaling up and down
+	}
+	else{ //mirror left side
+		let height = scaleHeight[scaleHeight.length - i - 1];
+	    modelMatrix.translate(0, h * 0.5 * height - 0.6, 0); // make all bars align horizontally
+	    modelMatrix.scale(1, height, 1); // scaling up and down
+	}
+
     gl.uniformMatrix4fv(u_ModelMatrix, false, modelMatrix.elements);
 
     // stride = 0, offset = FSIZE * 2 * polgons[i].offset 
