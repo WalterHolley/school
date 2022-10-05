@@ -27,7 +27,84 @@ TokenType Scanner::findToken(char tokenChar)
 
 }
 
-vector<Token> Scanner::verifyToken(string token)
+vector<Token> Scanner::verifyToken(string tokenString, int lineNumber)
 {
-    vector<Token>
+    vector<Token> tokens;
+    int column = 0;
+    string value;
+    TokenState state = START;
+    TokenType initialToken;
+
+
+    while(state != FINAL && state != ERROR)
+    {
+        char symbol = tokenString.at(column);
+        if(state == START)
+        {
+            if(symbol == ' ')
+            {
+                column++;
+                continue;
+            }
+            else
+            {
+                initialToken = findToken(symbol);
+                if(initialToken != UNKNOWN)
+                {
+                    state = NEXT;
+                    append(value, symbol);
+                    column++;
+
+                }
+            }
+        }
+        else if (state == NEXT)
+        {
+            if(symbol == ' ')
+            {
+                column++;
+                continue;
+            }
+        }
+
+
+        //check for whitespace
+
+        //check for start
+
+        //check for next
+
+        //check for unknown
+    }
+
+    return tokens;
+}
+
+/**
+ * @brief Reads a file and outputs the tokens from the file
+ * @param fb file buffer to read
+ */
+void Scanner::scanFile(std::filebuf fb)
+{
+    istream stream(&fb);
+    string line;
+    int lineCount = 0;
+    vector<Token> tokens;
+    try
+    {
+        getline(stream, line);
+        while(stream)
+        {
+            if(!line.empty())
+            {
+                lineCount++;
+                tokens = verifyToken(line, lineCount);
+
+                //print tokens
+
+                //stop processing if unknown token found
+
+            }
+        }
+    }
 }

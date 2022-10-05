@@ -5,6 +5,8 @@
 #ifndef TOKEN_H
 #define TOKEN_H
 
+#define MAX_TOKEN_SIZE = 8
+
 #include <string>
 #include <map>
 using std::string;
