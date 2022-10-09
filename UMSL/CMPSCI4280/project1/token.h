@@ -9,112 +9,66 @@
 #include <map>
 using std::string;
 
-map<string, int> TOKENS;
-TOKENS.insert({"a",0});
-TOKENS.insert({"b",0});
-TOKENS.insert({"c",0});
-TOKENS.insert({"d",0});
-TOKENS.insert({"e",0});
-TOKENS.insert({"f",0});
-TOKENS.insert({"g",0});
-TOKENS.insert({"h",0});
-TOKENS.insert({"i",0});
-TOKENS.insert({"j",0});
-TOKENS.insert({"k",0});
-TOKENS.insert({"l",0});
-TOKENS.insert({"m",0});
-TOKENS.insert({"n",0});
-TOKENS.insert({"o",0});
-TOKENS.insert({"p",0});
-TOKENS.insert({"q",0});
-TOKENS.insert({"r",0});
-TOKENS.insert({"s",0});
-TOKENS.insert({"t",0});
-TOKENS.insert({"u",0});
-TOKENS.insert({"v",0});
-TOKENS.insert({"w",0});
-TOKENS.insert({"x",0});
-TOKENS.insert({"y",0});
-TOKENS.insert({"z",0});
-TOKENS.insert({"A",0});
-TOKENS.insert({"B",0});
-TOKENS.insert({"C",0});
-TOKENS.insert({"D",0});
-TOKENS.insert({"E",0});
-TOKENS.insert({"F",0});
-TOKENS.insert({"G",0});
-TOKENS.insert({"H",0});
-TOKENS.insert({"I",0});
-TOKENS.insert({"J",0});
-TOKENS.insert({"K",0});
-TOKENS.insert({"L",0});
-TOKENS.insert({"M",0});
-TOKENS.insert({"N",0});
-TOKENS.insert({"O",0});
-TOKENS.insert({"P",0});
-TOKENS.insert({"Q",0});
-TOKENS.insert({"R",0});
-TOKENS.insert({"S",0});
-TOKENS.insert({"T",0});
-TOKENS.insert({"U",0});
-TOKENS.insert({"V",0});
-TOKENS.insert({"W",0});
-TOKENS.insert({"X",0});
-TOKENS.insert({"Y",0});
-TOKENS.insert({"Z",0});
-TOKENS.insert({"0",1});
-TOKENS.insert({"1",1});
-TOKENS.insert({"2",1});
-TOKENS.insert({"3",1});
-TOKENS.insert({"4",1});
-TOKENS.insert({"5",1});
-TOKENS.insert({"6",1});
-TOKENS.insert({"7",1});
-TOKENS.insert({"8",1});
-TOKENS.insert({"9",1});
-TOKENS.insert({"<",2});
-TOKENS.insert({">",2});
-TOKENS.insert({"==",2});
-TOKENS.insert({"!=",2});
-TOKENS.insert({":",2});
-TOKENS.insert({"||",3});
-TOKENS.insert({"+",3});
-TOKENS.insert({"-",3});
-TOKENS.insert({"=",3});
-TOKENS.insert({":=",3});
-TOKENS.insert({"*",3});
-TOKENS.insert({"/",3});
-TOKENS.insert({"^",3});
-TOKENS.insert({"(",4});
-TOKENS.insert({")",5});
-TOKENS.insert({"{",6});
-TOKENS.insert({"}",7});
-TOKENS.insert({"[",8});
-TOKENS.insert({"]",9});
+//map<string, int> TOKENS;
+string[][] TOKENS = {
+        {"a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r",
+         "s", "t", "u", "v", "w", "x", "y", "z", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J",
+         "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "0", "1",
+         "2", "3", "4", "5", "6", "7", "8", "9", "<", ">", "=", "!", ":", "*", "/", "^", "(", ")",
+         "{", "}", "[", "]", "_", "&", " ", "."},//existing tokens
+        {"2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2",
+         "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2",
+         "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "3", "3",
+         "3", "3", "3", "3", "3", "3", "3", "3", "4", "4", "12", "15", "13", "4", "4", "4", "5", "-999",
+         "7", "-999", "9", "-999", "0", "16", "17"},//IDTokens
+        {"2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2",
+         "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2",
+         "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2",
+         "2", "2", "2", "2", "2", "2", "2", "2", "-999", "-999", "-999", "-999", "-999", "-999", "-999", "-999", "-999", "-999",
+         "-999", "-999", "-999", "-999", "-999", "-999", "2"},//NumberTokens
+        {"-999", "-999", "-999", "-999", "-999", "-999", "-999", "-999", "-999", "-999", "-999", "-999", "-999", "-999", "-999", "-999", "-999", "-999",
+         "-999", "-999", "-999", "-999", "-999", "-999", "-999", "-999", "-999", "-999", "-999", "-999", "-999", "-999", "-999", "-999", "-999", "-999",
+         "-999", "-999", "-999", "-999", "-999", "-999", "-999", "-999", "-999", "-999", "-999", "-999", "-999", "-999", "-999", "-999", "3", "3",
+         "3", "3", "3", "3", "3", "3", "3", "3", "-999", "-999", "-999", "-999", "-999", "-999", "-999", "-999", "-999", "-999",
+         "-999", "-999",, "-999", "-999", "-999", "-999", "19", "18"},//Comparison Tokens
+        {"-999", "-999", "-999", "-999", "-999", "-999", "-999", "-999", "-999", "-999", "-999", "-999", "-999", "-999", "-999", "-999", "-999", "-999",
+         "-999", "-999", "-999", "-999", "-999", "-999", "-999", "-999", "-999", "-999", "-999", "-999", "-999", "-999", "-999", "-999", "-999", "-999",
+         "-999", "-999", "-999", "-999", "-999", "-999", "-999", "-999", "-999", "-999", "-999", "-999", "-999", "-999", "-999", "-999", "3", "3",
+         "3", "3", "3", "3", "3", "3", "3", "3", "-999", "-999", "4", "-999", "-999", "-999", "-999", "-999", "-999", "-999",
+         "-999", "-999",, "-999", "-999", "-999", "-999", "19", "-999"},
+
+};
+
 
 //The type of tokens available
-enum TokenType {
-    IDTOKEN = 0,
-    NUMTOKEN = 1,
-    COMPTOKEN = 2,
-    OPTOKEN = 3,
-    LPAREN = 4,
-    RPAREN = 5,
-    LBRACE = 6,
-    RBRACE = 7,
-    LBRACK = 8,
-    RBRACK = 9,
-    RWORD = 10,
-    UNKNOWN = -999
-    
+enum TOKENSTATE {
+    START = 1,
+    IDTOKEN = 2,
+    NUMTOKEN = 3,
+    COMPTOKEN = 4,
+    OPTOKEN = 5,
+    LPAREN = 6,
+    RPAREN = 7,
+    LBRACE = 8,
+    RBRACE = 9,
+    LBRACK = 10,
+    RBRACK = 11,
+    RWORD = 12,
+    ASSIGN = 13,
+    COLON = 14,
+    VERTBAR = 15,
+    EXCLAIM = 16,
+    AMPERSND = 17,
+    DOT = 18,
+    FINAL = 19
 
 };
 
 //States for processing a token instance
 enum TokenState{
-    START = 100,
-    NEXT = 200,
-    FINAL = 300,
+    START = 1,
+    NEXT = 2,
+    COMP = 3,
     ERROR = -999
 };
 
