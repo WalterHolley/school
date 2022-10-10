@@ -11,7 +11,7 @@
 class Scanner
 {
     private:
-        TokenType findToken(char firstChar);
+        int findToken(char firstChar);
     public:
         vector<Token> verifyToken(string token);
 };

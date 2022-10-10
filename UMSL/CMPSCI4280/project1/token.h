@@ -4,13 +4,14 @@
 
 #ifndef TOKEN_H
 #define TOKEN_H
+#define MAX_TOKENS 80
 
 #include <string>
 #include <map>
 using std::string;
 
 //map<string, int> TOKENS;
-string[][] TOKENS = {
+string[17][80] TOKENS = {
         {"a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r",
          "s", "t", "u", "v", "w", "x", "y", "z", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J",
          "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "0", "1",
@@ -42,7 +43,7 @@ string[][] TOKENS = {
 
 
 //The type of tokens available
-enum TOKENSTATE {
+enum TokenState {
     START = 1,
     IDTOKEN = 2,
     NUMTOKEN = 3,
@@ -61,17 +62,12 @@ enum TOKENSTATE {
     EXCLAIM = 16,
     AMPERSND = 17,
     DOT = 18,
-    FINAL = 19
-
-};
-
-//States for processing a token instance
-enum TokenState{
-    START = 1,
-    NEXT = 2,
-    COMP = 3,
+    FINAL = 19,
     ERROR = -999
+
 };
+
+
 
 //Token properties
 struct Token{
