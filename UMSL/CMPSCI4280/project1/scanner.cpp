@@ -8,103 +8,78 @@
 #include "scanner.h"
 #include <stdexcept>
 #include <vector>
+#include <iostream>
 using namespace std;
 
-TokenType Scanner::findToken(char tokenChar)
+/**
+ * Determine if the given character is a valid token
+ * @param tokenChar the character to evaliuate
+ * @return index of tokens locatioo in the Token Table.
+ * returns -1 if not found
+ */
+int Scanner::findToken(char tokenChar)
 {
-    TokenType result;
+    int result = -1;
     string element = tokenChar;
     try
     {
-        result = TOKENS.at(element)
+        for(int i = 0; i < MAX_TOKENS; i++)
+        {
+            if(TOKENS[0][i].c_str() == tokenChar)
+            {
+                result = i;
+            }
+        }
     }
     catch (const exception& e)
     {
-        result = UNKNOWN;
+        result = -2;
     }
 
     return result;
 
 }
 
-vector<Token> Scanner::verifyToken(string tokenString, int lineNumber)
+vector<Token> Scanner::verifyToken(string token)
 {
     vector<Token> tokens;
-    int column = 0;
-    string value;
     TokenState state = START;
-    TokenType initialToken;
+    int lastColumn = token.length();
+    String tokenValue;
 
-
-    while(state != FINAL && state != ERROR)
+    int column = 0;
+    while(state != FINAL || state != ERROR)
     {
-        char symbol = tokenString.at(column);
-        if(state == START)
+        char next = token.at(column);
+        int tokenId = findToken(next);
+        if(tokenId == -1)
         {
-            if(symbol == ' ')
+            state = ERROR;
+        }
+        if( state == START)
+        {
+            column++;
+            //continue if whitespace
+            if(next == ' ')
             {
-                column++;
+
                 continue;
             }
-            else
+            else             //update state
             {
-                initialToken = findToken(symbol);
-                if(initialToken != UNKNOWN)
-                {
-                    state = NEXT;
-                    append(value, symbol);
-                    column++;
-
-                }
+                state = TOKENS[state][tokenId];
+                token.push_back(next);
             }
+
         }
-        else if (state == NEXT)
+        if(state == ERROR)// record failure value and stop loop
         {
-            if(symbol == ' ')
-            {
-                column++;
-                continue;
-            }
-        }
-
-
-        //check for whitespace
-
-        //check for start
-
-        //check for next
-
-        //check for unknown
-    }
-
-    return tokens;
-}
-
-/**
- * @brief Reads a file and outputs the tokens from the file
- * @param fb file buffer to read
- */
-void Scanner::scanFile(std::filebuf fb)
-{
-    istream stream(&fb);
-    string line;
-    int lineCount = 0;
-    vector<Token> tokens;
-    try
-    {
-        getline(stream, line);
-        while(stream)
-        {
-            if(!line.empty())
-            {
-                lineCount++;
-                tokens = verifyToken(line, lineCount);
-
-                //print tokens
-
-                //stop processing if unknown token found
-
-            }
+            Token errorToken;
+            errorToken.ID = ERROR;
+            errorToken.col = column + 1;
+            errorToken.value = next;
+            tokens.push_back(errorToken);
+            break;
         }
     }
 }

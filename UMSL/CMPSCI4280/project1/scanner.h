@@ -7,14 +7,12 @@
 
 #include "token.h"
 #include <string>
-#include <fstream>
 
 class Scanner
 {
     private:
-        TokenType findToken(char firstChar);
-        vector<Token> verifyToken(string token, int lineNumber);
+        int findToken(char firstChar);
     public:
-        void scanFile(std::filebuf fb);
+        vector<Token> verifyToken(string token);
 };
 #endif //SCANNER_H
