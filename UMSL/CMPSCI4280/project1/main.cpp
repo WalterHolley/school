@@ -11,9 +11,14 @@ sends the information to the scanner.
 #include <iostream>
 #include <fstream>
 #include <string>
+#include "scanner.h"
+#include "testScanner.h"
+
 using namespace std;
 
 const string TEMP_FILE = "temp.in";
+
+Scanner scanner;
 
 /**
  * @brief frees resources associated with

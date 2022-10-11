@@ -13,6 +13,7 @@ class Scanner
     private:
         int findToken(char firstChar);
     public:
-        vector<Token> verifyToken(string token);
+        vector<Token> scanFile(string fileName);
+        vector<Token> verifyTokens(string tokens, int lineNumber);
 };
 #endif //SCANNER_H
