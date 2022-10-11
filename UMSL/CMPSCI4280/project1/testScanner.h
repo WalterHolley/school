@@ -5,12 +5,15 @@
 #ifndef TESTSCANNER_H
 #define TESTSCANNER_H
 
-#include "token.h"
+#include <vector>
+#include "scanner.h"
+using namespace std;
 
 class TestScanner
 {
     public:
-        void presentTokens(vector<Token> tokens);
+        TestScanner(vector<Token> tokens);
+        void presentTokens();
 };
 
 #endif //TESTSCANNER_H

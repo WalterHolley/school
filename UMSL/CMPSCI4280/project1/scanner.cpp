@@ -9,6 +9,8 @@
 #include <stdexcept>
 #include <vector>
 #include <iostream>
+#include <fstream>
+#include <sstream>
 using namespace std;
 
 /**
@@ -20,12 +22,12 @@ using namespace std;
 int Scanner::findToken(char tokenChar)
 {
     int result = ERROR;
-    string element = tokenChar;
+    string element(1, tokenChar);
     try
     {
         for(int i = 0; i < MAX_TOKENS; i++)
         {
-            if(TOKENS[0][i].c_str() == tokenChar)
+            if(TOKENS[0][i] == element)
             {
                 result = i;
             }
@@ -65,7 +67,7 @@ vector<Token>Scanner::scanFile(std::string fileName)
                 if(!line.empty())
                 {
 
-                    tokens = scanner.verifyTokens(line, lineCount);
+                    tokens = verifyTokens(line, lineCount);
 
 
                     allTokens.insert(allTokens.end(), tokens.begin(), tokens.end());
@@ -102,7 +104,7 @@ vector<Token> Scanner::verifyTokens(string token, int lineNumber)
     TokenState state = START;
     TokenState prevState;
     int lastColumn = token.length();
-    String tokenValue;
+    string tokenValue;
     Token nextToken;
 
     int column = 0;
@@ -126,7 +128,11 @@ vector<Token> Scanner::verifyTokens(string token, int lineNumber)
             else             //update state
             {
                 tokenValue = "";
-                state = TOKENS[state][tokenId];
+                stringstream  ss;
+                int stateVal;
+                ss << TOKENS[state][tokenId];
+                ss >> stateVal;
+                state = (TokenState)stateVal;
                 tokenValue.push_back(next);
                 nextToken.ID = state;
                 nextToken.col = column;
@@ -143,7 +149,7 @@ vector<Token> Scanner::verifyTokens(string token, int lineNumber)
 
                 nextToken.ID = prevState;
                 nextToken.value = tokenValue;
-                newToken.line = lineNumber;
+                nextToken.line = lineNumber;
                 tokens.push_back(nextToken);
 
             }
