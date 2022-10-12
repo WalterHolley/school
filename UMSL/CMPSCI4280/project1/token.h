@@ -94,6 +94,8 @@ const string TOKENS[17][80] = {
 };
 
 const string TOKEN_NAME[]  = {"START","IDTOKEN","NUMTOKEN","COMPTOKEN","OPTOKEN","LPAREN","RPAREN","LBRACE","RBRACE","LBRACK","RBRACK","RWORD","ASSIGN","COLON","VERTBAR","EXCLAIM","AMPERSND","DOT","FINAL"};
+
+const string RESERVED_WORDS[] = {"begin", "end", "do", "while", "whole", "label", "return", "input", "output", "program", "warp", "if", "then", "pick", "declare", "assign", "func"};
 //The type of tokens available
 enum TokenState {
     START = 1,

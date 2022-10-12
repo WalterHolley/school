@@ -13,6 +13,27 @@
 #include <sstream>
 using namespace std;
 
+
+/**
+ * Checks token to determine if it's a reserved word
+ * @param token
+ * @return
+ */
+bool  isReservedWord(string token)
+{
+    bool result = false;
+
+    for(int i = 0; i < RESERVED_WORDS->length(); i ++)
+    {
+        if(RESERVED_WORDS[i] == token)
+        {
+            result = true;
+            break;
+        }
+    }
+    return result;
+}
+
 /**
  * Determine if the given character is a valid token
  * @param tokenChar the character to evaliuate
@@ -154,6 +175,16 @@ vector<Token> Scanner::verifyTokens(string token, int lineNumber)
             {
                 // complete token
                 state = START;
+
+
+                //check for reserved words
+                if(prevState == IDTOKEN)
+                {
+                    if(isReservedWord(tokenValue))
+                    {
+                        prevState = RWORD;
+                    }
+                }
 
                 nextToken.ID = prevState;
                 nextToken.value = tokenValue;
