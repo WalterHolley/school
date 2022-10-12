@@ -10,6 +10,7 @@ sends the information to the scanner.
 */
 #include <iostream>
 #include <fstream>
+#include <vector>
 #include <string>
 #include "scanner.h"
 #include "testScanner.h"
@@ -19,6 +20,7 @@ using namespace std;
 const string TEMP_FILE = "temp.in";
 
 Scanner scanner;
+TestScanner testScanner;
 
 /**
  * @brief frees resources associated with
@@ -36,8 +38,8 @@ void cleanup()
  */
 void processFile(string fileName)
 {
-
-
+    vector<Token> tokens = scanner.scanFile(fileName);
+    testScanner.presentTokens(tokens);
 }
 
 /**
@@ -57,6 +59,8 @@ void processTempFile()
 
     tempFile.close();
 
+    processFile(TEMP_FILE);
+
     //cleanup temp file
     remove(TEMP_FILE.c_str());
 
@@ -74,7 +78,7 @@ int main(int argc, char *argv[])
     else
     {
         //read stream
-        //processTempFile();
+        processTempFile();
     }
 
     return 0;

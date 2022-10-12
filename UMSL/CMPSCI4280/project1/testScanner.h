@@ -6,14 +6,13 @@
 #define TESTSCANNER_H
 
 #include <vector>
-#include "scanner.h"
+#include "token.h"
 using namespace std;
 
 class TestScanner
 {
     public:
-        TestScanner(vector<Token> tokens);
-        void presentTokens();
+        void presentTokens(vector<Token> tokens);
 };
 
 #endif //TESTSCANNER_H

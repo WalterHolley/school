@@ -23,19 +23,13 @@ int Scanner::findToken(char tokenChar)
 {
     int result = ERROR;
     string element(1, tokenChar);
-    try
+
+    for(int i = 0; i < MAX_TOKENS; i++)
     {
-        for(int i = 0; i < MAX_TOKENS; i++)
-        {
-            if(TOKENS[0][i] == element)
-            {
-                result = i;
-            }
-        }
-    }
-    catch (const exception& e)
-    {
-        result = ERROR;
+       if(TOKENS[0][i] == element)
+       {
+           result = i;
+       }
     }
 
     return result;
@@ -66,7 +60,7 @@ vector<Token>Scanner::scanFile(std::string fileName)
             {
                 if(!line.empty())
                 {
-
+                    //process file line
                     tokens = verifyTokens(line, lineCount);
 
 
@@ -79,6 +73,7 @@ vector<Token>Scanner::scanFile(std::string fileName)
                         cout << "An error occurred while scanning the source file.  All tokens may not have been found" << endl;
                         break;
                     }
+                    getline(stream, line);
                 }
             }
             fb.close();
@@ -108,11 +103,23 @@ vector<Token> Scanner::verifyTokens(string token, int lineNumber)
     Token nextToken;
 
     int column = 0;
-    while(state != FINAL || state != ERROR)
+    while(state != FINAL && state != ERROR)
     {
-        char next = token.at(column);
+        char next;
+        int tokenId;
+        if(column >= lastColumn)
+        {
+            state = FINAL;
+        }
+        else
+        {
+            next = token.at(column);
+            tokenId = findToken(next);
+
+        }
+
         column++;
-        int tokenId = findToken(next);
+
         if(tokenId == ERROR)
         {
             state = ERROR;
@@ -136,22 +143,29 @@ vector<Token> Scanner::verifyTokens(string token, int lineNumber)
                 tokenValue.push_back(next);
                 nextToken.ID = state;
                 nextToken.col = column;
+                nextToken.line = lineNumber;
                 prevState = state;
             }
 
         }
         else
         {
-            if(next == ' ')
+            if(next == ' ' && state != FINAL)
             {
                 // complete token
                 state = START;
 
                 nextToken.ID = prevState;
                 nextToken.value = tokenValue;
-                nextToken.line = lineNumber;
                 tokens.push_back(nextToken);
 
+            }
+            else if(state == FINAL)
+            {
+                // complete token
+                nextToken.ID = prevState;
+                nextToken.value = tokenValue;
+                tokens.push_back(nextToken);
             }
             else if(state != prevState)
             {
