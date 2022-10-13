@@ -16,3 +16,6 @@ NUMTOKEN (Numbers. Integers only.  No real numbers)
 OPTOKEN (Operators: =  <  > == != :=  +  -  *  /   ^   || &&)
 DELIMTOKEN (Delimiters and grouping tokens: . : (  ) , { } ; [ ])
 RWORD (Reserved word token: begin end do while whole label return input output program warp if then pick declare assign func )
+
+Reserved words:
+begin end do while whole label return input output program warp if then pick declare assign func
