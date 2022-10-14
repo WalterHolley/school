@@ -4,7 +4,7 @@
 
 #ifndef TOKEN_H
 #define TOKEN_H
-#define MAX_TOKENS 80
+#define MAX_TOKENS 83
 
 #define MAX_RWORDS 17
 #define MAX_TOKEN_SIZE = 8
