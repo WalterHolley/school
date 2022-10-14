@@ -4,6 +4,10 @@ Walter Holley III
 
 Project 1: Scanner
 
+Usage:
+./scanner filename
+./scanner << filename
+
 Implement scanner for the provided lexical definitions.
 
 The scanner is embedded and thus it will return one token every time it is called. Since the parser is not available yet, we will use a tester program to call the scanner.
