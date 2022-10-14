@@ -6,6 +6,7 @@
 #define TOKEN_H
 #define MAX_TOKENS 80
 
+#define MAX_RWORDS 17
 #define MAX_TOKEN_SIZE = 8
 #define COMMENT_TOKEN = "#"
 #include <string>
@@ -46,9 +47,10 @@ const string TOKENS[17][83] = {
                 "-999", "-999", "-999", "-999", "2", "4", "4", "-999", "4", "4", "5"}//Delimiter token
 };
 
-const string TOKEN_NAME[]  = {"START","IDTOKEN","NUMTOKEN","OPTOKEN","DELIMTOKEN","FINAL"};
+const string TOKEN_NAME[7]  = {"START","IDTOKEN","NUMTOKEN","OPTOKEN","DELIMTOKEN", "RESERVED","FINAL"};
 
-const string RESERVED_WORDS[] = {"begin", "end", "do", "while", "whole", "label", "return", "input", "output", "program", "warp", "if", "then", "pick", "declare", "assign", "func"};
+const string RESERVED_WORDS[17] = {"begin", "end", "do", "while", "whole", "label", "return", "input", "output", "program", "warp", "if", "then", "pick", "declare", "assign", "func"};
+
 //The type of tokens available
 enum TokenState {
     START = 1,

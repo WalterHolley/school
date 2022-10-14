@@ -13,17 +13,42 @@
 #include <sstream>
 using namespace std;
 
+/**
+ * Determines the next state of the loop
+ * @param currentState the curent state of the loop
+ * @param tokenId
+ * @return new state of the loop
+ */
+TokenState getNewState(TokenState currentState, int tokenId)
+{
+    TokenState result;
+    stringstream ss;
+
+    int stateVal;
+    string tokenVal = TOKENS[currentState][tokenId];
+    ss.str("");
+
+    for(unsigned  i = 0; i < tokenVal.size(); i++)
+    {
+        ss << tokenVal[i];
+    }
+
+    ss >> stateVal;
+    result = (TokenState)stateVal;
+
+    return result;
+}
 
 /**
  * Checks token to determine if it's a reserved word
  * @param token
- * @return
+ * @return true if reserved word found.  otherwise false
  */
-bool  isReservedWord(string token)
+bool isReservedWord(string token)
 {
     bool result = false;
 
-    for(int i = 0; i < RESERVED_WORDS->length(); i ++)
+    for(int i = 0; i < MAX_RWORDS; i ++)
     {
         if(RESERVED_WORDS[i] == token)
         {
@@ -141,11 +166,11 @@ vector<Token> Scanner::verifyTokens(string token, int lineNumber)
 {
     vector<Token> tokens;
     TokenState state = START;
-    int stateVal;
+
     int lastColumn = token.length();
     bool comments = false;
     Token nextToken;
-    stringstream ss;
+
 
     int column = 0;
     while(state != FINAL && state != ERROR)
@@ -156,6 +181,18 @@ vector<Token> Scanner::verifyTokens(string token, int lineNumber)
         if(column >= lastColumn)//if last position scanned, end loop
         {
             state = FINAL;
+            //resolve final token if any
+            if(nextToken.ID)
+            {
+                if(nextToken.ID == IDTOKEN)
+                {
+                    if(isReservedWord(nextToken.value))
+                    {
+                        nextToken.ID = RWORD;
+                    }
+                }
+                tokens.push_back(nextToken);
+            }
         }
         else //get next token
         {
@@ -169,10 +206,15 @@ vector<Token> Scanner::verifyTokens(string token, int lineNumber)
                 if(nextToken.ID) //commit previous token if any
                 {
                     nextToken.line = lineNumber;
+                    //check for reserved word
+                    if(isReservedWord(nextToken.value))
+                    {
+                        nextToken.ID = RWORD;
+                    }
                     tokens.push_back(nextToken);
                 }
-                nextToken.value = ""; //reset token
-                nextToken.ID = ERROR;
+                //reset token
+                nextToken = Token();
 
                 continue;
             }
@@ -181,9 +223,9 @@ vector<Token> Scanner::verifyTokens(string token, int lineNumber)
 
                 if(tokenId != ERROR) //token recognized
                 {
-                    ss << TOKENS[state][tokenId];
-                    ss >> stateVal;
-                    state = (TokenState)stateVal;
+                    //update state
+                    state = getNewState(state, tokenId);
+
                     nextToken.ID = state;
                     nextToken.col = column;
                     nextToken.line = lineNumber;
@@ -214,9 +256,8 @@ vector<Token> Scanner::verifyTokens(string token, int lineNumber)
                 //get state for new token
                 if(tokenId != ERROR)
                 {
-                    ss << TOKENS[state][tokenId];
-                    ss >> stateVal;
-                    state = (TokenState)stateVal;
+
+                    state = getNewState(state, tokenId);
                     if(state == nextToken.ID)
                     {
                         nextToken.value.push_back(next);
@@ -225,7 +266,7 @@ vector<Token> Scanner::verifyTokens(string token, int lineNumber)
                     {
                         if(state != ERROR)
                         {
-
+                            //commit previous token
                         }
                     }
 
@@ -249,4 +290,5 @@ vector<Token> Scanner::verifyTokens(string token, int lineNumber)
     }
 
     return tokens;
+
 }
