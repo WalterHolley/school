@@ -139,6 +139,13 @@ vector<Token>Scanner::scanFile(std::string fileName)
                     getline(stream, line);
                 }
             }
+            //add EOF Token
+            Token endToken;
+            endToken.ID = EOFTOKEN;
+            endToken.value = "EOF";
+            endToken.line = lineCount - 1;
+            endToken.col = tokens.back().col + 1;
+            allTokens.push_back(endToken);
             fb.close();
         }
         catch (const exception& e)
