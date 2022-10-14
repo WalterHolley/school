@@ -126,9 +126,17 @@ vector<Token>Scanner::scanFile(std::string fileName)
                     //process file line
                     tokens = verifyTokens(line, lineCount);
 
+                    if(tokens.size() == 1 && tokens.back().ID == 10)
+                    {
+                        lineCount++;
+                    }
+                    else
+                    {
+                        allTokens.insert(allTokens.end(), tokens.begin(), tokens.end());
+                        lineCount++;
+                    }
 
-                    allTokens.insert(allTokens.end(), tokens.begin(), tokens.end());
-                    lineCount++;
+
 
                     //check for error
                     if(tokens.back().ID == ERROR)
