@@ -7,8 +7,9 @@
 #define MAX_TOKENS 84
 
 #define MAX_RWORDS 17
-#define MAX_TOKEN_SIZE = 8
-#define COMMENT_TOKEN = "#"
+#define MAX_TOKEN_SIZE 8
+#define COMMENT_TOKEN "#"
+#define  MAX_TOKEN_TYPES 32
 #include <string>
 
 using std::string;
@@ -23,8 +24,8 @@ const string TOKENS[6][84] = {
         {"2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2",
          "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2",
          "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "3", "3",
-         "3", "3", "3", "3", "3", "3", "3", "3", "4", "4", "4", "4", "4", "4", "4", "4", "5", "5",
-         "5", "5", "9", "5", "2", "4", "4", "5", "4", "4", "5", "5"},//Start State
+         "3", "3", "3", "3", "3", "3", "3", "3", "4", "4", "4", "4", "5", "4", "4", "4", "5", "5",
+         "5", "5", "5", "5", "2", "4", "4", "5", "4", "4", "5", "5"},//Start State
         {"2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2",
          "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2",
          "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2",
@@ -47,7 +48,14 @@ const string TOKENS[6][84] = {
                 "-999", "-999", "-999", "-999", "2", "4", "4", "-999", "4", "4", "5", "-999"}//Delimiter token
 };
 
-const string TOKEN_NAME[8]  = {"START","IDTOKEN","NUMTOKEN","OPTOKEN","DELIMTOKEN", "RESERVED","FINAL", "EOF"};
+const string TOKEN_NAME[32][2]  = {
+        {"1","START"},{"2","IDTOKEN"},{"3","NUMTOKEN"},{"4","OPTOKEN"},{"5","DELIMTOKEN"}, {"6","RESERVED"},{"7""FINAL"}, {"8","EOF"},
+        {"-999", "ERROR"}, {"70", "LPAREN" }, {"71", "RPAREN" }, {"72", "LBRACE" }, {"73", "RBRACE" }, {"74", "LBRACKET" }, {"75", "RBRACKET" },
+        {"66", "COLON" }, {"79", "DOT" }, {"83", "SEMICOLON" }, {"82", "COMMA" }, {"64", "ASSIGN" }, {"62", "LT" }, {"63", "GT" },
+        {"128", "EQ" }, {"129", "NEQ" }, {"130", "COMP" }, {"80", "ADD" }, {"81", "SUB" }, {"67", "MUL" }, {"68", "DIV" },
+        {"69", "EXP" }, {"156", "OR" }, {"154", "AND" }
+};
+
 
 const string RESERVED_WORDS[17] = {"begin", "end", "do", "while", "whole", "label", "return", "input", "output", "program", "warp", "if", "then", "pick", "declare", "assign", "func"};
 
@@ -61,15 +69,67 @@ enum TokenState {
     RWORD = 6,
     FINAL = 7,
     EOFTOKEN = 8,
+    LPAREN = 70,
+    RPAREN = 71,
+    LBRACE = 72,
+    RBRACE = 73,
+    LBRACKET = 74,
+    RBRACKET = 75,
+    COLON = 66,
+    DOT = 79,
+    SEMICOLON = 83,
+    COMMA = 82,
+    ASSIGN = 64,
+    LT = 62,
+    GT = 63,
+    EQ = 128,
+    NEQ = 129,
+    COMP = 130,
+    ADD = 80,
+    SUB = 79,
+    MUL = 67,
+    DIV = 68,
+    EXP = 69,
+    OR = 156,
+    AND = 154,
     ERROR = -999
 
 };
+/*
+enum DELIMTYPE {
+    LPAREN = 70,
+    RPAREN = 71,
+    LBRACE = 72,
+    RBRACE = 73,
+    LBRACKET = 74,
+    RBRACKET = 75,
+    COLON = 66,
+    DOT = 79,
+    SEMICOLON = 82,
+    COMMA = 83
+};
 
-
+enum OPTYPE {
+    ASSIGN = 64,
+    LT = 62,
+    GT = 63,
+    EQ = 128,
+    NEQ = 129,
+    COMP = 130,
+    ADD = 80,
+    SUB = 79,
+    MUL = 67,
+    DIV = 68,
+    EXP = 69,
+    OR = 156,
+    AND = 154
+};
+*/
 
 //Token properties
 struct Token{
     TokenState ID;
+    string name;
     string value;
     int line;
     int col;

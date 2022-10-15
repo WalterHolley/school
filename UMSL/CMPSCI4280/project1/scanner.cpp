@@ -40,6 +40,43 @@ TokenState getNewState(TokenState currentState, int tokenId)
 }
 
 /**
+ * gets the printable name of the token
+ * @param tokenId the token state enumerator value
+ * @return string representing the name of the token
+ */
+string getTokenName(int tokenId)
+{
+    stringstream  ss;
+    string id;
+    ss << tokenId;
+    ss >> id;
+
+    string result = "ERROR";
+
+    for(int i = 0; i < MAX_TOKEN_TYPES; i++)
+    {
+        if(TOKEN_NAME[i][0] == id)
+        {
+            result = TOKEN_NAME[i][1];
+        }
+    }
+
+    return result;
+}
+
+/**
+ * Returns the operation token state of a token
+ * @param tokenId the numeric id of a token
+ * @return state indicating what kind of operator token belongs to the given id
+ */
+TokenState getOpTokenState(int tokenId)
+{
+    TokenState result = ERROR;
+
+    return  result;
+}
+
+/**
  * Checks token to determine if it's a reserved word
  * @param token
  * @return true if reserved word found.  otherwise false
@@ -126,7 +163,8 @@ vector<Token>Scanner::scanFile(std::string fileName)
                     //process file line
                     tokens = verifyTokens(line, lineCount);
 
-                    if(tokens.size() == 1 && tokens.back().ID == 10)
+                    //check for empty lines
+                    if(tokens.size() == 1 && tokens.back().value == "")
                     {
                         lineCount++;
                     }
@@ -206,6 +244,7 @@ vector<Token> Scanner::verifyTokens(string token, int lineNumber)
                         nextToken.ID = RWORD;
                     }
                 }
+                nextToken.name = getTokenName((int)nextToken.ID);
                 tokens.push_back(nextToken);
             }
         }
@@ -226,6 +265,7 @@ vector<Token> Scanner::verifyTokens(string token, int lineNumber)
                     {
                         nextToken.ID = RWORD;
                     }
+                    nextToken.name = getTokenName((int)nextToken.ID);
                     tokens.push_back(nextToken);
                 }
                 //reset token
@@ -248,11 +288,20 @@ vector<Token> Scanner::verifyTokens(string token, int lineNumber)
 
                     if(state == DELIMTOKEN) //delimiter found.  save and reset token
                     {
-
+                        nextToken.ID = (TokenState)tokenId;
+                        nextToken.name = getTokenName((int)nextToken.ID);
+                        tokens.push_back(nextToken);
+                        nextToken = Token();
+                        continue;
                     }
                     else if(state == OPTOKEN) // check for compound tokens(look-ahead)
                     {
+                        if(column < lastColumn)
+                        {
+                            //next = token.at(column);
+                            column++;
 
+                        }
                     }
                 }
                 else //unrecognized token.  report issue
@@ -261,6 +310,7 @@ vector<Token> Scanner::verifyTokens(string token, int lineNumber)
                     nextToken.ID = ERROR;
                     nextToken.col = column;
                     nextToken.line = lineNumber;
+                    nextToken.name = getTokenName((int)nextToken.ID);
                     nextToken.value.push_back(next);
                     tokens.push_back(nextToken);
                     continue;
@@ -285,6 +335,24 @@ vector<Token> Scanner::verifyTokens(string token, int lineNumber)
                         }
                     }
 
+                    if(state == DELIMTOKEN) //delimiter found.  save and reset token
+                    {
+                        nextToken.ID = (TokenState)tokenId;
+                        nextToken.name = getTokenName((int)nextToken.ID);
+                        tokens.push_back(nextToken);
+                        nextToken = Token();
+                        continue;
+                    }
+                    else if(state == OPTOKEN) // check for compound tokens(look-ahead)
+                    {
+                        if(column < lastColumn)
+                        {
+                            //next = token.at(column);
+                            column++;
+
+                        }
+                    }
+
                 }
                 else //unrecognized token.  report issue
                 {
@@ -293,6 +361,7 @@ vector<Token> Scanner::verifyTokens(string token, int lineNumber)
                     nextToken.col = column;
                     nextToken.line = lineNumber;
                     nextToken.value.push_back(next);
+                    nextToken.name = getTokenName((int)nextToken.ID);
                     tokens.push_back(nextToken);
                     continue;
                 }
