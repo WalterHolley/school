@@ -17,6 +17,8 @@ var FSHADER_SOURCE = `#version 300 es
   uniform float u_hue;
   out vec4 cg_FragColor;
   
+ 
+  
   vec3 rgb2hsv(vec3 c) {
       vec4 K = vec4(0.0, -1.0/3.0, 2.0/3.0, -1.0);
       vec4 p = mix(vec4(c.bg, K.wz), vec4(c.gb, K.xy), step(c.b, c.g));
@@ -33,11 +35,16 @@ var FSHADER_SOURCE = `#version 300 es
       return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
   }
 
+
   void main() {     
-      vec4 c = texture(u_image, v_texCoord);    
-      vec3 hsv = rgb2hsv(c.rgb); // convert to hsv 
-      hsv.b = clamp(u_hue, 0.0, 1.0); // hue adjust        
-      vec3 rgb = hsv2rgb(hsv); // back to rgb
+      vec4 c = texture(u_image, v_texCoord);
+      vec3 hsv;
+      vec3 rgb;
+      
+      hsv = rgb2hsv(c.rgb); // convert to hsv
+      hsv.r -= u_hue; //update hue
+      rgb = hsv2rgb(hsv);
+      
 
       cg_FragColor = vec4(rgb, 1.0);    
   }       
