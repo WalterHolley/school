@@ -143,10 +143,6 @@ function render(canvas, gl, image) {
 // gets the hue selected by the user
 function getHue(){
   let hue = config.HUE;
-  if(hue < 0){
-    hue = hue * -1;
-  }
-
   return hue;
 }
 
