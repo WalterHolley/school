@@ -7,10 +7,12 @@
 */
 #include "scanner.h"
 #include <stdexcept>
+#include<algorithm>
 #include <vector>
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <string>
 using namespace std;
 
 /**
@@ -103,12 +105,34 @@ bool isReservedWord(string token)
  */
 string cleanup(string value)
 {
-
-   if((!value.empty() && value[value.size() - 1] == '\r') || (!value.empty() && value[value.size() - 1] == '\n'))
-   {
-       value.erase(value.size() - 1);
-   }
+    size_t  found = value.find("\r\n");
+    while(found != string::npos)
+    {
+        value.replace(found, 2, " ");
+        found = value.find("\r\n");
+    }
+       //value.erase(value.size() - 1);
     return value;
+}
+
+/**
+ * Determines the final state of a given token
+ * @param token the token to evaluate
+ * @return final version of the evaluated token
+ */
+Token finalizeToken(Token token, char nextChar)
+{
+    switch(token.ID)
+    {
+        case OPTOKEN:
+            break;
+        case DELIMTOKEN:
+            break;
+        case IDTOKEN:
+            break;
+        default:
+            break;
+    }
 }
 
 /**
@@ -142,25 +166,27 @@ int Scanner::findToken(char tokenChar)
 vector<Token>Scanner::scanFile(std::string fileName)
 {
     filebuf  fb;
-
+    Token nextToken;
     vector<Token> tokens;
     vector<Token> allTokens;
+    bool comments = false;
 
     if(fb.open(fileName.c_str(), ios::in))
     {
         istream stream(&fb);
+        char delimiter = ' ';
         string line;
         int lineCount = 1;
         try
         {
-            getline(stream, line);
-            while(stream)
+
+            while(getline(stream, line, delimiter))
             {
+                line = cleanup(line);
+                //line.erase(remove_if(line.begin(), line.end(), ::isspace), line.end());
+
                 if(!line.empty())
                 {
-                    //remove end line characters
-                    line = cleanup(line);
-                    //process file line
                     tokens = verifyTokens(line, lineCount);
 
                     //check for empty lines
@@ -174,15 +200,12 @@ vector<Token>Scanner::scanFile(std::string fileName)
                         lineCount++;
                     }
 
-
-
                     //check for error
                     if(tokens.back().ID == ERROR)
                     {
                         cout << "An error occurred while scanning the source file.  All tokens may not have been found" << endl;
                         break;
                     }
-                    getline(stream, line);
                 }
             }
             //add EOF Token
@@ -221,7 +244,6 @@ vector<Token> Scanner::verifyTokens(string token, int lineNumber)
     TokenState state = START;
 
     int lastColumn = token.length();
-    bool comments = false;
     Token nextToken;
 
 
@@ -233,6 +255,7 @@ vector<Token> Scanner::verifyTokens(string token, int lineNumber)
 
         if(column >= lastColumn)//if last position scanned, end loop
         {
+
             state = FINAL;
             //resolve final token if any
             if(nextToken.ID)
@@ -253,6 +276,8 @@ vector<Token> Scanner::verifyTokens(string token, int lineNumber)
             next = token.at(column);
             tokenId = findToken(next);
             column++;
+
+            //TODO: check if comments enabled
 
             if(next == ' ')//check for empty space
             {

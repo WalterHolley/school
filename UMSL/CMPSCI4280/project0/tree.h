@@ -17,6 +17,7 @@ class Tree
         void printInOrder(string fileName);
         void printPreOrder(string fileName);
         void printPostOrder(string fileName);
+        void destroy();
         ~Tree();
         node* getParent();
 };
