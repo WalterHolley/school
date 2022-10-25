@@ -13,8 +13,10 @@ using namespace std;
 
 class Scanner
 {
+
     private:
         int findToken(char firstChar);
+        string handleNewLines(string value);
     public:
         vector<Token> scanFile(string fileName);
         vector<Token> verifyTokens(string tokens, int lineNumber);

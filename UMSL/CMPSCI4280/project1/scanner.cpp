@@ -15,6 +15,13 @@
 #include <string>
 using namespace std;
 
+//scanner error message
+const string SCANNER_ERROR_MESSAGE = "An error occurred while scanning the source file.  All tokens may not have been found";
+
+//keep track of line number and tokens in file
+int lineCount;
+vector<Token> allTokens;
+
 /**
  * Determines the next state of the loop
  * @param currentState the curent state of the loop
@@ -98,22 +105,7 @@ bool isReservedWord(string token)
     return result;
 }
 
-/**
- * Removes carriage returns from string
- * @param value
- * @return
- */
-string cleanup(string value)
-{
-    size_t  found = value.find("\r\n");
-    while(found != string::npos)
-    {
-        value.replace(found, 2, " ");
-        found = value.find("\r\n");
-    }
-       //value.erase(value.size() - 1);
-    return value;
-}
+
 
 /**
  * Determines the final state of a given token
@@ -133,8 +125,14 @@ Token finalizeToken(Token token, char nextChar)
         default:
             break;
     }
+
+    return token;
 }
 
+TokenState finalOpToken(Token token, char nextChar)
+{
+    return token.ID;
+}
 /**
  * Determine if the given character is a valid token
  * @param tokenChar the character to evaliuate
@@ -159,6 +157,35 @@ int Scanner::findToken(char tokenChar)
 }
 
 /**
+ * Removes carriage returns from string
+ * @param value
+ * @return
+ */
+string Scanner::handleNewLines(std::string value) {
+
+    size_t  found = value.find("\r\n");
+    string token;
+    while(found != string::npos)
+    {
+
+        value.replace(found, 2, "");
+
+        //check for potential token
+        token = value.substr(0,found);
+        if(!token.empty())
+        {
+          vector<Token> lineTokens = verifyTokens(token, lineCount);
+          allTokens.insert(allTokens.end(), lineTokens.begin(), lineTokens.end());
+          value.erase(0,found);
+        }
+        lineCount++;
+        found = value.find("\r\n");
+    }
+    //value.erase(value.size() - 1);
+    return value;
+}
+
+/**
  * Breaks down a given file into its token artifacts
  * @param fileName the file to scan
  * @return Vector collection of the tokens produced from the file
@@ -168,7 +195,7 @@ vector<Token>Scanner::scanFile(std::string fileName)
     filebuf  fb;
     Token nextToken;
     vector<Token> tokens;
-    vector<Token> allTokens;
+
     bool comments = false;
 
     if(fb.open(fileName.c_str(), ios::in))
@@ -176,34 +203,31 @@ vector<Token>Scanner::scanFile(std::string fileName)
         istream stream(&fb);
         char delimiter = ' ';
         string line;
-        int lineCount = 1;
+        lineCount = 1;
         try
         {
 
             while(getline(stream, line, delimiter))
             {
-                line = cleanup(line);
-                //line.erase(remove_if(line.begin(), line.end(), ::isspace), line.end());
+                //process token values that are split between lines
+                line = handleNewLines(line);
 
-                if(!line.empty())
+                //check for errors
+                if(!allTokens.empty() && allTokens.back().ID == ERROR)
+                {
+                    cout << SCANNER_ERROR_MESSAGE << endl;
+                    break;
+                }
+                else if(!line.empty())
                 {
                     tokens = verifyTokens(line, lineCount);
+                    allTokens.insert(allTokens.end(), tokens.begin(), tokens.end());
 
-                    //check for empty lines
-                    if(tokens.size() == 1 && tokens.back().value == "")
-                    {
-                        lineCount++;
-                    }
-                    else
-                    {
-                        allTokens.insert(allTokens.end(), tokens.begin(), tokens.end());
-                        lineCount++;
-                    }
 
                     //check for error
                     if(tokens.back().ID == ERROR)
                     {
-                        cout << "An error occurred while scanning the source file.  All tokens may not have been found" << endl;
+                        cout << SCANNER_ERROR_MESSAGE << endl;
                         break;
                     }
                 }
@@ -219,7 +243,7 @@ vector<Token>Scanner::scanFile(std::string fileName)
         }
         catch (const exception& e)
         {
-            cout << "An error occurred while scanning the source file" <<endl;
+            cout << SCANNER_ERROR_MESSAGE <<endl;
             cerr << e.what() <<'\n';
             fb.close();
         }
@@ -244,10 +268,11 @@ vector<Token> Scanner::verifyTokens(string token, int lineNumber)
     TokenState state = START;
 
     int lastColumn = token.length();
+    int column = 0;
+
     Token nextToken;
 
 
-    int column = 0;
     while(state != FINAL && state != ERROR)
     {
         char next;
@@ -357,6 +382,14 @@ vector<Token> Scanner::verifyTokens(string token, int lineNumber)
                         if(state != ERROR)
                         {
                             //commit previous token
+                            tokens.push_back(nextToken);
+                            nextToken = Token();
+
+                            //start next token
+                            nextToken.ID = state;
+                            nextToken.value.push_back(next);
+                            nextToken.col = column;
+                            nextToken.line = lineCount;
                         }
                     }
 

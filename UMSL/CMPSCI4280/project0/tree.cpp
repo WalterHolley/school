@@ -32,21 +32,9 @@ void printNode(node* Node, int depth, FILE* outputFile)
  */
 void cleanup(node* Node)
 {
-    if(Node->left)
-    {
-        cleanup(Node->left);
-    }
-
-    if(Node->right)
-    {
-        cleanup(Node->right);
-    }
-
-    if(Node->center)
-    {
-        cleanup(Node->center);
-    }
-
+    cleanup(Node->left);
+    cleanup(Node->right);
+    cleanup(Node->center);
     delete Node;
 }
 
@@ -381,6 +369,14 @@ bool Tree::buildTree(string fileName)
 }
 
 /**
+ * @brief Destroys the binary tree
+ */
+void Tree::destroy()
+{
+    cleanup(_parent);
+}
+
+/**
 * @brief Gets the parent node of the tree
 * 
 * @return parent node of the binary tree 
@@ -392,14 +388,7 @@ node* Tree::getParent()
 
 Tree::~Tree() 
 {
-    try{
-      // cleanup(_parent);
-       //_parent = NULL;
-    }
-    catch(const exception& e)
-    {
-
-    }
+    destroy();
     
 }
 

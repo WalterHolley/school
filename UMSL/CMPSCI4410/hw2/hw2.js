@@ -106,7 +106,7 @@ function randomPolygon(){
        ranGon.scaleUp = false;
     }
 
-    ranGon.scaleRate = Math.random() * 0.005;
+    ranGon.scaleRate = Math.random() * 0.05;
 
     
     ranGon.color = [Math.random(), Math.random(), Math.random()];
@@ -166,7 +166,7 @@ function draw(gl, shaderModelMatrix){
        let centerY = polygons[i].center[1];
 
         //update angle
-        polygons[i].angle = ((polygons[i].angle + 1) % 360);
+        polygons[i].angle = animate(polygons[i.angle])
          //update radians
          let radians = (Math.PI * polygons[i].angle) / 180.0;
 
@@ -174,12 +174,15 @@ function draw(gl, shaderModelMatrix){
       
 
        //compute position matrix
-       polygons[i].matrix.setTranslate(centerX, centerY, 1);
        
+       polygons[i].matrix.translate(-centerY, -centerX, 0);
+       //polygons[i].matrix.scale(polygons[i].scale,polygons[i].scale,1);
        polygons[i].matrix.rotate(polygons[i].angle,0,0,1);
-       polygons[i].matrix.scale(polygons[i].scale,polygons[i].scale,1);
-       //polygons[i].matrix.translate(-centerX, -centerY, 1);
-        
+       polygons[i].matrix.translate(centerX, centerY, 0);
+       //polygons[i].matrix.setIdentity();
+      
+       
+       
        //set color
        let color = polygons[i].color;
        gl.uniform4f(u_Color, color[0], color[1], color[2], 1.0);
