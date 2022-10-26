@@ -7,6 +7,8 @@
 #define MAX_TOKENS 84
 
 #define MAX_RWORDS 17
+#define DELIM_TOKEN_COUNT 10
+#define OP_TOKEN_COUNT 13
 #define MAX_TOKEN_SIZE 8
 #define COMMENT_TOKEN "#"
 #define  MAX_TOKEN_TYPES 32

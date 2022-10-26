@@ -20,6 +20,9 @@ const string SCANNER_ERROR_MESSAGE = "An error occurred while scanning the sourc
 
 //keep track of line number and tokens in file
 int lineCount;
+int column;
+bool comments = false;
+
 vector<Token> allTokens;
 
 /**
@@ -107,32 +110,80 @@ bool isReservedWord(string token)
 
 
 
-/**
- * Determines the final state of a given token
- * @param token the token to evaluate
- * @return final version of the evaluated token
- */
-Token finalizeToken(Token token, char nextChar)
+
+int stringToInt(string number)
 {
-    switch(token.ID)
+    stringstream  ss;
+    int result;
+    try
     {
-        case OPTOKEN:
-            break;
-        case DELIMTOKEN:
-            break;
-        case IDTOKEN:
-            break;
-        default:
-            break;
+        ss << number;
+        ss >> result;
+    }
+    catch (const exception& e)
+    {
+        cout << SCANNER_ERROR_MESSAGE <<endl;
+        cerr << e.what() <<'\n';
+    }
+
+    return  result;
+}
+/*
+Token finalToken(Token token, char nextChar)
+{
+    string finalTokenValue;
+    string finalTokenId;
+    string tokenArray[][];
+    TokenState initialState = token.ID;
+    int maxTokens;
+
+    finalTokenValue.push_back(token.value);
+
+    //combine character
+    if(nextChar != '')
+    {
+        finalTokenValue.push_back(nextChar);
+
+    }
+
+    if(token.ID == DELIMTOKEN)
+    {
+        maxTokens = DELIM_TOKEN_COUNT;
+        tokenArray = DELIMTOKENS;
+
+    }
+    else if(token.ID == OPTOKEN)
+    {
+        maxTokens = OP_TOKEN_COUNT;
+        tokenArray = OPTOKENS;
+    }
+
+    if(token.ID == OPTOKEN || token.ID == DELIMTOKEN)
+    {
+        //search for token
+        for(int i = 0; i < maxTokens; i++)
+        {
+            if(finalTokenValue == tokenArray[i][0])
+            {
+                token.value = finalTokenValue;
+                //final token name
+                for(int c = 0; c < MAX_TOKEN_TYPES; c++)
+                {
+                    if( tokenArray[i][1] == TOKEN_NAME[c][0])
+                    {
+                        token.name = TOKEN_NAME[c][1];
+                        token.ID = (TokenState) stringToInt(TOKEN_NAME[c][0])
+                        break;
+                    }
+                }
+            }
+        }
     }
 
     return token;
 }
+*/
 
-TokenState finalOpToken(Token token, char nextChar)
-{
-    return token.ID;
-}
 /**
  * Determine if the given character is a valid token
  * @param tokenChar the character to evaliuate
@@ -175,6 +226,7 @@ string Scanner::handleNewLines(std::string value) {
         if(!token.empty())
         {
           vector<Token> lineTokens = verifyTokens(token, lineCount);
+          column = 1;
           allTokens.insert(allTokens.end(), lineTokens.begin(), lineTokens.end());
           value.erase(0,found);
         }
@@ -196,7 +248,7 @@ vector<Token>Scanner::scanFile(std::string fileName)
     Token nextToken;
     vector<Token> tokens;
 
-    bool comments = false;
+
 
     if(fb.open(fileName.c_str(), ios::in))
     {
@@ -235,6 +287,7 @@ vector<Token>Scanner::scanFile(std::string fileName)
             //add EOF Token
             Token endToken;
             endToken.ID = EOFTOKEN;
+            endToken.name = "EOFToken";
             endToken.value = "EOF";
             endToken.line = lineCount - 1;
             endToken.col = tokens.back().col + 1;
@@ -262,6 +315,7 @@ vector<Token>Scanner::scanFile(std::string fileName)
  * @param lineNumber the number of the line to be associated with the tokens
  * @return collection of tokens found in a string
  */
+ /*
 vector<Token> Scanner::verifyTokens(string token, int lineNumber)
 {
     vector<Token> tokens;
@@ -433,4 +487,85 @@ vector<Token> Scanner::verifyTokens(string token, int lineNumber)
 
     return tokens;
 
+}
+*/
+vector<Token> Scanner::verifyTokens(string token, int lineNumber)
+{
+    int tokenSize = 0;
+    int tokenId;
+    TokenState state = START;
+    char nextChar;
+    Token nextToken;
+    vector<Token> tokens;
+
+    while(state != FINAL & state != ERROR)
+    {
+        if(tokenSize >= token.length())
+        {
+            //end the loop
+            state  = FINAL;
+            if(nextToken.ID != 0)
+            {
+                tokens.push_back(nextToken);
+            }
+        }
+        else
+        {
+            nextChar = token.at(tokenSize);
+
+            //TODO: check if comments enabled
+            if(nextChar == '#')
+            {
+                comments = !comments;
+            }
+
+            if(comments)
+            {
+                tokenSize++;
+                continue;
+            }
+
+            //get state of current character
+            tokenId = findToken(nextChar);
+
+            //evaluate token states
+            if(state == START)
+            {
+                state = getNewState(state, tokenId);
+                nextToken = Token();
+                nextToken.ID = state;
+                nextToken.line = lineCount;
+                nextToken.col = column;
+                nextToken.value.push_back(nextChar);
+                tokenSize++;
+
+            }
+            else if(state == getNewState(state, tokenId))
+            {
+                if(state != ERROR)
+                {
+                    nextToken.value.push_back(nextChar);
+                    tokenSize++;
+                    continue;
+                }
+                else
+                {
+                    nextToken.ID = ERROR;
+                    nextToken.name = getTokenName((int)ERROR);
+                    tokenSize++
+                    tokens.push_back(nextToken);
+                    break;
+                }
+            }
+            else //state has changed
+            {
+                //finalize previous token if any
+
+                //check for delim or operator token
+
+                //look ahead for delim/operator
+            }
+        }
+    }
+    return tokens;
 }
