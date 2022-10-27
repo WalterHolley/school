@@ -539,6 +539,16 @@ vector<Token> Scanner::verifyTokens(string token, int lineNumber)
                 nextToken.value.push_back(nextChar);
                 tokenSize++;
 
+                //check for delimiter or operator
+                if(state == DELIMTOKEN)
+                {
+
+                }
+                else if (state == OPTOKEN)
+                {
+
+                }
+
             }
             else if(state == getNewState(state, tokenId))
             {
@@ -546,6 +556,37 @@ vector<Token> Scanner::verifyTokens(string token, int lineNumber)
                 {
                     nextToken.value.push_back(nextChar);
                     tokenSize++;
+
+                    //check next
+                    if(tokenSize < token.length())
+                    {
+                        char lookAhead = token.at(tokenSize);
+                        int id = findToken(lookAhead);
+                        if(id == ERROR)
+                        {
+                            nextToken.ID = ERROR;
+                            nextToken.name = getTokenName(ERROR);
+                            nextToken.value.push_back(lookAhead);
+                        }
+                        else
+                        {
+                            TokenState nextState = getNewState(state, id);
+                            if(state == nextState)
+                            {
+                                nextToken.value.push_back(lookAhead);
+                                tokenSize++;
+                                continue;
+                            }
+                            else
+                            {
+                                //check
+                            }
+                        }
+                    }
+                    else
+                    {
+                        state = FINAL;
+                    }
                     continue;
                 }
                 else
