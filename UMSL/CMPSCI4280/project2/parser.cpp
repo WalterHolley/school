@@ -35,12 +35,14 @@ void Parser::block()
 void Parser::expr()
 {
     //call <N>
+    N();
     //if next token is "-", call <expr>, otherwise done
 }
 
 void Parser::N()
 {
     //call <A>
+    A();
     //check for "+" or "*", run <N> if true
 
 }
@@ -49,6 +51,7 @@ void Parser::A()
 {
     //check next token for "/", call <A> if true
     //call <M>
+    M();
 }
 
 void Parser::M()
@@ -66,7 +69,9 @@ void Parser::R()
 void Parser::stats()
 {
     //call <stat>
+    stat();
     //call <mStat>
+    mStat();
 }
 
 void Parser::mStat()
