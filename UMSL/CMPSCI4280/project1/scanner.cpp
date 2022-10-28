@@ -315,7 +315,7 @@ vector<Token>Scanner::scanFile(std::string fileName)
  * @param lineNumber the number of the line to be associated with the tokens
  * @return collection of tokens found in a string
  */
- /*
+
 vector<Token> Scanner::verifyTokens(string token, int lineNumber)
 {
     vector<Token> tokens;
@@ -488,7 +488,8 @@ vector<Token> Scanner::verifyTokens(string token, int lineNumber)
     return tokens;
 
 }
-*/
+
+ /*
 vector<Token> Scanner::verifyTokens(string token, int lineNumber)
 {
     int tokenSize = 0;
@@ -593,7 +594,7 @@ vector<Token> Scanner::verifyTokens(string token, int lineNumber)
                 {
                     nextToken.ID = ERROR;
                     nextToken.name = getTokenName((int)ERROR);
-                    tokenSize++
+                    tokenSize++;
                     tokens.push_back(nextToken);
                     break;
                 }
@@ -610,3 +611,4 @@ vector<Token> Scanner::verifyTokens(string token, int lineNumber)
     }
     return tokens;
 }
+  */

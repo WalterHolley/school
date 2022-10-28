@@ -8,9 +8,20 @@
 
 #ifndef PARSER_H
 #define PARSER_H
+
+#include <stack>
+#include "token.h"
+
+using namespace std;
+
+struct parserNode {
+
+};
+
 class Parser
 {
     public:
+        void parseTokens(stack<> tokens);
         void program();
         void block();
         void vars();
