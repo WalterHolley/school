@@ -653,7 +653,7 @@ vector<Token> Scanner::verifyTokens(string token, int lineNumber)
                                 {
                                     allTokens.push_back(nextToken);
                                 }
-                                //start new
+                                //start new token
                                 state = START;
                             }
                         }
