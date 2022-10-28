@@ -18,5 +18,14 @@ void Parser::parseTokens(int tokens)
  */
 void Parser::program()
 {
-
+    vars();
+    //get next token
+    //check if next token is program
+    //call block if true
+    block();
+}
+void block()
+{
+    //check if next token is begin
+    //check if next is vars
 }
