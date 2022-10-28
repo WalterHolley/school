@@ -76,16 +76,75 @@ string getTokenName(int tokenId)
     return result;
 }
 
+int stringToInt(string number)
+{
+    stringstream  ss;
+    int result;
+    try
+    {
+        ss << number;
+        ss >> result;
+    }
+    catch (const exception& e)
+    {
+        cout << SCANNER_ERROR_MESSAGE <<endl;
+        cerr << e.what() <<'\n';
+    }
+
+    return  result;
+}
+
 /**
  * Returns the operation token state of a token
  * @param tokenId the numeric id of a token
  * @return state indicating what kind of operator token belongs to the given id
  */
-TokenState getOpTokenState(int tokenId)
+TokenState getOpTokenState(string token, int tokenPosition)
 {
     TokenState result = ERROR;
+    char startingToken = token.at(tokenPosition);
+    char nextToken;
+    string finalToken;
+
+    finalToken.push_back(startingToken);
+    if(tokenPosition + 1 < token.length())
+    {
+        nextToken = token.at(tokenPosition + 1);
+        finalToken.push_back(nextToken);
+    }
+
+    for(int i = 0; i < OP_TOKEN_COUNT; i++)
+    {
+        if(finalToken == OPTOKENS[i][0])
+        {
+            int tokenId = stringToInt(OPTOKENS[i][1]);
+            result = (TokenState)tokenId;
+            break;
+        }
+    }
+
 
     return  result;
+}
+
+TokenState getDelimTokenState(char token)
+{
+    string finalToken;
+    TokenState result = ERROR;
+    finalToken.push_back(token);
+
+
+    for(int i = 0; i < DELIM_TOKEN_COUNT; i++)
+    {
+        if(finalToken == DELIMTOKENS[i][0])
+        {
+            int tokenId = stringToInt(DELIMTOKENS[i][1]);
+            result = (TokenState)tokenId;
+            break;
+        }
+    }
+
+    return result;
 }
 
 /**
@@ -111,23 +170,7 @@ bool isReservedWord(string token)
 
 
 
-int stringToInt(string number)
-{
-    stringstream  ss;
-    int result;
-    try
-    {
-        ss << number;
-        ss >> result;
-    }
-    catch (const exception& e)
-    {
-        cout << SCANNER_ERROR_MESSAGE <<endl;
-        cerr << e.what() <<'\n';
-    }
 
-    return  result;
-}
 /*
 Token finalToken(Token token, char nextChar)
 {
@@ -315,7 +358,7 @@ vector<Token>Scanner::scanFile(std::string fileName)
  * @param lineNumber the number of the line to be associated with the tokens
  * @return collection of tokens found in a string
  */
-
+/*
 vector<Token> Scanner::verifyTokens(string token, int lineNumber)
 {
     vector<Token> tokens;
@@ -488,8 +531,8 @@ vector<Token> Scanner::verifyTokens(string token, int lineNumber)
     return tokens;
 
 }
+*/
 
- /*
 vector<Token> Scanner::verifyTokens(string token, int lineNumber)
 {
     int tokenSize = 0;
@@ -543,7 +586,29 @@ vector<Token> Scanner::verifyTokens(string token, int lineNumber)
                 //check for delimiter or operator
                 if(state == DELIMTOKEN)
                 {
+                    switch(nextChar)
+                    {
+                        case ':':
+                            //check for optoken
+                            TokenState opTokenState = getOpTokenState(token, tokenSize);
+                            if(opTokenState != ERROR)
+                            {
+                                nextToken.ID = opTokenState;
+                                nextToken.name = getTokenName(opTokenState);
+                                nextToken.value.push_back(token.at(tokenSize));
+                                tokenSize++;
+                                allTokens.push_back(nextToken);
+                            }
+                            else{
+                                nextToken.ID = COLON;
+                            }
+                            break;
+                        default: //set delimiter as normal
+                            nextToken.ID = getDelimTokenState(nextChar);
 
+                    }
+                    nextToken = Token();
+                    state = START;
                 }
                 else if (state == OPTOKEN)
                 {
@@ -568,6 +633,9 @@ vector<Token> Scanner::verifyTokens(string token, int lineNumber)
                             nextToken.ID = ERROR;
                             nextToken.name = getTokenName(ERROR);
                             nextToken.value.push_back(lookAhead);
+                            allTokens.push_back(nextToken);
+                            state = ERROR;
+                            continue;
                         }
                         else
                         {
@@ -580,7 +648,13 @@ vector<Token> Scanner::verifyTokens(string token, int lineNumber)
                             }
                             else
                             {
-                                //check
+                                //commit previous token
+                                if(nextToken.ID != 0)
+                                {
+                                    allTokens.push_back(nextToken);
+                                }
+                                //start new
+                                state = START;
                             }
                         }
                     }
@@ -602,13 +676,11 @@ vector<Token> Scanner::verifyTokens(string token, int lineNumber)
             else //state has changed
             {
                 //finalize previous token if any
-
-                //check for delim or operator token
-
-                //look ahead for delim/operator
+                //start new token
+                state = START;
+                tokenSize--;
             }
         }
     }
     return tokens;
 }
-  */
