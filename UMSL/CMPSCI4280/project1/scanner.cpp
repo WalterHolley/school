@@ -70,6 +70,7 @@ string getTokenName(int tokenId)
         if(TOKEN_NAME[i][0] == id)
         {
             result = TOKEN_NAME[i][1];
+            break;
         }
     }
 
@@ -358,181 +359,6 @@ vector<Token>Scanner::scanFile(std::string fileName)
  * @param lineNumber the number of the line to be associated with the tokens
  * @return collection of tokens found in a string
  */
-/*
-vector<Token> Scanner::verifyTokens(string token, int lineNumber)
-{
-    vector<Token> tokens;
-    TokenState state = START;
-
-    int lastColumn = token.length();
-    int column = 0;
-
-    Token nextToken;
-
-
-    while(state != FINAL && state != ERROR)
-    {
-        char next;
-        int tokenId;
-
-        if(column >= lastColumn)//if last position scanned, end loop
-        {
-
-            state = FINAL;
-            //resolve final token if any
-            if(nextToken.ID)
-            {
-                if(nextToken.ID == IDTOKEN)
-                {
-                    if(isReservedWord(nextToken.value))
-                    {
-                        nextToken.ID = RWORD;
-                    }
-                }
-                nextToken.name = getTokenName((int)nextToken.ID);
-                tokens.push_back(nextToken);
-            }
-        }
-        else //get next token
-        {
-            next = token.at(column);
-            tokenId = findToken(next);
-            column++;
-
-            //TODO: check if comments enabled
-
-            if(next == ' ')//check for empty space
-            {
-                state = START;
-                if(nextToken.ID) //commit previous token if any
-                {
-                    nextToken.line = lineNumber;
-                    //check for reserved word
-                    if(isReservedWord(nextToken.value))
-                    {
-                        nextToken.ID = RWORD;
-                    }
-                    nextToken.name = getTokenName((int)nextToken.ID);
-                    tokens.push_back(nextToken);
-                }
-                //reset token
-                nextToken = Token();
-
-                continue;
-            }
-            else if(state == START) //setup new token
-            {
-
-                if(tokenId != ERROR) //token recognized
-                {
-                    //update state
-                    state = getNewState(state, tokenId);
-
-                    nextToken.ID = state;
-                    nextToken.col = column;
-                    nextToken.line = lineNumber;
-                    nextToken.value.push_back(next);
-
-                    if(state == DELIMTOKEN) //delimiter found.  save and reset token
-                    {
-                        nextToken.ID = (TokenState)tokenId;
-                        nextToken.name = getTokenName((int)nextToken.ID);
-                        tokens.push_back(nextToken);
-                        nextToken = Token();
-                        continue;
-                    }
-                    else if(state == OPTOKEN) // check for compound tokens(look-ahead)
-                    {
-                        if(column < lastColumn)
-                        {
-                            //next = token.at(column);
-                            column++;
-
-                        }
-                    }
-                }
-                else //unrecognized token.  report issue
-                {
-                    state = ERROR;
-                    nextToken.ID = ERROR;
-                    nextToken.col = column;
-                    nextToken.line = lineNumber;
-                    nextToken.name = getTokenName((int)nextToken.ID);
-                    nextToken.value.push_back(next);
-                    tokens.push_back(nextToken);
-                    continue;
-                }
-            }
-            else
-            {
-                //get state for new token
-                if(tokenId != ERROR)
-                {
-
-                    state = getNewState(state, tokenId);
-                    if(state == nextToken.ID)
-                    {
-                        nextToken.value.push_back(next);
-                    }
-                    else //token type changed.evaluate
-                    {
-                        if(state != ERROR)
-                        {
-                            //commit previous token
-                            tokens.push_back(nextToken);
-                            nextToken = Token();
-
-                            //start next token
-                            nextToken.ID = state;
-                            nextToken.value.push_back(next);
-                            nextToken.col = column;
-                            nextToken.line = lineCount;
-                        }
-                    }
-
-                    if(state == DELIMTOKEN) //delimiter found.  save and reset token
-                    {
-                        nextToken.ID = (TokenState)tokenId;
-                        nextToken.name = getTokenName((int)nextToken.ID);
-                        tokens.push_back(nextToken);
-                        nextToken = Token();
-                        continue;
-                    }
-                    else if(state == OPTOKEN) // check for compound tokens(look-ahead)
-                    {
-                        if(column < lastColumn)
-                        {
-                            //next = token.at(column);
-                            column++;
-
-                        }
-                    }
-
-                }
-                else //unrecognized token.  report issue
-                {
-                    state = ERROR;
-                    nextToken.ID = ERROR;
-                    nextToken.col = column;
-                    nextToken.line = lineNumber;
-                    nextToken.value.push_back(next);
-                    nextToken.name = getTokenName((int)nextToken.ID);
-                    tokens.push_back(nextToken);
-                    continue;
-                }
-
-            }
-
-
-        }
-
-    }
-
-    return tokens;
-
-}
-*/
-
 vector<Token> Scanner::verifyTokens(string token, int lineNumber)
 {
     int tokenSize = 0;
@@ -578,6 +404,7 @@ vector<Token> Scanner::verifyTokens(string token, int lineNumber)
                 state = getNewState(state, tokenId);
                 nextToken = Token();
                 nextToken.ID = state;
+                nextToken.name = getTokenName(state);
                 nextToken.line = lineCount;
                 nextToken.col = column;
                 nextToken.value.push_back(nextChar);
@@ -590,14 +417,15 @@ vector<Token> Scanner::verifyTokens(string token, int lineNumber)
                     {
                         case ':':
                             //check for optoken
-                            TokenState opTokenState = getOpTokenState(token, tokenSize);
+                            TokenState opTokenState;
+                            opTokenState = getOpTokenState(token, tokenSize - 1);
                             if(opTokenState != ERROR)
                             {
                                 nextToken.ID = opTokenState;
                                 nextToken.name = getTokenName(opTokenState);
                                 nextToken.value.push_back(token.at(tokenSize));
                                 tokenSize++;
-                                allTokens.push_back(nextToken);
+                                tokens.push_back(nextToken);
                             }
                             else{
                                 nextToken.ID = COLON;
@@ -633,7 +461,7 @@ vector<Token> Scanner::verifyTokens(string token, int lineNumber)
                             nextToken.ID = ERROR;
                             nextToken.name = getTokenName(ERROR);
                             nextToken.value.push_back(lookAhead);
-                            allTokens.push_back(nextToken);
+                            tokens.push_back(nextToken);
                             state = ERROR;
                             continue;
                         }
@@ -651,7 +479,7 @@ vector<Token> Scanner::verifyTokens(string token, int lineNumber)
                                 //commit previous token
                                 if(nextToken.ID != 0)
                                 {
-                                    allTokens.push_back(nextToken);
+                                    tokens.push_back(nextToken);
                                 }
                                 //start new token
                                 state = START;
@@ -661,6 +489,11 @@ vector<Token> Scanner::verifyTokens(string token, int lineNumber)
                     else
                     {
                         state = FINAL;
+                        //commit final token if any
+                        if(nextToken.ID != 0)
+                        {
+                            tokens.push_back(nextToken);
+                        }
                     }
                     continue;
                 }
@@ -676,9 +509,12 @@ vector<Token> Scanner::verifyTokens(string token, int lineNumber)
             else //state has changed
             {
                 //finalize previous token if any
+                if(nextToken.ID != 0)
+                {
+                    tokens.push_back(nextToken);
+                }
                 //start new token
                 state = START;
-                tokenSize--;
             }
         }
     }
