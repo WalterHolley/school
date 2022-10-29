@@ -23,6 +23,8 @@ class Parser
 {
     public:
         void parseTokens(vector<Token> tokens);
+
+    private:
         void program();
         void block();
         void vars();
@@ -42,7 +44,6 @@ class Parser
         void RO();
         void label();
         void Goto();
-    private:
         vector<Token> tokens;
         Token getNextToken();
         Token lookAhead();
