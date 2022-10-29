@@ -47,5 +47,6 @@ class Parser
         vector<Token> tokens;
         Token getNextToken();
         Token lookAhead();
+        ReservedWords getReservedWord(string rWordValue);
 };
 #endif //PARSER_H

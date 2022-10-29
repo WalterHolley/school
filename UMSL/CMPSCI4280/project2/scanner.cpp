@@ -216,10 +216,10 @@ int Scanner::findToken(char tokenChar)
 
     for(int i = 0; i < MAX_TOKENS; i++)
     {
-       if(TOKENS[0][i] == element)
-       {
-           result = i;
-       }
+        if(TOKENS[0][i] == element)
+        {
+            result = i;
+        }
     }
 
     return result;
@@ -244,10 +244,10 @@ string Scanner::handleNewLines(std::string value) {
         token = value.substr(0,found);
         if(!token.empty())
         {
-          vector<Token> lineTokens = verifyTokens(token, lineCount);
-          column = 1;
-          allTokens.insert(allTokens.end(), lineTokens.begin(), lineTokens.end());
-          value.erase(0,found);
+            vector<Token> lineTokens = verifyTokens(token, lineCount);
+            column = 1;
+            allTokens.insert(allTokens.end(), lineTokens.begin(), lineTokens.end());
+            value.erase(0,found);
         }
         lineCount++;
         found = value.find("\r\n");
@@ -292,15 +292,23 @@ vector<Token>Scanner::scanFile(std::string fileName)
                 else if(!line.empty())
                 {
                     tokens = verifyTokens(line, lineCount);
-                    allTokens.insert(allTokens.end(), tokens.begin(), tokens.end());
-
-
-                    //check for error
-                    if(tokens.back().ID == ERROR)
+                    if(tokens.size() > 0)
                     {
-                        cout << SCANNER_ERROR_MESSAGE << endl;
-                        break;
+                        //check for error
+                        if(tokens.back().ID == ERROR)
+                        {
+                            cout << SCANNER_ERROR_MESSAGE << endl;
+                            break;
+                        }
+                        else
+                        {
+                            allTokens.insert(allTokens.end(), tokens.begin(), tokens.end());
+                        }
                     }
+
+
+
+
                 }
             }
             //add EOF Token
@@ -351,6 +359,10 @@ vector<Token> Scanner::verifyTokens(string token, int lineNumber)
             state  = FINAL;
             if(getTokenName(nextToken.ID) != "ERROR")
             {
+                if(nextToken.ID == IDTOKEN && isReservedWord(nextToken.value))
+                {
+                    nextToken.ID = RWORD;
+                }
                 tokens.push_back(nextToken);
             }
         }
@@ -460,6 +472,10 @@ vector<Token> Scanner::verifyTokens(string token, int lineNumber)
                                 //commit previous token
                                 if(nextToken.ID != 0)
                                 {
+                                    if(nextToken.ID == IDTOKEN && isReservedWord(nextToken.value))
+                                    {
+                                        nextToken.ID = RWORD;
+                                    }
                                     tokens.push_back(nextToken);
                                 }
                                 //start new token

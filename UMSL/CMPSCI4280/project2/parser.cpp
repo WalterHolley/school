@@ -11,6 +11,7 @@
 void Parser::parseTokens(vector<Token> fileTokens)
 {
     tokens = fileTokens;
+    program();
 }
 
 /**
@@ -20,16 +21,20 @@ void Parser::parseTokens(vector<Token> fileTokens)
  */
 void Parser::program()
 {
+    Token processingToken;
     //call <vars>
     vars();
     //get next token
-    Token nextToken = getNextToken();
+
     //check if next token is program
-    if(nextToken.value == "program")
+    if(lookAhead().value == "program")
     {
+        processingToken = getNextToken();
+        cout << processingToken.value << endl;
         //call block if true
         block();
     }
+    //TODO: throw error
 
 }
 void Parser::block()
@@ -43,7 +48,7 @@ void Parser::block()
         //call vars
         vars();
         //call stats
-        stats()
+        stats();
         //check if next token is end
         if(lookAhead().value == "end")
         {
@@ -152,38 +157,39 @@ void Parser::stat()
 {
     if(lookAhead().ID == RWORD)
     {
-        string reservedWord = lookAhead().value;
+        ReservedWords reservedWord = getReservedWord(lookAhead().value);
 
         //switch case for <in>, <out>,<block>,<if>, <loop>, <assign>, <goto>, and <label>.
         switch(reservedWord)
         {
-            case "input":
+            case INPUT:
                 in();
                 break;
-            case "output":
+            case OUTPUT:
                 out();
                 break;
-            case "begin":
+            case BEGIN:
                 block(); //does not require check for semicolon at the end
                 break;
-            case "if":
+            case IF:
                 If();
                 break;
-            case "while":
+            case WHILE:
                 loop();
                 break;
-            case "assign":
+            case ASSIGN:
                 assign();
                 break;
-            case "goto":
+            case WARP:
                 Goto();
                 break;
             default:
+                break;
                 //TODO: throw an error
         }
 
         //check for ";" at the end
-        if(lookAhead().ID == SEMICOLON && reservedWord != "block")
+        if(lookAhead().ID == SEMICOLON && reservedWord != BEGIN)
         {
             Token processingToken;
             processingToken = getNextToken();
@@ -191,6 +197,7 @@ void Parser::stat()
         }
 
     }
+    //TODO: Throw exception
 
 
 }
@@ -308,4 +315,18 @@ Token Parser::lookAhead()
     }
 
     return result;
+}
+
+ReservedWords Parser::getReservedWord(string rWordValue)
+{
+    ReservedWords rWordEnum;
+    for(int i = 0; i < MAX_RWORDS; i++)
+    {
+        if(rWordValue == RESERVED_WORDS[i])
+        {
+            rWordEnum = (ReservedWords)i;
+            break;
+        }
+    }
+    return rWordEnum;
 }

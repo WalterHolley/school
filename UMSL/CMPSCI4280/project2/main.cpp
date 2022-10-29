@@ -42,6 +42,7 @@ void cleanup()
 void processFile(string fileName)
 {
     vector<Token> tokens = scanner.scanFile(fileName);
+    parser.parseTokens(tokens);
 
 }
 

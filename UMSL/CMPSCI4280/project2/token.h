@@ -92,7 +92,7 @@ enum TokenState {
     DOT = 79,
     SEMICOLON = 83,
     COMMA = 82,
-    ASSIGN = 64,
+    ASSN = 64,
     LT = 62,
     GT = 63,
     EQ = 128,
@@ -107,6 +107,28 @@ enum TokenState {
     AND = 154,
     ERROR = -999
 
+};
+
+// Reserved words
+enum ReservedWords
+{
+    BEGIN = 0,
+    END = 1,
+    DO = 2,
+    WHILE = 3,
+    WHOLE = 4,
+    LABEL = 5,
+    RETURN = 6,
+    INPUT = 7,
+    OUTPUT = 8,
+    PROGRAM = 9,
+    WARP = 10,
+    IF = 11,
+    THEN = 12,
+    PICK = 13,
+    DECLARE = 14,
+    ASSIGN = 15,
+    FUNC = 16
 };
 
 //Token properties
