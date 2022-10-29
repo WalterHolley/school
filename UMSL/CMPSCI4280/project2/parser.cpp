@@ -342,11 +342,52 @@ void Parser::If()
 
 }
 
+/**
+ * Processes the <loop> non-terminal
+ * BNF:  while  [ <expr> <RO> <expr> ]  <stat>
+ */
 void Parser::loop()
 {
+    Token processingToken;
+
     //check for "while"
-    //check for "["(required), call <expr><RO><expr> if true
-    //check for "]"(required), call <stat> if true
+    if(lookAhead().ID == RWORD && lookAhead().value == "while")
+    {
+        processingToken = getNextToken();
+        cout << processingToken.value << endl;
+
+        //check for "["(required), call <expr><RO><expr> if true
+        if(lookAhead().ID == LBRACKET)
+        {
+            processingToken = getNextToken();
+            cout << processingToken.value << endl;
+            expr();
+            RO();
+            expr();
+
+            //check for "]"(required), call <stat> if true
+            if(lookAhead().ID == RBRACKET)
+            {
+                processingToken = getNextToken();
+                cout << processingToken.value << endl;
+                stat();
+            }
+            else
+            {
+                //TODO: throw error
+            }
+        }
+        else
+        {
+            //TODO: throw error
+        }
+    }
+    else
+    {
+        //TODO: Throw Error
+    }
+
+
 }
 
 void Parser::assign()
@@ -356,10 +397,47 @@ void Parser::assign()
     //check for "=", call <expr> if true
 }
 
+/**
+ * Processes the <RO> non-terminal
+ * BNF:    >  | < |  ==  |   [ = ]  (three tokens)  | !=
+ */
 void Parser::RO()
 {
+    Token processingToken;
     //check for following operators, fail if none exist:
     // >, <, ==, [=](three tokens), !=
+    switch(lookAhead().ID)
+    {
+        case GT:
+        case LT:
+        case EQ:
+        case NEQ:
+            processingToken = getNextToken();
+            cout << processingToken.value << endl;
+            break;
+        case LBRACKET:
+            processingToken = getNextToken();
+            cout << processingToken.value << endl;
+            if(lookAhead().ID == ASSN)
+            {
+                processingToken = getNextToken();
+                cout << processingToken.value << endl;
+
+                if(lookAhead().ID == RBRACKET)
+                {
+                    processingToken = getNextToken();
+                    cout << processingToken.value << endl;
+                }
+                else
+                {
+                    //TODO: Throw error
+                }
+            }
+            else
+            {
+                //TODO: Throw Error
+            }
+    }
 }
 
 void Parser::label()
