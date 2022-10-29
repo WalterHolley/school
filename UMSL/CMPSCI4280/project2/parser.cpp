@@ -102,38 +102,122 @@ void Parser::vars()
     }
 }
 
+/**
+ * Processes the <expr> non-terminal
+ * BNF:  <N> - <expr>  | <N>
+ */
 void Parser::expr()
 {
     //call <N>
     N();
     //if next token is "-", call <expr>, otherwise done
+    if(lookAhead().ID == SUB)
+    {
+        Token processingToken;
+        processingToken = getNextToken();
+        cout << processingToken.value << endl;
+        expr();
+    }
 }
 
+/**
+ * Processes the <N> non-terminal
+ * BNF:  <A> + <N> | <A> * <N> | <A>
+ */
 void Parser::N()
 {
+    Token processingToken;
     //call <A>
     A();
     //check for "+" or "*", run <N> if true
+    switch(lookAhead().ID)
+    {
+        case ADD:
+        case MUL:
+            processingToken = getNextToken();
+            cout << processingToken.value << endl;
+            N();
+        default:
+            break;
+    }
 
 }
 
+/**
+ * Processes the <A> non-terminal
+ * BNF:  <A> / <M> | <M>
+ */
 void Parser::A()
 {
-    //check next token for "/", call <A> if true
+    Token processingToken;
     //call <M>
     M();
+    //check next token for "/", call <A> if true
+    if(lookAhead().ID == DIV)
+    {
+        processingToken = getNextToken();
+        cout << processingToken.value << endl;
+        A();
+
+    }
+
 }
 
+/**
+ * Processes the <M> non-terminal
+ * : <M> |  <R>
+ */
 void Parser::M()
 {
+    Token processingToken;
     //check for ":" token, call <M> if true
-    //otherwise call <R>
+    if(lookAhead().ID == COLON)
+    {
+        processingToken = getNextToken();
+        cout << processingToken.value << endl;
+        M();
+    }
+    else //otherwise call <R>
+    {
+        R();
+    }
+
 }
 
+/**
+ * Processes the <R> non-terminal
+ * BNF:  ( <expr> ) | Identifier | Integer
+ */
 void Parser::R()
 {
+    Token processingToken;
     //check for "(", call <expr> if true, then check for ")"
-    //if false, check for number or identifier
+    if(lookAhead().ID == LPAREN)
+    {
+        processingToken = getNextToken();
+        cout << processingToken.value << endl;
+        expr();
+
+        if(lookAhead().ID == RPAREN)
+        {
+            processingToken = getNextToken();
+            cout << processingToken.value << endl;
+        }
+        else //Error
+        {
+            //TODO: Throw error
+        }
+
+    }    //if false, check for number or identifier
+    else if(lookAhead().ID == IDTOKEN || lookAhead().ID == NUMTOKEN)
+    {
+        processingToken = getNextToken();
+        cout << processingToken.value << endl;
+    }
+    else //Error
+    {
+        //TODO: Throw Error
+    }
 }
 
 /**
@@ -222,10 +306,27 @@ void Parser::in()
     //TODO: Throw error
 }
 
+/**
+ * Processes the <out> non-terminal
+ * BNF:  output <expr>
+ */
 void Parser::out()
 {
-    //check for output reserved work
-    //if true, call <expr>
+    Token processingToken;
+
+    //check for output reserved word
+    if(lookAhead().ID == RWORD && lookAhead().value == RESERVED_WORDS[OUTPUT])
+    {
+        processingToken = getNextToken();
+        //call <expr>
+        expr();
+    }
+    else //Error
+    {
+        //TODO: throw error
+    }
+
+
 }
 
 void Parser::If()
