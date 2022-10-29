@@ -18,6 +18,7 @@ void Parser::parseTokens(int tokens)
  */
 void Parser::program()
 {
+    //call <vars>
     vars();
     //get next token
     //check if next token is program

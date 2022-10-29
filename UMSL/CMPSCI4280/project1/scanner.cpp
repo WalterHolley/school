@@ -108,26 +108,58 @@ TokenState getOpTokenState(string token, int tokenPosition)
     string finalToken;
 
     finalToken.push_back(startingToken);
-    if(tokenPosition + 1 < token.length())
+
+
+    switch(startingToken)
     {
-        nextToken = token.at(tokenPosition + 1);
-        finalToken.push_back(nextToken);
+        case '=':
+        case ':':
+        case '!':
+        case '|':
+        case '&':
+            if(tokenPosition + 1 < token.length())
+            {
+                nextToken = token.at(tokenPosition + 1);
+                finalToken.push_back(nextToken);
+            }
+        default:
+            for(int i = 0; i < OP_TOKEN_COUNT; i++)
+            {
+                if(finalToken == OPTOKENS[i][0])
+                {
+                    int tokenId = stringToInt(OPTOKENS[i][1]);
+                    result = (TokenState)tokenId;
+                    break;
+                }
+            }
+
     }
 
-    for(int i = 0; i < OP_TOKEN_COUNT; i++)
+    //check single character operators
+    if(result == ERROR && finalToken.length() == 2)
     {
-        if(finalToken == OPTOKENS[i][0])
+        finalToken.erase(finalToken.end());
+
+        for(int i = 0; i < OP_TOKEN_COUNT; i++)
         {
-            int tokenId = stringToInt(OPTOKENS[i][1]);
-            result = (TokenState)tokenId;
-            break;
+            if(finalToken == OPTOKENS[i][0])
+            {
+                int tokenId = stringToInt(OPTOKENS[i][1]);
+                result = (TokenState)tokenId;
+                break;
+            }
         }
     }
-
 
     return  result;
 }
 
+/**
+ * Determines the exact state(type) of a
+ * delimiter token
+ * @param token the token value to analyze
+ * @return The exact delimiter type, or ERROR if not recognized
+ */
 TokenState getDelimTokenState(char token)
 {
     string finalToken;
@@ -170,63 +202,6 @@ bool isReservedWord(string token)
 
 
 
-
-
-/*
-Token finalToken(Token token, char nextChar)
-{
-    string finalTokenValue;
-    string finalTokenId;
-    string tokenArray[][];
-    TokenState initialState = token.ID;
-    int maxTokens;
-
-    finalTokenValue.push_back(token.value);
-
-    //combine character
-    if(nextChar != '')
-    {
-        finalTokenValue.push_back(nextChar);
-
-    }
-
-    if(token.ID == DELIMTOKEN)
-    {
-        maxTokens = DELIM_TOKEN_COUNT;
-        tokenArray = DELIMTOKENS;
-
-    }
-    else if(token.ID == OPTOKEN)
-    {
-        maxTokens = OP_TOKEN_COUNT;
-        tokenArray = OPTOKENS;
-    }
-
-    if(token.ID == OPTOKEN || token.ID == DELIMTOKEN)
-    {
-        //search for token
-        for(int i = 0; i < maxTokens; i++)
-        {
-            if(finalTokenValue == tokenArray[i][0])
-            {
-                token.value = finalTokenValue;
-                //final token name
-                for(int c = 0; c < MAX_TOKEN_TYPES; c++)
-                {
-                    if( tokenArray[i][1] == TOKEN_NAME[c][0])
-                    {
-                        token.name = TOKEN_NAME[c][1];
-                        token.ID = (TokenState) stringToInt(TOKEN_NAME[c][0])
-                        break;
-                    }
-                }
-            }
-        }
-    }
-
-    return token;
-}
-*/
 
 /**
  * Determine if the given character is a valid token
@@ -374,7 +349,7 @@ vector<Token> Scanner::verifyTokens(string token, int lineNumber)
         {
             //end the loop
             state  = FINAL;
-            if(nextToken.ID != 0)
+            if(getTokenName(nextToken.ID) != "ERROR")
             {
                 tokens.push_back(nextToken);
             }
@@ -389,11 +364,12 @@ vector<Token> Scanner::verifyTokens(string token, int lineNumber)
                 comments = !comments;
             }
 
-            if(comments)
+            if((comments == false && nextChar == '#') ||(comments))
             {
                 tokenSize++;
                 continue;
             }
+
 
             //get state of current character
             tokenId = findToken(nextChar);
@@ -424,7 +400,7 @@ vector<Token> Scanner::verifyTokens(string token, int lineNumber)
                                 nextToken.ID = opTokenState;
                                 nextToken.name = getTokenName(opTokenState);
                                 nextToken.value.push_back(token.at(tokenSize));
-                                tokenSize++;
+                                //tokenSize++;
                                 tokens.push_back(nextToken);
                             }
                             else{
@@ -433,6 +409,9 @@ vector<Token> Scanner::verifyTokens(string token, int lineNumber)
                             break;
                         default: //set delimiter as normal
                             nextToken.ID = getDelimTokenState(nextChar);
+                            nextToken.name = getTokenName(nextToken.ID);
+                            tokens.push_back(nextToken);
+                            //tokenSize++;
 
                     }
                     nextToken = Token();
@@ -440,6 +419,8 @@ vector<Token> Scanner::verifyTokens(string token, int lineNumber)
                 }
                 else if (state == OPTOKEN)
                 {
+                    nextToken.ID = getOpTokenState(token, tokenSize - 1);
+                    nextToken.name = getTokenName(nextToken.ID);
 
                 }
 
