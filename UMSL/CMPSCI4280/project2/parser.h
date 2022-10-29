@@ -10,7 +10,7 @@
 #define PARSER_H
 
 #include <stack>
-#include "token.h"
+#include "scanner.h"
 
 using namespace std;
 
