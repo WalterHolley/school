@@ -318,6 +318,7 @@ void Parser::out()
     if(lookAhead().ID == RWORD && lookAhead().value == RESERVED_WORDS[OUTPUT])
     {
         processingToken = getNextToken();
+        cout << processingToken.value << endl;
         //call <expr>
         expr();
     }

@@ -348,7 +348,7 @@ vector<Token> Scanner::verifyTokens(string token, int lineNumber)
     int tokenId;
     TokenState state = START;
     char nextChar;
-    Token nextToken;
+    Token nextToken  = Token();
     vector<Token> tokens;
 
     while(state != FINAL & state != ERROR)
@@ -412,7 +412,7 @@ vector<Token> Scanner::verifyTokens(string token, int lineNumber)
                                 nextToken.ID = opTokenState;
                                 nextToken.name = getTokenName(opTokenState);
                                 nextToken.value.push_back(token.at(tokenSize));
-                                //tokenSize++;
+                                tokenSize++;
                                 tokens.push_back(nextToken);
                             }
                             else{
@@ -423,7 +423,7 @@ vector<Token> Scanner::verifyTokens(string token, int lineNumber)
                             nextToken.ID = getDelimTokenState(nextChar);
                             nextToken.name = getTokenName(nextToken.ID);
                             tokens.push_back(nextToken);
-                            //tokenSize++;
+
 
                     }
                     nextToken = Token();
@@ -489,6 +489,10 @@ vector<Token> Scanner::verifyTokens(string token, int lineNumber)
                         //commit final token if any
                         if(nextToken.ID != 0)
                         {
+                            if(nextToken.ID == IDTOKEN && isReservedWord(nextToken.value))
+                            {
+                                nextToken.ID = RWORD;
+                            }
                             tokens.push_back(nextToken);
                         }
                     }
@@ -508,8 +512,14 @@ vector<Token> Scanner::verifyTokens(string token, int lineNumber)
                 //finalize previous token if any
                 if(nextToken.ID != 0)
                 {
-                    tokens.push_back(nextToken);
+                    if(nextToken.ID == IDTOKEN && isReservedWord(nextToken.value))
+                    {
+                        nextToken.ID = RWORD;
+                    }
                 }
+
+
+                tokens.push_back(nextToken);
                 //start new token
                 state = START;
             }
