@@ -5,32 +5,96 @@
  * Implementation of parser for the language
  */
 
+#include <iostream>
 #include "parser.h"
 
-void Parser::parseTokens(int tokens)
+void Parser::parseTokens(vector<Token> fileTokens)
 {
-
+    tokens = fileTokens;
 }
 
 /**
  * Program non-terminal.  called first.
  * handles the beginning of the program
+ * BNF: <vars> program <block>
  */
 void Parser::program()
 {
     //call <vars>
     vars();
     //get next token
+    Token nextToken = getNextToken();
     //check if next token is program
-    //call block if true
-    block();
+    if(nextToken.value == "program")
+    {
+        //call block if true
+        block();
+    }
+
 }
 void Parser::block()
 {
+    Token processingToken;
     //check if next token is begin
-    //check if next is vars
-    //check if next token is stats
-    //check if next token is end
+    if(lookAhead().value == "begin")
+    {
+        processingToken = getNextToken();
+        cout << processingToken.value << endl;
+        //call vars
+        vars();
+        //call stats
+        stats()
+        //check if next token is end
+        if(lookAhead().value == "end")
+        {
+            processingToken = getNextToken();
+            cout << processingToken.value << endl;
+        }
+    }
+
+
+}
+
+/**
+ * Processes the <vars> non-terminal
+ * BNF:  empty | whole Identifier :=  Integer  ;  <vars>
+ */
+void Parser::vars()
+{
+    Token processingToken;
+    if(lookAhead().ID == RWORD && lookAhead().value == "whole")
+    {
+        processingToken = getNextToken();
+        cout << processingToken.value << endl;
+
+        //check for identifier
+        if(lookAhead().ID == IDTOKEN)
+        {
+            processingToken = getNextToken();
+            cout << processingToken.value << endl;
+
+            //check for comp
+            if(lookAhead().ID == COMP)
+            {
+                processingToken = getNextToken();
+                cout << processingToken.value << endl;
+
+                //check for NUMTOKEN
+                if(lookAhead().ID == NUMTOKEN)
+                {
+                    processingToken = getNextToken();
+                    cout << processingToken.value << endl;
+
+                    //check for semicolon
+                    if(lookAhead().ID == SEMICOLON)
+                    {
+                        processingToken = getNextToken();
+                        cout << processingToken.value << endl;
+                    }
+                }
+            }
+        }
+    }
 }
 
 void Parser::expr()
@@ -67,6 +131,10 @@ void Parser::R()
     //if false, check for number or identifier
 }
 
+/**
+ * Handles the processing of statements
+ * BNF: <stat>  <mStat>
+ */
 void Parser::stats()
 {
     //call <stat>
@@ -82,13 +150,69 @@ void Parser::mStat()
 
 void Parser::stat()
 {
-    //switch case for <in>, <out>,<block>,<if>, <loop>, <assign>, <goto>, and <label>.
-    //check for ";" at end of each one
+    if(lookAhead().ID == RWORD)
+    {
+        string reservedWord = lookAhead().value;
+
+        //switch case for <in>, <out>,<block>,<if>, <loop>, <assign>, <goto>, and <label>.
+        switch(reservedWord)
+        {
+            case "input":
+                in();
+                break;
+            case "output":
+                out();
+                break;
+            case "begin":
+                block(); //does not require check for semicolon at the end
+                break;
+            case "if":
+                If();
+                break;
+            case "while":
+                loop();
+                break;
+            case "assign":
+                assign();
+                break;
+            case "goto":
+                Goto();
+                break;
+            default:
+                //TODO: throw an error
+        }
+
+        //check for ";" at the end
+        if(lookAhead().ID == SEMICOLON && reservedWord != "block")
+        {
+            Token processingToken;
+            processingToken = getNextToken();
+            cout << processingToken.value << endl;
+        }
+
+    }
+
+
 }
 
 void Parser::in()
 {
+    Token processingToken;
     // check for input reserved word followed by an IDToken
+    if(lookAhead().value == "input")
+    {
+
+        processingToken = getNextToken();
+        cout << processingToken.value << endl;
+
+        if(lookAhead().ID == IDTOKEN)
+        {
+            processingToken = getNextToken();
+            cout << processingToken.value << endl;
+        }
+        //TODO: throw error
+    }
+    //TODO: Throw error
 }
 
 void Parser::out()
@@ -139,4 +263,49 @@ void Parser::Goto()
 {
     //check for warp rword
     //check for IDtoken if true
+}
+
+/**
+ * Retrieves the next token to be reviewed,
+ * and removes it from the token collection.
+ * @return Token to be viewed, or ERROR token if
+ * no more tokens remain
+ */
+Token Parser::getNextToken()
+{
+    Token result;
+    if(tokens.size() > 0)
+    {
+        result = tokens.front();
+        tokens.erase(tokens.begin());
+    }
+    else
+    {
+        result.ID = ERROR;
+        result.name = "ERROR";
+    }
+
+    return result;
+}
+
+/**
+ * Reveals the next token in the order,
+ * but does not remove it from the collection.
+ * @return the next available token, or an ERROR
+ * token if no tokens remain
+ */
+Token Parser::lookAhead()
+{
+    Token result;
+    if(tokens.size() > 0)
+    {
+        result = tokens.front();
+    }
+    else
+    {
+        result.ID = ERROR;
+        result.name = "ERROR";
+    }
+
+    return result;
 }

@@ -9,19 +9,20 @@
 #ifndef PARSER_H
 #define PARSER_H
 
-#include <stack>
-#include "scanner.h"
+#include <string>
+#include <vector>
+#include "token.h"
 
 using namespace std;
 
 struct parserNode {
-
+    string value;
 };
 
 class Parser
 {
     public:
-        void parseTokens(stack<> tokens);
+        void parseTokens(vector<Token> tokens);
         void program();
         void block();
         void vars();
@@ -41,5 +42,9 @@ class Parser
         void RO();
         void label();
         void Goto();
+    private:
+        vector<Token> tokens;
+        Token getNextToken();
+        Token lookAhead();
 };
 #endif //PARSER_H

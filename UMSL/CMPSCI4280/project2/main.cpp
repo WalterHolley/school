@@ -15,14 +15,15 @@ the parsing apparatus responsible for tranlating the program.
 #include <vector>
 #include <string>
 #include "scanner.h"
-#include "testScanner.h"
+#include "parser.h"
 
 using namespace std;
 
 const string TEMP_FILE = "temp.in";
 
 Scanner scanner;
-TestScanner testScanner;
+Parser parser;
+
 
 /**
  * @brief frees resources associated with
@@ -41,7 +42,7 @@ void cleanup()
 void processFile(string fileName)
 {
     vector<Token> tokens = scanner.scanFile(fileName);
-    testScanner.presentTokens(tokens);
+
 }
 
 /**
