@@ -37,6 +37,11 @@ void Parser::program()
     //TODO: throw error
 
 }
+
+/**
+ * Processes the <block> non-terminal
+ * BNF:  begin <vars> <stats> end
+ */
 void Parser::block()
 {
     Token processingToken;
@@ -55,6 +60,14 @@ void Parser::block()
             processingToken = getNextToken();
             cout << processingToken.value << endl;
         }
+        else
+        {
+            //TODO: throw error
+        }
+    }
+    else
+    {
+        //TODO: throw error
     }
 
 
@@ -232,11 +245,31 @@ void Parser::stats()
     mStat();
 }
 
+/**
+ * Processes the <mStat> non-terminal
+ * BNF:   empty |  <stat>  <mStat>
+ */
 void Parser::mStat()
 {
-    //if certain reserved words are the next token, call <stat>, then <mStat>
+    //if reserved words are the next token, call <stat>, then <mStat>
+    if(lookAhead().ID == RWORD && getReservedWord(lookAhead().value) != END)
+    {
+        stat();
+        mStat();
+    }
+    else if(getReservedWord(lookAhead().value) != END)
+    {
+        //TODO: Throw Error
+    }
+
+
 }
 
+/**
+ * Processes non-terminal for <stat>
+ * BNF:  <in> ;  | <out> ;  | <block> | <if> ;  | <loop> ;  | <assign> ; | <goto> ; |
+ * <label> ;
+ */
 void Parser::stat()
 {
     if(lookAhead().ID == RWORD)
@@ -272,20 +305,34 @@ void Parser::stat()
                 //TODO: throw an error
         }
 
-        //check for ";" at the end
-        if(lookAhead().ID == SEMICOLON && reservedWord != BEGIN)
+        if(reservedWord != BEGIN)
         {
-            Token processingToken;
-            processingToken = getNextToken();
-            cout << processingToken.value << endl;
+            //check for ";" at the end
+            if(lookAhead().ID == SEMICOLON && reservedWord != BEGIN)
+            {
+                Token processingToken;
+                processingToken = getNextToken();
+                cout << processingToken.value << endl;
+            }
+            else
+            {
+                //TODO: Throw exception
+            }
         }
-
     }
-    //TODO: Throw exception
+    else
+    {
+        //TODO: Throw exception
+    }
+
 
 
 }
 
+/**
+ * Processes the <in> non-terminal
+ * BNF:  input  Identifier
+ */
 void Parser::in()
 {
     Token processingToken;
@@ -330,6 +377,11 @@ void Parser::out()
 
 }
 
+/**
+ * Processes the <if> non-terminal
+ * BNF:  if [ <expr> <RO> <expr> ] then <stat> |
+ * if [ <expr> <RO> <expr> ] then <stat> pick <stat>
+ */
 void Parser::If()
 {
     //check for if reserved word
@@ -390,11 +442,49 @@ void Parser::loop()
 
 }
 
+/**
+ * Processes the <assign> non-terminal
+ * BNF:  assign Identifier  = <expr>
+ */
 void Parser::assign()
 {
+    Token processingToken;
+
     //check for "assign"
-    //check for IDToken
-    //check for "=", call <expr> if true
+    if(lookAhead().ID == RWORD && getReservedWord(lookAhead().value) == ASSIGN)
+    {
+        processingToken = getNextToken();
+        cout << processingToken.value << endl;
+
+        //check for IDToken
+        if(lookAhead().ID == IDTOKEN)
+        {
+            processingToken = getNextToken();
+            cout << processingToken.value << endl;
+
+            //check for "=", call <expr> if true
+            if(lookAhead().ID == ASSN)
+            {
+                processingToken = getNextToken();
+                cout << processingToken.value << endl;
+                expr();
+            }
+            else
+            {
+                //TODO: throw error
+            }
+        }
+        else
+        {
+            //TODO: throw error
+        }
+    }
+    else
+    {
+        //TODO: throw error
+    }
+
+
 }
 
 /**
@@ -497,6 +587,11 @@ Token Parser::lookAhead()
     return result;
 }
 
+/**
+ * Find the enumerator value for a reserved word
+ * @param rWordValue The string to search for reserved words
+ * @return enum of the reserved word
+ */
 ReservedWords Parser::getReservedWord(string rWordValue)
 {
     ReservedWords rWordEnum;
