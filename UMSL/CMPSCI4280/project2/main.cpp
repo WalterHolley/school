@@ -36,14 +36,55 @@ void cleanup()
 }
 
 /**
+ * @brief Prints the value of a given node
+ * @param node
+ * @param depth
+ */
+void printNode(ParserNode* node, int depth)
+{
+    //Print the node's token if set, otherwise just print the non-terminal
+    if(node->value.ID != 0)
+    {
+        printf("%*c%.1s:%-9s", depth*2, ' ', node->nonTerminal.c_str(), node->value.value.c_str());
+    }
+    else
+    {
+        printf("%*c%s:", depth*2, ' ', node->nonTerminal.c_str());
+    }
+    printf("\n");
+}
+
+/**
+ * @brief a node and its child contents in pre-order
+ * @param node the node to print
+ * @param depth depth of the node to print
+ */
+void printParseTree(ParserNode* node, int depth)
+{
+    //print children
+    if(node->children.size() > 0)
+    {
+        vector<ParserNode*>::iterator iter = node->children.begin();
+        for(iter; iter < node->children.end(); iter++)
+        {
+            printParseTree(*iter, depth + 1);
+        }
+    }
+    //print parent node
+    printNode(node, depth);
+}
+
+/**
  * @brief processes a file parameter passed to the program
  * @param fileName
  */
 void processFile(string fileName)
 {
     vector<Token> tokens = scanner.scanFile(fileName);
-    parser.parseTokens(tokens);
+    ParserNode* root = parser.parseTokens(tokens);
+    printParseTree(root,1);
 
+    delete root;
 }
 
 /**

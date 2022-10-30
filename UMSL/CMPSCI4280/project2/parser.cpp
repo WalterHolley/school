@@ -8,10 +8,10 @@
 #include <iostream>
 #include "parser.h"
 
-void Parser::parseTokens(vector<Token> fileTokens)
+ParserNode* Parser::parseTokens(vector<Token> fileTokens)
 {
     tokens = fileTokens;
-    program();
+    return program();
 }
 
 /**
@@ -19,37 +19,60 @@ void Parser::parseTokens(vector<Token> fileTokens)
  * handles the beginning of the program
  * BNF: <vars> program <block>
  */
-void Parser::program()
+ParserNode* Parser::program()
 {
     Token processingToken;
+    ParserNode* processingNode;
+    ParserNode* programNode;
     //call <vars>
-    vars();
-    //get next token
+    processingNode = vars();
+
+    programNode = new ParserNode;
+    programNode->nonTerminal = "program";
+    if(processingNode != NULL)
+    {
+        programNode->children.push_back(processingNode);
+    }
 
     //check if next token is program
     if(lookAhead().value == "program")
     {
         processingToken = getNextToken();
-        cout << processingToken.value << endl;
-        //call block if true
-        block();
-    }
-    //TODO: throw error
+        processingNode = createTokenNode(processingToken);
 
+        processingNode = block();
+        processingNode->parentNode = programNode;
+        programNode->children.push_back(processingNode);
+
+    }
+    else
+    {
+        //TODO: throw error
+    }
+
+    return programNode;
 }
 
 /**
  * Processes the <block> non-terminal
  * BNF:  begin <vars> <stats> end
  */
-void Parser::block()
+ParserNode* Parser::block()
 {
     Token processingToken;
+    ParserNode* blockNode = NULL;
+    ParserNode* processingNode;
+
+
     //check if next token is begin
     if(lookAhead().value == "begin")
     {
+        blockNode = new ParserNode;
+        blockNode->nonTerminal = "block";
         processingToken = getNextToken();
-        cout << processingToken.value << endl;
+        processingNode = createTokenNode(processingToken);
+        processingNode->nonTerminal = blockNode->nonTerminal;
+        blockNode->children.push_back(processingNode);
         //call vars
         vars();
         //call stats
@@ -58,7 +81,9 @@ void Parser::block()
         if(lookAhead().value == "end")
         {
             processingToken = getNextToken();
-            cout << processingToken.value << endl;
+            processingNode = createTokenNode(processingToken);
+            processingNode->nonTerminal = blockNode->nonTerminal;
+            blockNode->children.push_back(processingNode);
         }
         else
         {
@@ -70,6 +95,7 @@ void Parser::block()
         //TODO: throw error
     }
 
+    return  blockNode;
 
 }
 
@@ -77,42 +103,79 @@ void Parser::block()
  * Processes the <vars> non-terminal
  * BNF:  empty | whole Identifier :=  Integer  ;  <vars>
  */
-void Parser::vars()
+ParserNode* Parser::vars()
 {
     Token processingToken;
+    ParserNode* varsNode = NULL;
+    ParserNode* processingNode;
     if(lookAhead().ID == RWORD && lookAhead().value == "whole")
     {
+        varsNode = new ParserNode;
+        varsNode->nonTerminal = "vars";
         processingToken = getNextToken();
-        cout << processingToken.value << endl;
+        processingNode = createTokenNode(processingToken);
+        processingNode->nonTerminal = varsNode->nonTerminal;
+        processingNode->parentNode = varsNode;
+        varsNode->children.push_back(processingNode);
 
         //check for identifier
         if(lookAhead().ID == IDTOKEN)
         {
             processingToken = getNextToken();
-            cout << processingToken.value << endl;
+            processingNode = createTokenNode(processingToken);
+            processingNode->nonTerminal = varsNode->nonTerminal;
+            processingNode->parentNode = varsNode;
+            varsNode->children.push_back(processingNode);
 
             //check for comp
             if(lookAhead().ID == COMP)
             {
                 processingToken = getNextToken();
-                cout << processingToken.value << endl;
+                processingNode = createTokenNode(processingToken);
+                processingNode->nonTerminal = varsNode->nonTerminal;
+                processingNode->parentNode = varsNode;
+                varsNode->children.push_back(processingNode);
 
                 //check for NUMTOKEN
                 if(lookAhead().ID == NUMTOKEN)
                 {
                     processingToken = getNextToken();
-                    cout << processingToken.value << endl;
+                    processingNode = createTokenNode(processingToken);
+                    processingNode->nonTerminal = varsNode->nonTerminal;
+                    processingNode->parentNode = varsNode;
+                    varsNode->children.push_back(processingNode);
 
                     //check for semicolon
                     if(lookAhead().ID == SEMICOLON)
                     {
                         processingToken = getNextToken();
-                        cout << processingToken.value << endl;
+                        processingNode = createTokenNode(processingToken);
+                        processingNode->nonTerminal = varsNode->nonTerminal;
+                        processingNode->parentNode = varsNode;
+                        varsNode->children.push_back(processingNode);
+                    }
+                    else
+                    {
+                        //TODO: Throw error
                     }
                 }
+                else
+                {
+                    //TODO: Throw error
+                }
+            }
+            else
+            {
+                //TODO: Throw error
             }
         }
+        else
+        {
+            //TODO: Throw error
+        }
     }
+
+    return varsNode;
 }
 
 /**
@@ -580,7 +643,7 @@ void Parser::RO()
                 //TODO: Throw Error
             }
             break;
-        default:
+
             //TODO: throw error
     }
 }
@@ -702,4 +765,18 @@ ReservedWords Parser::getReservedWord(string rWordValue)
         }
     }
     return rWordEnum;
+}
+
+/**
+ * Creates a parser node with a scanner token
+ * @param nodeToken The token for the parser node
+ * @return parser node
+ */
+ParserNode* Parser::createTokenNode(Token nodeToken)
+{
+    ParserNode* result;
+    result = new ParserNode;
+    result->value = nodeToken;
+
+    return result;
 }

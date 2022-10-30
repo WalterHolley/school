@@ -15,19 +15,23 @@
 
 using namespace std;
 
-struct parserNode {
-    string value;
+struct ParserNode {
+    string nonTerminal;
+    Token value = Token();
+    struct ParserNode* parentNode = NULL;
+    vector<ParserNode*> children;
+
 };
 
 class Parser
 {
     public:
-        void parseTokens(vector<Token> tokens);
+        ParserNode* parseTokens(vector<Token> tokens);
 
     private:
-        void program();
-        void block();
-        void vars();
+        ParserNode* program();
+        ParserNode* block();
+        ParserNode* vars();
         void expr();
         void N();
         void A();
@@ -48,5 +52,6 @@ class Parser
         Token getNextToken();
         Token lookAhead();
         ReservedWords getReservedWord(string rWordValue);
+        ParserNode* createTokenNode(Token nodeToken);
 };
 #endif //PARSER_H
