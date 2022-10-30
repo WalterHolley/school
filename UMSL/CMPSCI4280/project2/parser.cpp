@@ -384,13 +384,65 @@ void Parser::out()
  */
 void Parser::If()
 {
+    Token processingToken;
     //check for if reserved word
-    //check for "["
-    //call <expr>
-    //check for "]"
-    //check for  "then" reserved word
-    //call <stat>
-    //check for "pick" reserved word, call <stat> if true
+    if(lookAhead().ID == RWORD && getReservedWord(lookAhead().value) == IF)
+    {
+        processingToken = getNextToken();
+        cout << processingToken.value << endl;
+
+        //check for "["
+        if(lookAhead().ID == LBRACKET)
+        {
+            processingToken = getNextToken();
+            cout << processingToken.value << endl;
+
+            //call <expr>
+            expr();
+            //check for "]"
+            if(lookAhead().ID == RBRACKET)
+            {
+                processingToken = getNextToken();
+                cout << processingToken.value << endl;
+
+                //check for  "then" reserved word
+                if(lookAhead().ID == RWORD && getReservedWord(lookAhead().value) == THEN)
+                {
+                    processingToken = getNextToken();
+                    cout << processingToken.value << endl;
+                    //call <stat>
+                    stat();
+                    //check for "pick" reserved word(optional), call <stat> if true
+                    if(lookAhead().ID == RWORD && getReservedWord(lookAhead().value) == PICK)
+                    {
+                        processingToken = getNextToken();
+                        cout << processingToken.value << endl;
+                        stat();
+                    }
+                }
+                else
+                {
+                    //TODO: throw error
+                }
+
+
+            }
+            else
+            {
+                //TODO: throw error
+            }
+        }
+        else
+        {
+            //TODO: throw error
+        }
+    }
+    else
+    {
+        //TODO: throw error
+    }
+
+
 
 }
 
@@ -527,19 +579,65 @@ void Parser::RO()
             {
                 //TODO: Throw Error
             }
+            break;
+        default:
+            //TODO: throw error
     }
 }
 
+/**
+ * Processes the <label> non-terminal
+ * BNF:  label Identifier
+ */
 void Parser::label()
 {
+    Token processingToken;
     //check for label rword
-    //check for ID token if true
+    if(lookAhead().ID == RWORD && getReservedWord(lookAhead().value) == LABEL)
+    {
+        processingToken = getNextToken();
+        cout << processingToken.value << endl;
+        //check for ID token if true
+        if(lookAhead().ID == IDTOKEN)
+        {
+            processingToken = getNextToken();
+            cout << processingToken.value << endl;
+        }
+        else
+        {
+            //TODO: throw error
+        }
+    }
+    else
+    {
+        //TODO: throw error
+    }
+
 }
 
 void Parser::Goto()
 {
+    Token processingToken;
     //check for warp rword
-    //check for IDtoken if true
+    if(lookAhead().ID == RWORD && getReservedWord(lookAhead().value) == WARP)
+    {
+        processingToken = getNextToken();
+        cout << processingToken.value << endl;
+        //check for ID token if true
+        if(lookAhead().ID == IDTOKEN)
+        {
+            processingToken = getNextToken();
+            cout << processingToken.value << endl;
+        }
+        else
+        {
+            //TODO: throw error
+        }
+    }
+    else
+    {
+        //TODO: throw error
+    }
 }
 
 /**
