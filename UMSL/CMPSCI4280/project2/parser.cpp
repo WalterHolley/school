@@ -181,81 +181,112 @@ ParserNode* Parser::vars()
  * Processes the <expr> non-terminal
  * BNF:  <N> - <expr>  | <N>
  */
-void Parser::expr()
+ParserNode* Parser::expr()
 {
+    ParserNode* exprNode;
+    ParserNode* processingNode;
+
+    exprNode = new ParserNode;
+    exprNode->nonTerminal = "expr";
     //call <N>
-    N();
+    processingNode = N();
+    exprNode->children.push_back(processingNode);
+
+
     //if next token is "-", call <expr>, otherwise done
     if(lookAhead().ID == SUB)
     {
-        Token processingToken;
-        processingToken = getNextToken();
-        cout << processingToken.value << endl;
-        expr();
+        processingNode = createTokenNode(getNextToken(), exprNode);
+        exprNode->children.push_back(processingNode);
+        processingNode = expr();
+        exprNode->children.push_back(processingNode);
     }
+
+    return exprNode;
 }
 
 /**
  * Processes the <N> non-terminal
  * BNF:  <A> + <N> | <A> * <N> | <A>
  */
-void Parser::N()
+ParserNode* Parser::N()
 {
-    Token processingToken;
+    ParserNode* nNode;
+    ParserNode* processingNode;
+
+    nNode = new ParserNode;
+    nNode->nonTerminal = "N";
     //call <A>
-    A();
+    processingNode = A();
+    nNode->children.push_back(processingNode);
     //check for "+" or "*", run <N> if true
     switch(lookAhead().ID)
     {
         case ADD:
         case MUL:
-            processingToken = getNextToken();
-            cout << processingToken.value << endl;
-            N();
+            processingNode = createTokenNode(getNextToken(), nNode);
+            nNode->children.push_back(processingNode);
+            processingNode = N();
+            nNode->children.push_back(processingNode);
         default:
             break;
     }
 
+    return nNode;
 }
 
 /**
  * Processes the <A> non-terminal
  * BNF:  <A> / <M> | <M>
  */
-void Parser::A()
+ParserNode* Parser::A()
 {
-    Token processingToken;
+    ParserNode* aNode;
+    ParserNode* processingNode;
+
+    aNode = new ParserNode;
+    aNode->nonTerminal = "A";
     //call <M>
-    M();
+    processingNode = M();
+    aNode->children.push_back(processingNode);
+
     //check next token for "/", call <A> if true
     if(lookAhead().ID == DIV)
     {
-        processingToken = getNextToken();
-        cout << processingToken.value << endl;
-        A();
+        processingNode = createTokenNode(getNextToken(), aNode);
+        aNode->children.push_back(processingNode);
+        aNode->children.push_back(A());
 
     }
 
+    return  aNode;
 }
 
 /**
  * Processes the <M> non-terminal
  * : <M> |  <R>
  */
-void Parser::M()
+ParserNode* Parser::M()
 {
-    Token processingToken;
+    ParserNode* mNode;
+    ParserNode* processingNode;
+
+    mNode = new ParserNode;
+    mNode->nonTerminal = "M";
     //check for ":" token, call <M> if true
     if(lookAhead().ID == COLON)
     {
-        processingToken = getNextToken();
-        cout << processingToken.value << endl;
-        M();
+        processingNode = createTokenNode(getNextToken(), mNode);
+        mNode->children.push_back(processingNode);
+        processingNode = M();
+        mNode->children.push_back(processingNode);
     }
     else //otherwise call <R>
     {
-        R();
+        mNode->children.push_back(R());
     }
+
+    return mNode;
 
 }
 
@@ -263,20 +294,28 @@ void Parser::M()
  * Processes the <R> non-terminal
  * BNF:  ( <expr> ) | Identifier | Integer
  */
-void Parser::R()
+ParserNode* Parser::R()
 {
+    ParserNode* rNode;
+    ParserNode* processingNode;
     Token processingToken;
+    string nonTerminal = "R";
+
     //check for "(", call <expr> if true, then check for ")"
     if(lookAhead().ID == LPAREN)
     {
-        processingToken = getNextToken();
-        cout << processingToken.value << endl;
-        expr();
+        rNode = new ParserNode;
+        rNode->nonTerminal = nonTerminal;
+        processingNode = createTokenNode(getNextToken(), rNode);
+        rNode->children.push_back(processingNode);
+
+        processingNode = expr();
+        rNode->children.push_back(processingNode);
 
         if(lookAhead().ID == RPAREN)
         {
-            processingToken = getNextToken();
-            cout << processingToken.value << endl;
+            processingNode = createTokenNode(getNextToken(), rNode);
+            rNode->children.push_back(processingNode);
         }
         else //Error
         {
@@ -286,13 +325,17 @@ void Parser::R()
     }    //if false, check for number or identifier
     else if(lookAhead().ID == IDTOKEN || lookAhead().ID == NUMTOKEN)
     {
-        processingToken = getNextToken();
-        cout << processingToken.value << endl;
+        rNode = new ParserNode;
+        rNode->nonTerminal = nonTerminal;
+        processingNode = createTokenNode(getNextToken(), rNode);
+        rNode->children.push_back(processingNode);
     }
     else //Error
     {
         //TODO: Throw Error
     }
+
+    return rNode;
 }
 
 /**
@@ -375,10 +418,10 @@ ParserNode* Parser::stat()
                 processingNode = in();
                 break;
             case OUTPUT:
-              //  processingNode = out();
+                processingNode = out();
                 break;
             case BEGIN:
-              //  processingNode = block(); //does not require check for semicolon at the end
+                processingNode = block(); //does not require check for semicolon at the end
                 break;
             case IF:
             //    processingNode = If();
@@ -466,24 +509,32 @@ ParserNode* Parser::in()
  * Processes the <out> non-terminal
  * BNF:  output <expr>
  */
-void Parser::out()
+ParserNode* Parser::out()
 {
+    ParserNode* outputNode;
+    ParserNode* processingNode;
     Token processingToken;
 
     //check for output reserved word
     if(lookAhead().ID == RWORD && lookAhead().value == RESERVED_WORDS[OUTPUT])
     {
-        processingToken = getNextToken();
-        cout << processingToken.value << endl;
+        outputNode = new ParserNode;
+        outputNode->nonTerminal = "out";
+        processingNode = createTokenNode(getNextToken(), outputNode);
+        outputNode->children.push_back(processingNode);
+
         //call <expr>
-        expr();
+        processingNode = expr();
+        outputNode->children.push_back(processingNode);
+
+
     }
     else //Error
     {
         //TODO: throw error
     }
 
-
+    return outputNode;
 }
 
 /**
