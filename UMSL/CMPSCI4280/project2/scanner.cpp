@@ -417,6 +417,7 @@ vector<Token> Scanner::verifyTokens(string token, int lineNumber)
                             }
                             else{
                                 nextToken.ID = COLON;
+                                tokens.push_back(nextToken);
                             }
                             break;
                         default: //set delimiter as normal
