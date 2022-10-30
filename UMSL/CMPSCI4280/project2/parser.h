@@ -37,10 +37,10 @@ class Parser
         void A();
         void M();
         void R();
-        void stats();
-        void mStat();
-        void stat();
-        void in();
+        ParserNode* stats();
+        ParserNode* mStat();
+        ParserNode* stat();
+        ParserNode* in();
         void out();
         void If();
         void loop();
@@ -52,6 +52,6 @@ class Parser
         Token getNextToken();
         Token lookAhead();
         ReservedWords getReservedWord(string rWordValue);
-        ParserNode* createTokenNode(Token nodeToken);
+        ParserNode* createTokenNode(Token nodeToken, ParserNode* parentNode);
 };
 #endif //PARSER_H

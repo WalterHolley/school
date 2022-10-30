@@ -38,10 +38,9 @@ ParserNode* Parser::program()
     if(lookAhead().value == "program")
     {
         processingToken = getNextToken();
-        processingNode = createTokenNode(processingToken);
-
+        processingNode = createTokenNode(processingToken, programNode);
+        programNode->children.push_back(processingNode);
         processingNode = block();
-        processingNode->parentNode = programNode;
         programNode->children.push_back(processingNode);
 
     }
@@ -70,19 +69,23 @@ ParserNode* Parser::block()
         blockNode = new ParserNode;
         blockNode->nonTerminal = "block";
         processingToken = getNextToken();
-        processingNode = createTokenNode(processingToken);
-        processingNode->nonTerminal = blockNode->nonTerminal;
+        processingNode = createTokenNode(processingToken, blockNode);
         blockNode->children.push_back(processingNode);
-        //call vars
-        vars();
+
+        //call vars. It's optional. so check for NULL
+        processingNode = vars();
+        if(processingNode != NULL)
+        {
+            blockNode->children.push_back(processingNode);
+        }
         //call stats
-        stats();
+        processingNode = stats();
+        blockNode->children.push_back(processingNode);
         //check if next token is end
         if(lookAhead().value == "end")
         {
             processingToken = getNextToken();
-            processingNode = createTokenNode(processingToken);
-            processingNode->nonTerminal = blockNode->nonTerminal;
+            processingNode = createTokenNode(processingToken, blockNode);
             blockNode->children.push_back(processingNode);
         }
         else
@@ -102,6 +105,7 @@ ParserNode* Parser::block()
 /**
  * Processes the <vars> non-terminal
  * BNF:  empty | whole Identifier :=  Integer  ;  <vars>
+ * @returns NULL if no data
  */
 ParserNode* Parser::vars()
 {
@@ -113,45 +117,40 @@ ParserNode* Parser::vars()
         varsNode = new ParserNode;
         varsNode->nonTerminal = "vars";
         processingToken = getNextToken();
-        processingNode = createTokenNode(processingToken);
-        processingNode->nonTerminal = varsNode->nonTerminal;
-        processingNode->parentNode = varsNode;
+        processingNode = createTokenNode(processingToken, varsNode);
+
         varsNode->children.push_back(processingNode);
 
         //check for identifier
         if(lookAhead().ID == IDTOKEN)
         {
             processingToken = getNextToken();
-            processingNode = createTokenNode(processingToken);
-            processingNode->nonTerminal = varsNode->nonTerminal;
-            processingNode->parentNode = varsNode;
+            processingNode = createTokenNode(processingToken, varsNode);
+
             varsNode->children.push_back(processingNode);
 
             //check for comp
             if(lookAhead().ID == COMP)
             {
                 processingToken = getNextToken();
-                processingNode = createTokenNode(processingToken);
-                processingNode->nonTerminal = varsNode->nonTerminal;
-                processingNode->parentNode = varsNode;
+                processingNode = createTokenNode(processingToken, varsNode);
+
                 varsNode->children.push_back(processingNode);
 
                 //check for NUMTOKEN
                 if(lookAhead().ID == NUMTOKEN)
                 {
                     processingToken = getNextToken();
-                    processingNode = createTokenNode(processingToken);
-                    processingNode->nonTerminal = varsNode->nonTerminal;
-                    processingNode->parentNode = varsNode;
+                    processingNode = createTokenNode(processingToken, varsNode);
+;
                     varsNode->children.push_back(processingNode);
 
                     //check for semicolon
                     if(lookAhead().ID == SEMICOLON)
                     {
                         processingToken = getNextToken();
-                        processingNode = createTokenNode(processingToken);
-                        processingNode->nonTerminal = varsNode->nonTerminal;
-                        processingNode->parentNode = varsNode;
+                        processingNode = createTokenNode(processingToken, varsNode);
+
                         varsNode->children.push_back(processingNode);
                     }
                     else
@@ -300,32 +299,58 @@ void Parser::R()
  * Handles the processing of statements
  * BNF: <stat>  <mStat>
  */
-void Parser::stats()
+ParserNode* Parser::stats()
 {
+    ParserNode* statsNode;
+    ParserNode* processingNode;
+
+    statsNode = new ParserNode;
+    statsNode->nonTerminal = "stats";
     //call <stat>
-    stat();
+    processingNode = stat();
+    statsNode->children.push_back(processingNode);
     //call <mStat>
-    mStat();
+    processingNode = mStat();
+
+    //mstat node is optional.  Check for null
+    if(processingNode != NULL)
+    {
+        statsNode->children.push_back(processingNode);
+    }
+
+    return statsNode;
 }
 
 /**
  * Processes the <mStat> non-terminal
  * BNF:   empty |  <stat>  <mStat>
  */
-void Parser::mStat()
+ParserNode* Parser::mStat()
 {
+    ParserNode* mStatsNode = NULL;
+    ParserNode* processingNode;
+
     //if reserved words are the next token, call <stat>, then <mStat>
     if(lookAhead().ID == RWORD && getReservedWord(lookAhead().value) != END)
     {
-        stat();
-        mStat();
+        mStatsNode = new ParserNode;
+        mStatsNode->nonTerminal = "mStat";
+        processingNode = stat();
+        mStatsNode->children.push_back(processingNode);
+
+        processingNode = mStat();
+        //mstat is optional.  check for null
+        if(processingNode != NULL)
+        {
+            mStatsNode->children.push_back(processingNode);
+        }
     }
     else if(getReservedWord(lookAhead().value) != END)
     {
         //TODO: Throw Error
     }
 
-
+    return mStatsNode;
 }
 
 /**
@@ -333,49 +358,54 @@ void Parser::mStat()
  * BNF:  <in> ;  | <out> ;  | <block> | <if> ;  | <loop> ;  | <assign> ; | <goto> ; |
  * <label> ;
  */
-void Parser::stat()
+ParserNode* Parser::stat()
 {
+    ParserNode* statNode;
+    ParserNode* processingNode;
     if(lookAhead().ID == RWORD)
     {
+        statNode = new ParserNode;
+        statNode->nonTerminal = "stat";
         ReservedWords reservedWord = getReservedWord(lookAhead().value);
 
         //switch case for <in>, <out>,<block>,<if>, <loop>, <assign>, <goto>, and <label>.
         switch(reservedWord)
         {
             case INPUT:
-                in();
+                processingNode = in();
                 break;
             case OUTPUT:
-                out();
+              //  processingNode = out();
                 break;
             case BEGIN:
-                block(); //does not require check for semicolon at the end
+              //  processingNode = block(); //does not require check for semicolon at the end
                 break;
             case IF:
-                If();
+            //    processingNode = If();
                 break;
             case WHILE:
-                loop();
+              //  processingNode = loop();
                 break;
             case ASSIGN:
-                assign();
+               // processingNode = assign();
                 break;
             case WARP:
-                Goto();
+               // processingNode = Goto();
                 break;
             default:
                 break;
                 //TODO: throw an error
         }
 
+        statNode->children.push_back(processingNode);
+
         if(reservedWord != BEGIN)
         {
             //check for ";" at the end
             if(lookAhead().ID == SEMICOLON && reservedWord != BEGIN)
             {
-                Token processingToken;
-                processingToken = getNextToken();
-                cout << processingToken.value << endl;
+                processingNode = createTokenNode(getNextToken(), statNode);
+                statNode->children.push_back(processingNode);
             }
             else
             {
@@ -388,7 +418,7 @@ void Parser::stat()
         //TODO: Throw exception
     }
 
-
+    return statNode;
 
 }
 
@@ -396,24 +426,40 @@ void Parser::stat()
  * Processes the <in> non-terminal
  * BNF:  input  Identifier
  */
-void Parser::in()
+ParserNode* Parser::in()
 {
+    ParserNode* inputNode;
+    ParserNode* processingNode;
     Token processingToken;
+
     // check for input reserved word followed by an IDToken
     if(lookAhead().value == "input")
     {
+        inputNode = new ParserNode;
+        inputNode->nonTerminal = "in";
 
-        processingToken = getNextToken();
-        cout << processingToken.value << endl;
+        processingNode = createTokenNode(getNextToken(), inputNode);
+        inputNode->children.push_back(processingNode);
+
 
         if(lookAhead().ID == IDTOKEN)
         {
-            processingToken = getNextToken();
-            cout << processingToken.value << endl;
+            processingNode = createTokenNode(getNextToken(), inputNode);
+            inputNode->children.push_back(processingNode);
         }
-        //TODO: throw error
+        else
+        {
+            //TODO: throw error
+        }
+
     }
-    //TODO: Throw error
+    else
+    {
+        //TODO: Throw error
+    }
+
+    return inputNode;
+
 }
 
 /**
@@ -772,11 +818,13 @@ ReservedWords Parser::getReservedWord(string rWordValue)
  * @param nodeToken The token for the parser node
  * @return parser node
  */
-ParserNode* Parser::createTokenNode(Token nodeToken)
+ParserNode* Parser::createTokenNode(Token nodeToken, ParserNode* parent)
 {
     ParserNode* result;
     result = new ParserNode;
     result->value = nodeToken;
+    result->nonTerminal = parent->nonTerminal;
+    result->parentNode = parent;
 
     return result;
 }
