@@ -99,7 +99,7 @@ enum TokenState {
     NEQ = 129,
     COMP = 130,
     ADD = 80,
-    SUB = 79,
+    SUB = 81,
     MUL = 67,
     DIV = 68,
     EXP = 69,
