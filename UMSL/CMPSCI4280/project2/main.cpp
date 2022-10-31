@@ -45,7 +45,7 @@ void printNode(ParserNode* node, int depth)
     //Print the node's token if set, otherwise just print the non-terminal
     if(node->value.ID != 0)
     {
-        printf("%*c%.1s:%-9s", depth*2, ' ', node->nonTerminal.c_str(), node->value.value.c_str());
+        printf("%*c%s:%-9s", depth*2, ' ', node->nonTerminal.c_str(), node->value.value.c_str());
     }
     else
     {
@@ -61,6 +61,10 @@ void printNode(ParserNode* node, int depth)
  */
 void printParseTree(ParserNode* node, int depth)
 {
+
+    //print parent node
+    printNode(node, depth);
+
     //print children
     if(node->children.size() > 0)
     {
@@ -70,8 +74,7 @@ void printParseTree(ParserNode* node, int depth)
             printParseTree(*iter, depth + 1);
         }
     }
-    //print parent node
-    printNode(node, depth);
+
 }
 
 /**
