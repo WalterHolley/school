@@ -412,16 +412,16 @@ ParserNode* Parser::stat()
                 processingNode = block(); //does not require check for semicolon at the end
                 break;
             case IF:
-            //    processingNode = If();
+                processingNode = If();
                 break;
             case WHILE:
-              //  processingNode = loop();
+                processingNode = loop();
                 break;
             case ASSIGN:
-               // processingNode = assign();
+                processingNode = assign();
                 break;
             case WARP:
-               // processingNode = Goto();
+                processingNode = Goto();
                 break;
             default:
                 break;
@@ -617,6 +617,8 @@ ParserNode* Parser::loop()
     //check for "while"
     if(lookAhead().ID == RWORD && lookAhead().value == "while")
     {
+        loopNode = new ParserNode;
+        loopNode->nonTerminal = "while";
         processingNode = createTokenNode(getNextToken(), loopNode);
         loopNode->children.push_back(processingNode);
 
@@ -668,6 +670,9 @@ ParserNode* Parser::assign()
     //check for "assign"
     if(lookAhead().ID == RWORD && getReservedWord(lookAhead().value) == ASSIGN)
     {
+        assignNode = new ParserNode;
+        assignNode->nonTerminal = "assign";
+
         processingNode = createTokenNode(getNextToken(), assignNode);
         assignNode->children.push_back(processingNode);
 
@@ -699,6 +704,7 @@ ParserNode* Parser::assign()
         //TODO: throw error
     }
 
+    return assignNode;
 
 }
 
@@ -805,7 +811,7 @@ ParserNode* Parser::Goto()
     if(lookAhead().ID == RWORD && getReservedWord(lookAhead().value) == WARP)
     {
         gotoNode = new ParserNode;
-
+        gotoNode->nonTerminal = "goto";
         processingNode = createTokenNode(getNextToken(), gotoNode);
         gotoNode->children.push_back(processingNode);
         //check for ID token if true
