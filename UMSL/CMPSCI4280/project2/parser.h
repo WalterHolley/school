@@ -53,5 +53,6 @@ class Parser
         Token lookAhead();
         ReservedWords getReservedWord(string rWordValue);
         ParserNode* createTokenNode(Token nodeToken, ParserNode* parentNode);
+        string createErrorMessage(Token token);
 };
 #endif //PARSER_H

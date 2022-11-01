@@ -5,8 +5,26 @@
  * Implementation of parser for the language
  */
 
-#include <iostream>
+#include <stdexcept>
+#include <sstream>
 #include "parser.h"
+
+string intToString(int number)
+{
+    stringstream  ss;
+    string result;
+    ss << number;
+    ss >> result;
+
+    return  result;
+}
+
+string Parser::createErrorMessage(Token token)
+{
+    string errorMessage = "Invalid syntax near line: " + intToString(token.line) + " column: " + intToString(token.col);
+
+    return errorMessage;
+}
 
 ParserNode* Parser::parseTokens(vector<Token> fileTokens)
 {
@@ -41,10 +59,19 @@ ParserNode* Parser::program()
         processingNode = block();
         programNode->children.push_back(processingNode);
 
+        if(lookAhead().ID != EOFTOKEN)
+        {
+            throw std::invalid_argument(createErrorMessage(lookAhead()));
+        }
+        else //clear final token
+        {
+            getNextToken();
+        }
+
     }
     else
     {
-        //TODO: throw error
+        throw std::invalid_argument(createErrorMessage(lookAhead()));
     }
 
     return programNode;
@@ -85,12 +112,12 @@ ParserNode* Parser::block()
         }
         else
         {
-            //TODO: throw error
+            throw std::invalid_argument(createErrorMessage(lookAhead()));
         }
     }
     else
     {
-        //TODO: throw error
+        throw std::invalid_argument(createErrorMessage(lookAhead()));
     }
 
     return  blockNode;
@@ -144,22 +171,22 @@ ParserNode* Parser::vars()
                     }
                     else
                     {
-                        //TODO: Throw error
+                        throw std::invalid_argument(createErrorMessage(lookAhead()));
                     }
                 }
                 else
                 {
-                    //TODO: Throw error
+                    throw std::invalid_argument(createErrorMessage(lookAhead()));
                 }
             }
             else
             {
-                //TODO: Throw error
+                throw std::invalid_argument(createErrorMessage(lookAhead()));
             }
         }
         else
         {
-            //TODO: Throw error
+            throw std::invalid_argument(createErrorMessage(lookAhead()));
         }
     }
 
@@ -218,7 +245,7 @@ ParserNode* Parser::N()
             processingNode = N();
             nNode->children.push_back(processingNode);
         default:
-            break;
+            throw std::invalid_argument(createErrorMessage(lookAhead()));
     }
 
     return nNode;
@@ -307,7 +334,7 @@ ParserNode* Parser::R()
         }
         else //Error
         {
-            //TODO: Throw error
+            throw std::invalid_argument(createErrorMessage(lookAhead()));
         }
 
     }    //if false, check for number or identifier
@@ -320,7 +347,7 @@ ParserNode* Parser::R()
     }
     else //Error
     {
-        //TODO: Throw Error
+        throw std::invalid_argument(createErrorMessage(lookAhead()));
     }
 
     return rNode;
@@ -378,7 +405,7 @@ ParserNode* Parser::mStat()
     }
     else if(getReservedWord(lookAhead().value) != END)
     {
-        //TODO: Throw Error
+        throw std::invalid_argument(createErrorMessage(lookAhead()));
     }
 
     return mStatsNode;
@@ -424,8 +451,7 @@ ParserNode* Parser::stat()
                 processingNode = Goto();
                 break;
             default:
-                break;
-                //TODO: throw an error
+                throw std::invalid_argument(createErrorMessage(lookAhead()));
         }
 
         statNode->children.push_back(processingNode);
@@ -440,13 +466,13 @@ ParserNode* Parser::stat()
             }
             else
             {
-                //TODO: Throw exception
+                throw std::invalid_argument(createErrorMessage(lookAhead()));
             }
         }
     }
     else
     {
-        //TODO: Throw exception
+        throw std::invalid_argument(createErrorMessage(lookAhead()));
     }
 
     return statNode;
@@ -479,13 +505,13 @@ ParserNode* Parser::in()
         }
         else
         {
-            //TODO: throw error
+            throw std::invalid_argument(createErrorMessage(lookAhead()));
         }
 
     }
     else
     {
-        //TODO: Throw error
+        throw std::invalid_argument(createErrorMessage(lookAhead()));
     }
 
     return inputNode;
@@ -517,7 +543,7 @@ ParserNode* Parser::out()
     }
     else //Error
     {
-        //TODO: throw error
+        throw std::invalid_argument(createErrorMessage(lookAhead()));
     }
 
     return outputNode;
@@ -580,24 +606,24 @@ ParserNode* Parser::If()
                 }
                 else
                 {
-                    //TODO: throw error
+                    throw std::invalid_argument(createErrorMessage(lookAhead()));
                 }
 
 
             }
             else
             {
-                //TODO: throw error
+                throw std::invalid_argument(createErrorMessage(lookAhead()));
             }
         }
         else
         {
-            //TODO: throw error
+            throw std::invalid_argument(createErrorMessage(lookAhead()));
         }
     }
     else
     {
-        //TODO: throw error
+        throw std::invalid_argument(createErrorMessage(lookAhead()));
     }
 
     return ifNode;
@@ -642,17 +668,17 @@ ParserNode* Parser::loop()
             }
             else
             {
-                //TODO: throw error
+                throw std::invalid_argument(createErrorMessage(lookAhead()));
             }
         }
         else
         {
-            //TODO: throw error
+            throw std::invalid_argument(createErrorMessage(lookAhead()));
         }
     }
     else
     {
-        //TODO: Throw Error
+        throw std::invalid_argument(createErrorMessage(lookAhead()));
     }
 
     return loopNode;
@@ -691,17 +717,17 @@ ParserNode* Parser::assign()
             }
             else
             {
-                //TODO: throw error
+                throw std::invalid_argument(createErrorMessage(lookAhead()));
             }
         }
         else
         {
-            //TODO: throw error
+            throw std::invalid_argument(createErrorMessage(lookAhead()));
         }
     }
     else
     {
-        //TODO: throw error
+        throw std::invalid_argument(createErrorMessage(lookAhead()));
     }
 
     return assignNode;
@@ -747,16 +773,16 @@ ParserNode* Parser::RO()
                 }
                 else
                 {
-                    //TODO: Throw error
+                    throw std::invalid_argument(createErrorMessage(lookAhead()));
                 }
             }
             else
             {
-                //TODO: Throw Error
+                throw std::invalid_argument(createErrorMessage(lookAhead()));
             }
             break;
-
-            //TODO: throw error
+        default:
+            throw std::invalid_argument(createErrorMessage(lookAhead()));
     }
     return roNode;
 }
@@ -786,12 +812,12 @@ ParserNode* Parser::label()
         }
         else
         {
-            //TODO: throw error
+            throw std::invalid_argument(createErrorMessage(lookAhead()));
         }
     }
     else
     {
-        //TODO: throw error
+        throw std::invalid_argument(createErrorMessage(lookAhead()));
     }
 
     return labelNode;
@@ -822,12 +848,12 @@ ParserNode* Parser::Goto()
         }
         else
         {
-            //TODO: throw error
+            throw std::invalid_argument(createErrorMessage(lookAhead()));
         }
     }
     else
     {
-        //TODO: throw error
+        throw std::invalid_argument(createErrorMessage(lookAhead()));
     }
 
     return gotoNode;
