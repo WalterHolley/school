@@ -9,6 +9,11 @@
 #include <sstream>
 #include "parser.h"
 
+/**
+ * Converts an integer to a string
+ * @param number the integer to convert
+ * @return the resulting string from the conversion
+ */
 string intToString(int number)
 {
     stringstream  ss;
@@ -19,6 +24,12 @@ string intToString(int number)
     return  result;
 }
 
+/**
+ * Creates an error message string from an offending
+ * token
+ * @param token The token at or near the source of the error
+ * @return formatted string detailing the error
+ */
 string Parser::createErrorMessage(Token token)
 {
     string errorMessage = "Invalid syntax near line: " + intToString(token.line) + " column: " + intToString(token.col);

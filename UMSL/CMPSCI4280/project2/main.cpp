@@ -83,11 +83,20 @@ void printParseTree(ParserNode* node, int depth)
  */
 void processFile(string fileName)
 {
-    vector<Token> tokens = scanner.scanFile(fileName);
-    ParserNode* root = parser.parseTokens(tokens);
-    printParseTree(root,1);
+    try
+    {
+        vector<Token> tokens = scanner.scanFile(fileName);
+        ParserNode* root = parser.parseTokens(tokens);
+        printParseTree(root,1);
 
-    delete root;
+        delete root;
+    }
+    catch (const exception& e )
+    {
+        cout << 'A problem occurred during file analysis' <<endl;
+        cerr << e.what() <<endl;
+    }
+
 }
 
 /**
