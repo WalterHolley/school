@@ -42,12 +42,12 @@ class Parser
         ParserNode* stat();
         ParserNode* in();
         ParserNode* out();
-        void If();
-        void loop();
-        void assign();
-        void RO();
-        void label();
-        void Goto();
+        ParserNode* If();
+        ParserNode* loop();
+        ParserNode* assign();
+        ParserNode* RO();
+        ParserNode* label();
+        ParserNode* Goto();
         vector<Token> tokens;
         Token getNextToken();
         Token lookAhead();
