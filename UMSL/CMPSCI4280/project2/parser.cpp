@@ -256,7 +256,7 @@ ParserNode* Parser::N()
             processingNode = N();
             nNode->children.push_back(processingNode);
         default:
-            throw std::invalid_argument(createErrorMessage(lookAhead()));
+            break;
     }
 
     return nNode;
