@@ -245,7 +245,6 @@ string Scanner::handleNewLines(std::string value) {
         if(!token.empty())
         {
             vector<Token> lineTokens = verifyTokens(token, lineCount);
-            column = 1;
             allTokens.insert(allTokens.end(), lineTokens.begin(), lineTokens.end());
             value.erase(0,found);
         }
@@ -275,6 +274,7 @@ vector<Token>Scanner::scanFile(std::string fileName)
         char delimiter = ' ';
         string line;
         lineCount = 1;
+        column = 1;
         try
         {
 
@@ -413,16 +413,19 @@ vector<Token> Scanner::verifyTokens(string token, int lineNumber)
                                 nextToken.name = getTokenName(opTokenState);
                                 nextToken.value.push_back(token.at(tokenSize));
                                 tokenSize++;
+                                column += tokenSize;
                                 tokens.push_back(nextToken);
                             }
                             else{
                                 nextToken.ID = COLON;
+                                column += tokenSize;
                                 tokens.push_back(nextToken);
                             }
                             break;
                         default: //set delimiter as normal
                             nextToken.ID = getDelimTokenState(nextChar);
                             nextToken.name = getTokenName(nextToken.ID);
+                            column += tokenSize;
                             tokens.push_back(nextToken);
 
 
@@ -478,6 +481,7 @@ vector<Token> Scanner::verifyTokens(string token, int lineNumber)
                                         nextToken.ID = RWORD;
                                     }
                                     tokens.push_back(nextToken);
+                                    column += tokenSize;
                                 }
                                 //start new token
                                 state = START;
@@ -495,6 +499,7 @@ vector<Token> Scanner::verifyTokens(string token, int lineNumber)
                                 nextToken.ID = RWORD;
                             }
                             tokens.push_back(nextToken);
+                            column += tokenSize;
                         }
                     }
                     continue;
@@ -505,6 +510,7 @@ vector<Token> Scanner::verifyTokens(string token, int lineNumber)
                     nextToken.name = getTokenName((int)ERROR);
                     tokenSize++;
                     tokens.push_back(nextToken);
+                    column += tokenSize;
                     break;
                 }
             }
@@ -521,6 +527,7 @@ vector<Token> Scanner::verifyTokens(string token, int lineNumber)
 
 
                 tokens.push_back(nextToken);
+                column += tokenSize;
                 //start new token
                 state = START;
             }
