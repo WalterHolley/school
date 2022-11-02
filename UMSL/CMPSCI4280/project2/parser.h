@@ -35,6 +35,7 @@ class Parser
         ParserNode* expr();
         ParserNode* N();
         ParserNode* A();
+        ParserNode* B();
         ParserNode* M();
         ParserNode* R();
         ParserNode* stats();

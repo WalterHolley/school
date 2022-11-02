@@ -32,7 +32,7 @@ string intToString(int number)
  */
 string Parser::createErrorMessage(Token token)
 {
-    string errorMessage = "Invalid syntax near line: " + intToString(token.line) + " column: " + intToString(token.col);
+    string errorMessage = "Invalid syntax '" + token.value + "' near line: " + intToString(token.line) + " column: " + intToString(token.col);
 
     return errorMessage;
 }
@@ -264,7 +264,8 @@ ParserNode* Parser::N()
 
 /**
  * Processes the <A> non-terminal
- * BNF:  <A> / <M> | <M>
+ * Original BNF:  <A> / <M> | <M>
+ * Fixed BNF: <M><B> (left recursion removed)
  */
 ParserNode* Parser::A()
 {
@@ -277,16 +278,46 @@ ParserNode* Parser::A()
     processingNode = M();
     aNode->children.push_back(processingNode);
 
-    //check next token for "/", call <A> if true
+    processingNode = B();
+    if(processingNode != NULL)
+    {
+        aNode->children.push_back(processingNode);
+    }
+
+
+    return  aNode;
+}
+
+/**
+ * Processes the <B> non-terminal
+ * This is an optional non-terminal
+ * BNF: /<M><B>|empty
+ * @returns NULL if there's no data to parse
+ */
+ParserNode* Parser::B()
+{
+    ParserNode* bNode = NULL;
+    ParserNode* processingNode;
+
+    //check next token for "/", call <M><B> if true
     if(lookAhead().ID == DIV)
     {
-        processingNode = createTokenNode(getNextToken(), aNode);
-        aNode->children.push_back(processingNode);
-        aNode->children.push_back(A());
+        bNode = new ParserNode;
+        bNode->nonTerminal = "B";
+        processingNode = createTokenNode(getNextToken(), bNode);
+        bNode->children.push_back(processingNode);
+        bNode->children.push_back(M());
+
+        //<B> is optional. check for NULL
+        processingNode = B();
+        if(processingNode != NULL)
+        {
+            bNode->children.push_back(processingNode);
+        }
 
     }
 
-    return  aNode;
+    return bNode;
 }
 
 /**
