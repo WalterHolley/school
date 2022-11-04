@@ -1,0 +1,6 @@
+# p2g2 #
+whole _x := 10 ;
+program
+begin
+output _x ;
+end
