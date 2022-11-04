@@ -7,7 +7,7 @@ organizes them into a pre-ordered tree.  The parsing is done according to a give
 Failures found in the tokens or grammar inside the file will cause the process to halt and report the issue.
 
 Invocation:
-> frontend [file]
+> frontEnd [file]
 
 File Parsing Grammar
 <program>  ->  <vars> program <block>
@@ -16,7 +16,7 @@ File Parsing Grammar
 <expr>     ->  <N> - <expr>  | <N>
 <N>        ->  <A> + <N> | <A> * <N> | <A>
 <A>        ->  <M> <B>
-<B>        ->  / <M> <B> | empty (NOTE:  This is a revision.  Fixes left recursion originall fount in <A>)
+<B>        ->  / <M> <B> | empty (NOTE:  This is a revision.  Fixes left recursion originally found in <A>)
 <M>        ->  : <M> |  <R>
 <R>        ->  ( <expr> ) | Identifier | Integer
 <stats>    ->  <stat>  <mStat>

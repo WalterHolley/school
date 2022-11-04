@@ -1,8 +1,8 @@
 CC=g++
-EXEC=frontend
+EXEC=frontEnd
 
 
-frontend: scanner.o parser.o main.cpp
+frontEnd: scanner.o parser.o main.cpp
 	$(CC) scanner.o parser.o main.cpp -o $(EXEC)
 
 scanner.o: token.h scanner.h scanner.cpp
