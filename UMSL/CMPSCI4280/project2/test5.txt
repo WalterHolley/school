@@ -1,0 +1,11 @@
+# p2g4 #
+program
+begin
+   whole yx := 5 ;
+   while [ yx < 10 ]
+   begin
+      assign whole yx = yx + 1 ;
+   end ;
+
+   output yx ;
+end

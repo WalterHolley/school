@@ -1,0 +1,7 @@
+# p2g3 #
+program
+begin
+   whole yx := 5 ;
+   assign yx = yx * 5 - 3 + 8 / : 11 ;
+   output yx ;
+end
