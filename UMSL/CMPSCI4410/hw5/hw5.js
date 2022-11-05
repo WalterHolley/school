@@ -180,19 +180,19 @@ function getBaseCircleIndicies(baseCircleIndex, startingIndex){
 //sets the indicies to be used for the top circle
 function getTopCircleIndicies(topCircleIndex){
   let inds = [];
-  let offset = topCircleIndex + 1;
+  let offset = RES + 1;
   for(let i = 0; i < RES; ++i){
 
-    if(i < RES - 1){
-      inds.push(topCircleIndex);
+    if(offset < RES * 2){
       inds.push(offset);
+      inds.push(topCircleIndex);
       inds.push(offset + 1);
       offset++;
     }
     else{
-      inds.push(topCircleIndex);
       inds.push(offset);
-      inds.push(topCircleIndex + 1);
+      inds.push(topCircleIndex);
+      inds.push(RES + 1);
     }
     
   }
@@ -212,8 +212,9 @@ function initVertexBuffers(gl) {
   let sideIndicesTopIndex = (vertices.length / 3) - 3;
   let sideIndices = getSideIndicies();
   let baseIndices = getBaseCircleIndicies(baseIndex, sideIndices[sideIndices.length - 1]);
+  let topIndices = getTopCircleIndicies(topIndex);
   //indices = sideIndices;
-  indices = sideIndices.concat(baseIndices);
+  indices = sideIndices.concat(baseIndices, topIndices);
  
 
  
