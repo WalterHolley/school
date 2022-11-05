@@ -1,3 +1,10 @@
+/**
+CMPSCI4410
+Homework 5: Cylinder
+Author: Walter Holley III
+Draws a cylinder using webgl 2
+**/
+
 var VSHADER_SOURCE = `#version 300 es
   in vec4 a_Position;   
   uniform mat4 u_MvpMatrix;
@@ -13,13 +20,13 @@ var FSHADER_SOURCE =  `#version 300 es
   out vec4 cg_FragColor;
   
   void main() {
-    cg_FragColor = vec4(1.0, 0.6, 0.0, 1.0);
+    cg_FragColor = vec4(1.0, 0.0, 1.0, 1.0);
   }
 `;
 
-  const RES = 10; // number of longitudes/latitudes  
+  const RES = 30; // number of longitudes/latitudes  
   let rad = 1; //radius of cylinder
-  let height = 2; //height of the cylinder
+  let height = 4; //height of the cylinder
 
 
 function main() {
@@ -44,7 +51,7 @@ function main() {
   mvpMatrix.lookAt(0, 10, 0, 0, 0, 0, 0, 0, 1);
 
   function update() {
-    mvpMatrix.rotate(0.5, 0, 1, 0); // 0.5 degree y-roll
+    mvpMatrix.rotate(0.5,0,0,1); // 0.5 degree z-roll
     mvpMatrix.rotate(1, 1, 0, 0); // 1 degree x-roll
 
     // Pass the model view projection matrix to u_MvpMatrix
@@ -53,7 +60,7 @@ function main() {
     // Clear color buffer
     gl.clear(gl.COLOR_BUFFER_BIT);
 
-    // Draw polyhedron using vertex indices, instead of positions
+    // Draw cylinder using vertex indices, instead of positions
     // n: total number of indices we'll use to draw triangles
     // gl.UNSIGNED_SHORT: data type of index
     // total number of indices could be over 256 (thus SHORT instead of BYTE)
@@ -156,9 +163,9 @@ function getSideIndicies(){
 }
 
 //sets the indicies to be used for the base circle
-function getBaseCircleIndicies(baseCircleIndex, startingIndex){
+function getBaseCircleIndicies(baseCircleIndex){
   let inds = [];
-  let offset = startingIndex;
+  let offset = RES;
   for(let i = 0; i < RES; ++i){
 
     if(offset > 0){
@@ -170,7 +177,7 @@ function getBaseCircleIndicies(baseCircleIndex, startingIndex){
     else{
       inds.push(offset);
       inds.push(baseCircleIndex);
-      inds.push(startingIndex);
+      inds.push(RES);
     }
     
   }
@@ -206,14 +213,11 @@ function initVertexBuffers(gl) {
 
   //setup vertices
   vertices = getSideVertices().concat(getCircleVertices());
-  //vertices.concat(getSideVertices());
-  let baseIndex = (vertices.length / 3) - 2;
-  let topIndex = (vertices.length / 3) - 1;
-  let sideIndicesTopIndex = (vertices.length / 3) - 3;
+  let baseIndex = (vertices.length / 3) - 2; //indice location of base center point
+  let topIndex = (vertices.length / 3) - 1;  //indice location of top center point
   let sideIndices = getSideIndicies();
-  let baseIndices = getBaseCircleIndicies(baseIndex, sideIndices[sideIndices.length - 1]);
+  let baseIndices = getBaseCircleIndicies(baseIndex);
   let topIndices = getTopCircleIndicies(topIndex);
-  //indices = sideIndices;
   indices = sideIndices.concat(baseIndices, topIndices);
  
 
