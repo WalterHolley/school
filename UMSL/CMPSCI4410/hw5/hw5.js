@@ -17,6 +17,11 @@ var FSHADER_SOURCE =  `#version 300 es
   }
 `;
 
+  const RES = 5; // number of longitudes/latitudes  
+  let rad = 1; //radius of cylinder
+  let height = 2; //height of the cylinder
+
+
 function main() {
   var canvas = document.getElementById('canvas');
 
@@ -60,45 +65,118 @@ function main() {
   update();
 }
 
+//creates vertices for top and bottom circles
+function getCircleVertices(){
+  let vertices = [];
+      
+    
+
+  for(let i = 0; i < 2; ++i){
+    let h = -height / 2 + (i * height); //alternates height coordinate
+    //center point;
+    vertices.push(0);
+    vertices.push(0);
+    vertices.push(h);
+    for(let j = 0; j < RES; ++j){
+      let theta = j * (2 * Math.PI) / RES; //angle for section to be drawn
+      let sinTheta = Math.sin(theta); //y angle
+      let cosTheta = Math.cos(theta); //x angle
+
+      vertices.push(cosTheta * rad);
+      vertices.push(sinTheta * rad);
+      vertices.push(h);
+    }
+  }
+
+  return vertices;
+}
+
+function getSideVertices(){
+  let vertices = [];
+  let circleVertices = getCircleVertices();
+  for(let i = 0; i < 2; ++i){
+    let h = -height / 2 + (i * height); //alternates height coordinate
+    let count = 0;  //iterator for circle vertices
+
+    for(let j = 0; j <= RES; ++j){
+      let cx = circleVertices[count];
+      let cy = circleVertices[count + 1];
+      let x = cx * rad;
+      let y = cy * rad;
+      let z = h;
+
+      vertices.push(x);
+      vertices.push(y);
+      vertices.push(z);
+      
+
+      count += 3;
+    }
+    
+  }
+  return vertices;
+}
+
+function getSideIndicies(){
+  let indicies = [];
+  
+}
+
+function getBaseCircleIndicies(baseCircleIndex){
+  let inds = [];
+  let offset = baseCircleIndex + 1;
+  for(let i = 0; i < RES; ++i){
+
+    if(i < RES - 1){
+      inds.push(baseCircleIndex);
+      inds.push(offset + 1);
+      inds.push(offset);
+      offset++;
+    }
+    else{
+      inds.push(baseCircleIndex);
+      inds.push(baseCircleIndex + 1);
+      inds.push(offset);
+    }
+    
+  }
+  return inds;
+}
+
+function getTopCircleIndicies(topCircleIndex){
+  let inds = [];
+  let offset = topCircleIndex + 1;
+  for(let i = 0; i < RES; ++i){
+
+    if(i < RES - 1){
+      inds.push(topCircleIndex);
+      inds.push(offset);
+      inds.push(offset + 1);
+      offset++;
+    }
+    else{
+      inds.push(topCircleIndex);
+      inds.push(offset);
+      inds.push(topCircleIndex + 1);
+    }
+    
+  }
+  return inds;
+}
+
 function initVertexBuffers(gl) {
-  const RES = 20; // number of longitudes/latitudes  
-  let rad = 1; //radius of cylinder
-  let height = 2; //height of the cylinder
 
   let vertices = [];
   let indices = [];
 
   //setup vertices
-  for(let i = 0; i <= RES; i++){
-    let theta = i * (2 * Math.PI) / RES; //angle for section to be drawn
-    let sinTheta = Math.sin(theta);
-    let cosTheta = Math.cos(theta);
+  vertices = getCircleVertices();
+  //vertices.concat(getSideVertices());
+  baseIndex = 0;
+  topIndex = RES + 1;
+  indices = getBaseCircleIndicies(baseIndex).concat(getTopCircleIndicies(topIndex));
+ 
 
-    let x = rad * cosTheta;
-    let y = rad * sinTheta;
-    let z = 0;
-    
-
-    vertices.push(x);
-    vertices.push(y);
-    vertices.push(z);
-    
-    
-  }
-
-  
-  let center = vertices.length / 3;
-  //setup indicies
-  for(let i = 0; i <= RES; ++i){
-    
-    let left = (i + 1) % (RES + 1);
-    let right = (i + 2) % (RES + 1);
-
-    indices.push(left);
-    indices.push(right);
-    indices.push(center);
-    
-  }
  
 
   vertexData = new Float32Array(vertices);
