@@ -93,13 +93,6 @@ function getCircleVertices(){
     vertices.push(0);
     vertices.push(0);
     vertices.push(h);
-    for(let j = 0; j < RES; ++j){
-      
-
-      vertices.push(cosTheta * rad);
-      vertices.push(sinTheta * rad);
-      vertices.push(h);
-    }
   }
 
   return vertices;
@@ -163,21 +156,21 @@ function getSideIndicies(){
 }
 
 //sets the indicies to be used for the base circle
-function getBaseCircleIndicies(baseCircleIndex){
+function getBaseCircleIndicies(baseCircleIndex, startingIndex){
   let inds = [];
-  let offset = baseCircleIndex + 1;
+  let offset = startingIndex;
   for(let i = 0; i < RES; ++i){
 
-    if(i < RES - 1){
-      inds.push(baseCircleIndex);
-      inds.push(offset + 1);
+    if(offset > 0){
       inds.push(offset);
-      offset++;
+      inds.push(baseCircleIndex);
+      inds.push(offset - 1);
+      offset--;
     }
     else{
-      inds.push(baseCircleIndex);
-      inds.push(baseCircleIndex + 1);
       inds.push(offset);
+      inds.push(baseCircleIndex);
+      inds.push(startingIndex);
     }
     
   }
@@ -212,12 +205,15 @@ function initVertexBuffers(gl) {
   let indices = [];
 
   //setup vertices
-  vertices = getSideVertices();
+  vertices = getSideVertices().concat(getCircleVertices());
   //vertices.concat(getSideVertices());
-  baseIndex = 0;
-  topIndex = RES + 1;
-  //indices = getBaseCircleIndicies(baseIndex).concat(getTopCircleIndicies(topIndex));
-  indices = getSideIndicies();
+  let baseIndex = (vertices.length / 3) - 2;
+  let topIndex = (vertices.length / 3) - 1;
+  let sideIndicesTopIndex = (vertices.length / 3) - 3;
+  let sideIndices = getSideIndicies();
+  let baseIndices = getBaseCircleIndicies(baseIndex, sideIndices[sideIndices.length - 1]);
+  //indices = sideIndices;
+  indices = sideIndices.concat(baseIndices);
  
 
  
