@@ -17,7 +17,7 @@ var FSHADER_SOURCE =  `#version 300 es
   }
 `;
 
-  const RES = 5; // number of longitudes/latitudes  
+  const RES = 10; // number of longitudes/latitudes  
   let rad = 1; //radius of cylinder
   let height = 2; //height of the cylinder
 
@@ -65,6 +65,22 @@ function main() {
   update();
 }
 
+//calculates the angle positions for the vertices
+function getAngles(){
+  let vertices = [];
+  for(let i = 0; i < RES; ++i){
+      let theta =i * (2 * Math.PI) / RES; //angle for section to be drawn
+      let sinTheta = Math.sin(theta); //y angle
+      let cosTheta = Math.cos(theta); //x angle
+
+      vertices.push(cosTheta);
+      vertices.push(sinTheta);
+  }
+  
+  return vertices;
+}
+
+
 //creates vertices for top and bottom circles
 function getCircleVertices(){
   let vertices = [];
@@ -78,9 +94,7 @@ function getCircleVertices(){
     vertices.push(0);
     vertices.push(h);
     for(let j = 0; j < RES; ++j){
-      let theta = j * (2 * Math.PI) / RES; //angle for section to be drawn
-      let sinTheta = Math.sin(theta); //y angle
-      let cosTheta = Math.cos(theta); //x angle
+      
 
       vertices.push(cosTheta * rad);
       vertices.push(sinTheta * rad);
@@ -91,16 +105,17 @@ function getCircleVertices(){
   return vertices;
 }
 
+
 function getSideVertices(){
   let vertices = [];
-  let circleVertices = getCircleVertices();
+  let angles = getAngles();
   for(let i = 0; i < 2; ++i){
     let h = -height / 2 + (i * height); //alternates height coordinate
     let count = 0;  //iterator for circle vertices
 
     for(let j = 0; j <= RES; ++j){
-      let cx = circleVertices[count];
-      let cy = circleVertices[count + 1];
+      let cx = angles[count];
+      let cy = angles[count + 1];
       let x = cx * rad;
       let y = cy * rad;
       let z = h;
@@ -109,19 +124,45 @@ function getSideVertices(){
       vertices.push(y);
       vertices.push(z);
       
-
-      count += 3;
+      if((count + 2) == angles.length){
+        count = 0;
+      }
+      else{
+        count += 2;
+      }
+      
     }
     
   }
   return vertices;
 }
 
+//sets the indicies to be used for drawing the sides
 function getSideIndicies(){
-  let indicies = [];
+  let base = 0;
+  let top = RES + 1;
+  let inds = [];
+
+  for(let i = 0; i < RES; ++i){
+
+    //first half of side
+    inds.push(base);
+    inds.push(base + 1);
+    inds.push(top);
+
+    //second half of side;
+    inds.push(top);
+    inds.push(top + 1);
+    inds.push(base + 1);
+    
+    base++;
+    top++;
+  }
+  return inds;
   
 }
 
+//sets the indicies to be used for the base circle
 function getBaseCircleIndicies(baseCircleIndex){
   let inds = [];
   let offset = baseCircleIndex + 1;
@@ -143,6 +184,7 @@ function getBaseCircleIndicies(baseCircleIndex){
   return inds;
 }
 
+//sets the indicies to be used for the top circle
 function getTopCircleIndicies(topCircleIndex){
   let inds = [];
   let offset = topCircleIndex + 1;
@@ -170,11 +212,12 @@ function initVertexBuffers(gl) {
   let indices = [];
 
   //setup vertices
-  vertices = getCircleVertices();
+  vertices = getSideVertices();
   //vertices.concat(getSideVertices());
   baseIndex = 0;
   topIndex = RES + 1;
-  indices = getBaseCircleIndicies(baseIndex).concat(getTopCircleIndicies(topIndex));
+  //indices = getBaseCircleIndicies(baseIndex).concat(getTopCircleIndicies(topIndex));
+  indices = getSideIndicies();
  
 
  
