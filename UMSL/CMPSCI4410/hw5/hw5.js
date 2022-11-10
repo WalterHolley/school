@@ -24,7 +24,7 @@ var FSHADER_SOURCE =  `#version 300 es
   }
 `;
 
-  const RES = 30; // number of longitudes/latitudes  
+  const RES = 20; // number of longitudes/latitudes  
   let rad = 1; //radius of cylinder
   let height = 4; //height of the cylinder
 
