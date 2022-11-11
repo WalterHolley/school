@@ -2,8 +2,11 @@ CC=g++
 EXEC=statSem
 
 
-statSem: scanner.o parser.o main.cpp
-	$(CC) scanner.o parser.o main.cpp -o $(EXEC)
+statSem: scanner.o parser.o semantics.o main.cpp
+	$(CC) scanner.o parser.o semantics.o main.cpp -o $(EXEC)
+
+semantics.o: semantics.h semantics.cpp
+	$(CC) -g -c semantics.cpp
 
 scanner.o: token.h scanner.h scanner.cpp
 	$(CC) -g -c scanner.cpp

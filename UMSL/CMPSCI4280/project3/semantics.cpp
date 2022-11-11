@@ -19,10 +19,9 @@ bool Semantics::verify(std::string value)
 {
     bool result = false;
 
-    vector<string>::iterator iter = symbolTable.begin();
-    for(iter; iter < symbolTable.end(); iter++)
+    for(int i = 0; i < symbolTable.size(); i++)
     {
-        if( symbolTable.at(iter) == value)
+        if( symbolTable.at(i) == value)
         {
             result = true;
             break;

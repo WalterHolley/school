@@ -70,9 +70,9 @@ void processParseTree(ParserNode* node, int depth)
     {
         if(node->children.size() > 0)
         {
-            for(iter; iter < node->children.end(); iter++)
+            for(int i = 0; i < node->children.size(); i++)
             {
-                ParserNode* childNode = node->children.at(iter);
+                ParserNode* childNode = node->children.at(i);
                 if(childNode->value.ID == IDTOKEN)
                 {
                     IDTokenName = childNode->value.value;
@@ -94,7 +94,7 @@ void processParseTree(ParserNode* node, int depth)
         {
             for(iter; iter < node->children.end(); iter++)
             {
-                processParseTree(*iter, depth + 1)
+                processParseTree(*iter, depth + 1);
             }
         }
     }
