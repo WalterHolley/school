@@ -9,6 +9,7 @@
 #define SEMANTICS_H
 
 #include <string>
+#include <vector>
 #include "token.h"
 
 using namespace std;
@@ -18,6 +19,8 @@ class Semantics
     public:
         void insert(string value);
         bool verify(string value);
+    private:
+        vector<string> symbolTable;
 };
 
 #endif //SEMANTICS_H

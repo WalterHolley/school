@@ -16,6 +16,7 @@ the parsing apparatus responsible for tranlating the program.
 #include <string>
 #include "scanner.h"
 #include "parser.h"
+#include "semantics.h"
 
 using namespace std;
 
@@ -23,6 +24,7 @@ const string TEMP_FILE = "temp.in";
 
 Scanner scanner;
 Parser parser;
+Semantics semantics;
 
 
 /**
@@ -55,27 +57,57 @@ void printNode(ParserNode* node, int depth)
 }
 
 /**
- * @brief a node and its child contents in pre-order
+ * @brief Review a node and its child contents in pre-order
  * @param node the node to print
- * @param depth depth of the node to print
+ * @param depth depth of the node
  */
-void printParseTree(ParserNode* node, int depth)
+void processParseTree(ParserNode* node, int depth)
 {
+    vector<ParserNode*>::iterator iter = node->children.begin();
+    string IDTokenName;
 
-    //print parent node
-    printNode(node, depth);
-
-    //print children
-    if(node->children.size() > 0)
+    if(node->nonTerminal == "vars")
     {
-        vector<ParserNode*>::iterator iter = node->children.begin();
-        for(iter; iter < node->children.end(); iter++)
+        if(node->children.size() > 0)
         {
-            printParseTree(*iter, depth + 1);
+            for(iter; iter < node->children.end(); iter++)
+            {
+                ParserNode* childNode = node->children.at(iter);
+                if(childNode->value.ID == IDTOKEN)
+                {
+                    IDTokenName = childNode->value.value;
+                    if(!semantics.verify(IDTokenName))
+                    {
+                        semantics.insert(IDTokenName);
+                    }
+                    else
+                    {
+                        //ERROR, variable already declared
+                    }
+                }
+            }
         }
     }
-
+    else if(node->value.ID != IDTOKEN) //recurse through all children
+    {
+        if(node->children.size() > 0)
+        {
+            for(iter; iter < node->children.end(); iter++)
+            {
+                processParseTree(*iter, depth + 1)
+            }
+        }
+    }
+    else
+    {
+        IDTokenName = node->value.value;
+        if(!semantics.verify(IDTokenName))
+        {
+            semantics.insert(IDTokenName);
+        }
+    }
 }
+
 
 /**
  * @brief processes a file parameter passed to the program
@@ -87,7 +119,7 @@ void processFile(string fileName)
     {
         vector<Token> tokens = scanner.scanFile(fileName);
         ParserNode* root = parser.parseTokens(tokens);
-        printParseTree(root,1);
+        processParseTree(root,1);
 
         delete root;
     }

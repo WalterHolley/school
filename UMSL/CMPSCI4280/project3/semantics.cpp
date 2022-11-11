@@ -12,12 +12,22 @@
 
 void Semantics::insert(std::string value)
 {
-
+    symbolTable.push_back(value);
 }
 
 bool Semantics::verify(std::string value)
 {
     bool result = false;
+
+    vector<string>::iterator iter = symbolTable.begin();
+    for(iter; iter < symbolTable.end(); iter++)
+    {
+        if( symbolTable.at(iter) == value)
+        {
+            result = true;
+            break;
+        }
+    }
 
     return result;
 }
