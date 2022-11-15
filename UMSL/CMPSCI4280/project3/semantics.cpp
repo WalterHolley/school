@@ -15,6 +15,11 @@ void Semantics::insert(std::string value)
     symbolTable.push_back(value);
 }
 
+vector<string> Semantics::getSymbolTable()
+{
+    return symbolTable;
+}
+
 bool Semantics::verify(std::string value)
 {
     bool result = false;

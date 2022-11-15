@@ -19,6 +19,7 @@ class Semantics
     public:
         void insert(string value);
         bool verify(string value);
+        vector<string> getSymbolTable();
     private:
         vector<string> symbolTable;
 };

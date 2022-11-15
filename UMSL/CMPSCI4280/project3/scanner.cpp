@@ -317,7 +317,7 @@ vector<Token>Scanner::scanFile(std::string fileName)
             endToken.name = "EOFToken";
             endToken.value = "EOF";
             endToken.line = lineCount - 1;
-            endToken.col = tokens.back().col + 1;
+            endToken.col = 1; //tokens.back().col + 1;
             allTokens.push_back(endToken);
             fb.close();
         }

@@ -11,9 +11,11 @@ the parsing apparatus responsible for tranlating the program.
 */
 
 #include <iostream>
+#include <sstream>
 #include <fstream>
 #include <vector>
 #include <string>
+#include <stdexcept>
 #include "scanner.h"
 #include "parser.h"
 #include "semantics.h"
@@ -38,23 +40,20 @@ void cleanup()
 }
 
 /**
- * @brief Prints the value of a given node
- * @param node
- * @param depth
+ * Converts an integer to a string
+ * @param number the integer to convert
+ * @return the resulting string from the conversion
  */
-void printNode(ParserNode* node, int depth)
+string convertIntToString(int number)
 {
-    //Print the node's token if set, otherwise just print the non-terminal
-    if(node->value.ID != 0)
-    {
-        printf("%*c%s:%-9s", depth*2, ' ', node->nonTerminal.c_str(), node->value.value.c_str());
-    }
-    else
-    {
-        printf("%*c%s:", depth*2, ' ', node->nonTerminal.c_str());
-    }
-    printf("\n");
+    stringstream  ss;
+    string result;
+    ss << number;
+    ss >> result;
+
+    return  result;
 }
+
 
 /**
  * @brief Review a node and its child contents in pre-order
@@ -66,7 +65,7 @@ void processParseTree(ParserNode* node, int depth)
     vector<ParserNode*>::iterator iter = node->children.begin();
     string IDTokenName;
 
-    if(node->nonTerminal == "vars")
+    if(node->nonTerminal == "vars") //vars node
     {
         if(node->children.size() > 0)
         {
@@ -82,7 +81,7 @@ void processParseTree(ParserNode* node, int depth)
                     }
                     else
                     {
-                        //ERROR, variable already declared
+                        throw std::invalid_argument("Cannot redefine variable '" + IDTokenName + "' at line " + convertIntToString(childNode->value.line));
                     }
                 }
             }
@@ -101,13 +100,26 @@ void processParseTree(ParserNode* node, int depth)
     else
     {
         IDTokenName = node->value.value;
-        if(!semantics.verify(IDTokenName))
+        if(!semantics.verify(IDTokenName)) //Error if item not found in list
         {
-            semantics.insert(IDTokenName);
+            throw std::invalid_argument("Unknown variable '" + IDTokenName + "' at line " + convertIntToString(node->value.line));
         }
     }
 }
 
+/**
+ * Prints the static semantics(variables) of
+ * the program
+ */
+void printSemantics()
+{
+    int i = 0;
+
+    for(int i = 0; i < semantics.getSymbolTable().size(); i++)
+    {
+        printf("%s\n", semantics.getSymbolTable().at(i).c_str());
+    }
+}
 
 /**
  * @brief processes a file parameter passed to the program
@@ -120,6 +132,7 @@ void processFile(string fileName)
         vector<Token> tokens = scanner.scanFile(fileName);
         ParserNode* root = parser.parseTokens(tokens);
         processParseTree(root,1);
+        printSemantics();
 
         delete root;
     }
