@@ -11,34 +11,10 @@
 #include <stdio.h>
 #include "semantics.h"
 
-
-
-void Semantics::insert(std::string value)
-{
-    symbolTable.push_back(value);
-}
-
-vector<string> Semantics::getSymbolTable()
-{
-    return symbolTable;
-}
-
-bool Semantics::verify(std::string value)
-{
-    bool result = false;
-
-    for(int i = 0; i < symbolTable.size(); i++)
-    {
-        if( symbolTable.at(i) == value)
-        {
-            result = true;
-            break;
-        }
-    }
-
-    return result;
-}
-
+/**
+ * Adds variable to the stack
+ * @param var
+ */
 void Semantics::push(StackVariable var)
 {
 
@@ -110,9 +86,7 @@ void Semantics::printDebug(StackVariable var, string action)
 {
     if(DEBUG)
     {
-        char* message;
         printf("variable %s %s at scope %i \n", var.ID.c_str(), action.c_str(), var.scope);
-        //cout << message << endl;
 
     }
 }

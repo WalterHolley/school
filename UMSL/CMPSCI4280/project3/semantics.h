@@ -29,12 +29,8 @@ class Semantics
         void pop();
         StackVariable top();
         int find(string varName);
-        void insert(string value);
-        bool verify(string value);
-        vector<string> getSymbolTable();
         bool DEBUG = false;
     private:
-        vector<string> symbolTable;
         stack<StackVariable> symbolStack;
         void printDebug(StackVariable var, string action);
 };
