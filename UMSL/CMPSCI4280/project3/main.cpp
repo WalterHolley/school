@@ -27,6 +27,7 @@ const string TEMP_FILE = "temp.in";
 Scanner scanner;
 Parser parser;
 Semantics semantics;
+int varScope = 0;
 
 
 /**
@@ -54,6 +55,11 @@ string convertIntToString(int number)
     return  result;
 }
 
+void printVariable(int scope, Token idToken, bool wasRemoved)
+{
+
+}
+
 
 /**
  * @brief Review a node and its child contents in pre-order
@@ -64,6 +70,7 @@ void processParseTree(ParserNode* node, int depth)
 {
     vector<ParserNode*>::iterator iter = node->children.begin();
     string IDTokenName;
+    StackVariable var;
 
     if(node->nonTerminal == "vars") //vars node
     {
@@ -75,9 +82,13 @@ void processParseTree(ParserNode* node, int depth)
                 if(childNode->value.ID == IDTOKEN)
                 {
                     IDTokenName = childNode->value.value;
-                    if(!semantics.verify(IDTokenName))
+                    if(semantics.find(IDTokenName) == -1)
                     {
-                        semantics.insert(IDTokenName);
+
+                        var.scope = varScope;
+                        var.ID = IDTokenName;
+                        var.line = childNode->value.line;
+                        semantics.push(var);
                     }
                     else
                     {
@@ -89,6 +100,11 @@ void processParseTree(ParserNode* node, int depth)
     }
     else if(node->value.ID != IDTOKEN) //recurse through all children
     {
+        if(node->value.value == "begin")
+        {
+            cout << "start of scope found" << endl;
+            varScope++;
+        }
         if(node->children.size() > 0)
         {
             for(iter; iter < node->children.end(); iter++)
@@ -96,28 +112,34 @@ void processParseTree(ParserNode* node, int depth)
                 processParseTree(*iter, depth + 1);
             }
         }
+
+        if(node->value.value == "end") //clear current scope and decrement
+        {
+            cout << "End of scope reached" << endl;
+            if(varScope >= 0)
+            {
+                while(semantics.top().scope == varScope)
+                {
+                    semantics.pop();
+                }
+                varScope--;
+            }
+            else
+            {
+                //clear remaining variables
+                cout << "End of program" << endl;
+            }
+
+        }
     }
-    else
+    else if(node->value.ID == IDTOKEN)
     {
+        //check for existing token
         IDTokenName = node->value.value;
-        if(!semantics.verify(IDTokenName)) //Error if item not found in list
+        if(semantics.find(IDTokenName) == -1) //Error if item not found in list
         {
             throw std::invalid_argument("Unknown variable '" + IDTokenName + "' at line " + convertIntToString(node->value.line));
         }
-    }
-}
-
-/**
- * Prints the static semantics(variables) of
- * the program
- */
-void printSemantics()
-{
-    int i = 0;
-
-    for(int i = 0; i < semantics.getSymbolTable().size(); i++)
-    {
-        printf("%s\n", semantics.getSymbolTable().at(i).c_str());
     }
 }
 
@@ -132,7 +154,6 @@ void processFile(string fileName)
         vector<Token> tokens = scanner.scanFile(fileName);
         ParserNode* root = parser.parseTokens(tokens);
         processParseTree(root,1);
-        printSemantics();
 
         delete root;
     }
@@ -171,6 +192,7 @@ void processTempFile()
 //MAIN ENTRY POINT OF PROGRAM
 int main(int argc, char *argv[])
 {
+    semantics.DEBUG = true;
     //read file
     if(argc > 1)
     {
