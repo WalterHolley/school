@@ -76,7 +76,8 @@ ParserNode* Parser::program()
         }
         else //clear final token
         {
-            getNextToken();
+            processingNode = createTokenNode(getNextToken(), programNode);
+            programNode->children.push_back(processingNode);
         }
 
     }

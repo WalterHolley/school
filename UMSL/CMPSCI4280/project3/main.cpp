@@ -93,6 +93,7 @@ void processParseTree(ParserNode* node, int depth)
                     else
                     {
                         throw std::invalid_argument("Cannot redefine variable '" + IDTokenName + "' at line " + convertIntToString(childNode->value.line));
+                        break;
                     }
                 }
             }
@@ -102,8 +103,12 @@ void processParseTree(ParserNode* node, int depth)
     {
         if(node->value.value == "begin")
         {
-            cout << "start of scope found" << endl;
             varScope++;
+            if(semantics.DEBUG)
+            {
+                printf("Start of scope %i \n", varScope);
+            }
+
         }
         if(node->children.size() > 0)
         {
@@ -115,14 +120,20 @@ void processParseTree(ParserNode* node, int depth)
 
         if(node->value.value == "end") //clear current scope and decrement
         {
-            cout << "End of scope reached" << endl;
+            if(semantics.DEBUG)
+            {
+                printf("End of scope %i reached \n", varScope);
+            }
+
             if(varScope >= 0)
             {
+
                 while(semantics.top().scope == varScope)
                 {
                     semantics.pop();
                 }
                 varScope--;
+
             }
             else
             {
@@ -130,6 +141,19 @@ void processParseTree(ParserNode* node, int depth)
                 cout << "End of program" << endl;
             }
 
+        }
+
+        if(node->value.ID == EOFTOKEN) //end of file.  clear global tokens if any
+        {
+            if(semantics.DEBUG)
+            {
+                printf("End of scope %i reached \n", varScope);
+            }
+
+            while(semantics.top().scope != -1)
+            {
+                semantics.pop();
+            }
         }
     }
     else if(node->value.ID == IDTOKEN)
