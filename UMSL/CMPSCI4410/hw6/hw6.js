@@ -49,9 +49,13 @@ var FSHADER_SOURCE =`#version 300 es
      cg_FragColor = v_Color; // output the interpolated surface color
 }`;
 
+let LIGHTRES = 200;
+
+
 let config = {
     OBJECT: 1,
     ROTATE: false,
+    LIGHT: false,
     SPEED: 0.5,
     RAINBOW: false,
     COLOR: "#00ffff"
@@ -60,6 +64,7 @@ let config = {
 let gui = new dat.GUI({ width: 300 });
 function startGUI () {    
     gui.add(config, 'OBJECT', { 'Sphere': 0, 'Torus': 1, 'Cone': 2, 'Cube': 3 }).name('object').onChange(update);  
+    gui.add(config, 'LIGHT').name('light?').onChange(update);
     gui.add(config, 'ROTATE').name('rotate?').onChange(update);
     gui.add(config, 'SPEED', 0.0, 1.0).name('speed');
     gui.add(config, 'RAINBOW').name('rainbow?').onChange(update);
@@ -67,18 +72,60 @@ function startGUI () {
 }
 startGUI();
 
+//returns x,y positions of light source
+function getLightAngles(){
+  let xyCoords = [];
+  let rad = 5;
+  let y = 7.0;
+  for(let i = 0; i < LIGHTRES; ++i){
+    let theta = i * (2* Math.PI) / LIGHTRES;
+    let x = Math.cos(theta);
+    let z = Math.sin(theta);
+    
+
+    x = x * rad;
+    z = z * rad
+    xyCoords.push(x); //x
+    xyCoords.push(y); //y
+    xyCoords.push(z); //z
+  }
+
+  return xyCoords;
+}
+
 let gl, canvas;
 let indices = []; // number of indices for each object
 let vao = []; // vertex array object (VAO) for each object
 let modelMatrix; // make it global to keep track of transformations being updated
 let animID; // animation id 
 let color, hsv;
+let lightPositions = getLightAngles();
+let decreaseY = true;
+let lightTick = 0; //animation count for lighting.  used for rotating the light source
+
+
 
 function update() {
   color = new THREE.Color( config.COLOR );
 
   cancelAnimationFrame(animID); // to avoid duplicate animation requests 
   drawObject(); 
+}
+
+function getLightPosition(){
+  if(config.LIGHT){
+    if(lightTick >= LIGHTRES)
+      lightTick = 0;
+    else
+      lightTick += 1;
+  }
+  let position = [];
+  let offset = lightTick * 3;
+  position.push(lightPositions[offset]);
+  position.push(lightPositions[offset + 1]);
+  position.push(lightPositions[offset + 2]);
+
+  return position;
 }
 
 function main() {
@@ -114,10 +161,13 @@ function drawObject() {
   var u_AmbientLight = gl.getUniformLocation(gl.program, 'u_AmbientLight');
   var u_Color = gl.getUniformLocation(gl.program, 'u_Color');
 
+  //get light position
+  var lightPos = getLightPosition();
+
   // Set light color 
   gl.uniform3f(u_LightColor, 0.8, 0.8, 0.8);
   // Set light position (point light)
-  gl.uniform3f(u_LightPosition, 5.0, 8.0, 7.0);
+  gl.uniform3f(u_LightPosition, lightPos[0], lightPos[1], lightPos[2]);
   // Set ambient light
   gl.uniform3f(u_AmbientLight, 0.2, 0.2, 0.2);
 
@@ -141,8 +191,11 @@ function drawObject() {
   // Pass the model view projection matrix to u_MvpMatrix
   gl.uniformMatrix4fv(u_MvpMatrix, false, mvpMatrix.elements);
 
-  modelMatrix.rotate(config.SPEED, 0, 1, 0); // y-roll
-  modelMatrix.rotate(2 * config.SPEED, 1, 0, 0); // x-roll
+  if(config.ROTATE){
+    modelMatrix.rotate(config.SPEED, 0, 1, 0); // y-roll
+    modelMatrix.rotate(2 * config.SPEED, 1, 0, 0); // x-roll
+  }
+
 
   // Pass the model matrix to u_ModelMatrix
   gl.uniformMatrix4fv(u_ModelMatrix, false, modelMatrix.elements);
@@ -161,7 +214,7 @@ function drawObject() {
   // draw selected object
   gl.drawElements(gl.TRIANGLES, indices[config.OBJECT], gl.UNSIGNED_SHORT, 0);
 
-  if (config.ROTATE) // if rotate mode is on
+  if (config.ROTATE || config.LIGHT) // if rotate mode is on
       animID = requestAnimationFrame(drawObject);
 } 
 
