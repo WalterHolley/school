@@ -49,7 +49,7 @@ var FSHADER_SOURCE =`#version 300 es
      cg_FragColor = v_Color; // output the interpolated surface color
 }`;
 
-let LIGHTRES = 200;
+let LIGHTRES = 400;
 
 
 let config = {
@@ -114,10 +114,9 @@ function update() {
 
 function getLightPosition(){
   if(config.LIGHT){
-    if(lightTick >= LIGHTRES)
+    lightTick += 1;
+    if(lightTick == LIGHTRES)
       lightTick = 0;
-    else
-      lightTick += 1;
   }
   let position = [];
   let offset = lightTick * 3;
