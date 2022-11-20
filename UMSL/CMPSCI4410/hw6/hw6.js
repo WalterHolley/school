@@ -49,7 +49,7 @@ var FSHADER_SOURCE =`#version 300 es
      cg_FragColor = v_Color; // output the interpolated surface color
 }`;
 
-let LIGHTRES = 400;
+let LIGHTRES = 400; //resolution for lighting
 
 
 let config = {
@@ -72,7 +72,7 @@ function startGUI () {
 }
 startGUI();
 
-//returns x,y positions of light source
+//returns x,y,z positions of light source
 function getLightAngles(){
   let xyCoords = [];
   let rad = 5;
@@ -101,7 +101,7 @@ let animID; // animation id
 let color, hsv;
 let lightPositions = getLightAngles();
 let decreaseY = true;
-let lightTick = 0; //animation count for lighting.  used for rotating the light source
+let lightTick = LIGHTRES - 1; //animation count for lighting.  used for rotating the light source
 
 
 
@@ -114,9 +114,9 @@ function update() {
 
 function getLightPosition(){
   if(config.LIGHT){
-    lightTick += 1;
-    if(lightTick == LIGHTRES)
-      lightTick = 0;
+    lightTick -= 1;
+    if(lightTick < 0)
+      lightTick = LIGHTRES - 1;
   }
   let position = [];
   let offset = lightTick * 3;
