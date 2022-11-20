@@ -72,7 +72,7 @@ function startGUI () {
 }
 startGUI();
 
-//returns x,y,z positions of light source
+//creates x,y,z positions of light source
 function getLightAngles(){
   let xyCoords = [];
   let rad = 5;
@@ -112,6 +112,8 @@ function update() {
   drawObject(); 
 }
 
+//retrieves the light's position based on 
+//the application's configuration
 function getLightPosition(){
   if(config.LIGHT){
     lightTick -= 1;
