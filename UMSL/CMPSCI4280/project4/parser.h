@@ -15,8 +15,34 @@
 
 using namespace std;
 
+
+
+enum TerminalEnum
+{
+    TERMPROGRAM = 0,
+    BLOCK = 1,
+    VARS = 2,
+    EXPR = 3,
+    TERMN = 4,
+    TERMA = 5,
+    TERMB = 6,
+    TERMM = 7,
+    TERMR = 8,
+    STATS = 9,
+    MSTAT = 10,
+    STAT = 11,
+    IN = 12,
+    OUT = 13,
+    TERMIF = 14,
+    LOOP = 15,
+    TERMASSIGN = 16,
+    TERMRO = 17,
+    TERMLABEL = 18,
+    TERMGOTO = 19
+};
+
 struct ParserNode {
-    string nonTerminal;
+    TerminalEnum nonTerminal;
     Token value = Token();
     struct ParserNode* parentNode = NULL;
     vector<ParserNode*> children;

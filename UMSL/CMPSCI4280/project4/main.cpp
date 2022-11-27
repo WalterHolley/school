@@ -29,7 +29,7 @@ Scanner scanner;
 Parser parser;
 Semantics semantics;
 Generator generator;
-int varScope = 0;
+//int varScope = 0;
 
 
 /**
@@ -47,6 +47,7 @@ void cleanup()
  * @param number the integer to convert
  * @return the resulting string from the conversion
  */
+ /*
 string convertIntToString(int number)
 {
     stringstream  ss;
@@ -56,20 +57,21 @@ string convertIntToString(int number)
 
     return  result;
 }
-
+*/
 
 /**
  * @brief Review a node and its child contents in pre-order
  * @param node the node to print
  * @param depth depth of the node
  */
+ /*
 void processParseTree(ParserNode* node, int depth)
 {
     vector<ParserNode*>::iterator iter = node->children.begin();
     string IDTokenName;
     StackVariable var;
 
-    if(node->nonTerminal == "vars") //vars node
+    if(node->nonTerminal == VARS) //vars node
     {
         if(node->children.size() > 0)
         {
@@ -163,6 +165,7 @@ void processParseTree(ParserNode* node, int depth)
         }
     }
 }
+*/
 
 /**
  * @brief processes a file parameter passed to the program

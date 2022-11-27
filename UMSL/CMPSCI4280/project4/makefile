@@ -1,5 +1,5 @@
 CC=g++
-EXEC=statSem
+EXEC=compfs
 
 
 compfs: scanner.o parser.o semantics.o generator.o main.cpp

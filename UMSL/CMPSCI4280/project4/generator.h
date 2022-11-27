@@ -8,6 +8,7 @@
 #ifndef GENERATOR_H
 #define GENERATOR_H
 
+#include <fstream>
 #include "parser.h"
 #include "semantics.h"
 
@@ -19,6 +20,8 @@ class Generator
         void genASMFile(ParserNode* root, string fileName);
     private:
         Semantics semantics;
+        void processNode(ParserNode* node, FILE* outputFile);
+        void handleVarNode(ParserNode* root, FILE* outputFile);
 };
 
 #endif //GENERATOR_H

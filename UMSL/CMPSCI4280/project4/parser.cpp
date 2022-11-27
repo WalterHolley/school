@@ -56,7 +56,7 @@ ParserNode* Parser::program()
     processingNode = vars();
 
     programNode = new ParserNode;
-    programNode->nonTerminal = "program";
+    programNode->nonTerminal = TERMPROGRAM;
     if(processingNode != NULL)
     {
         programNode->children.push_back(processingNode);
@@ -103,7 +103,7 @@ ParserNode* Parser::block()
     if(lookAhead().value == "begin")
     {
         blockNode = new ParserNode;
-        blockNode->nonTerminal = "block";
+        blockNode->nonTerminal = BLOCK;
         processingNode = createTokenNode(getNextToken(), blockNode);
         blockNode->children.push_back(processingNode);
 
@@ -148,7 +148,7 @@ ParserNode* Parser::vars()
     if(lookAhead().ID == RWORD && lookAhead().value == "whole")
     {
         varsNode = new ParserNode;
-        varsNode->nonTerminal = "vars";
+        varsNode->nonTerminal = VARS;
         processingNode = createTokenNode(getNextToken(), varsNode);
 
         varsNode->children.push_back(processingNode);
@@ -215,7 +215,7 @@ ParserNode* Parser::expr()
     ParserNode* processingNode;
 
     exprNode = new ParserNode;
-    exprNode->nonTerminal = "expr";
+    exprNode->nonTerminal = EXPR;
     //call <N>
     processingNode = N();
     exprNode->children.push_back(processingNode);
@@ -243,7 +243,7 @@ ParserNode* Parser::N()
     ParserNode* processingNode;
 
     nNode = new ParserNode;
-    nNode->nonTerminal = "N";
+    nNode->nonTerminal = TERMN;
     //call <A>
     processingNode = A();
     nNode->children.push_back(processingNode);
@@ -274,7 +274,7 @@ ParserNode* Parser::A()
     ParserNode* processingNode;
 
     aNode = new ParserNode;
-    aNode->nonTerminal = "A";
+    aNode->nonTerminal = TERMA;
     //call <M>
     processingNode = M();
     aNode->children.push_back(processingNode);
@@ -304,7 +304,7 @@ ParserNode* Parser::B()
     if(lookAhead().ID == DIV)
     {
         bNode = new ParserNode;
-        bNode->nonTerminal = "B";
+        bNode->nonTerminal = TERMB;
         processingNode = createTokenNode(getNextToken(), bNode);
         bNode->children.push_back(processingNode);
         bNode->children.push_back(M());
@@ -331,7 +331,7 @@ ParserNode* Parser::M()
     ParserNode* processingNode;
 
     mNode = new ParserNode;
-    mNode->nonTerminal = "M";
+    mNode->nonTerminal = TERMM;
     //check for ":" token, call <M> if true
     if(lookAhead().ID == COLON)
     {
@@ -357,7 +357,7 @@ ParserNode* Parser::R()
 {
     ParserNode* rNode;
     ParserNode* processingNode;
-    string nonTerminal = "R";
+    TerminalEnum nonTerminal = TERMR;
 
     //check for "(", call <expr> if true, then check for ")"
     if(lookAhead().ID == LPAREN)
@@ -406,7 +406,7 @@ ParserNode* Parser::stats()
     ParserNode* processingNode;
 
     statsNode = new ParserNode;
-    statsNode->nonTerminal = "stats";
+    statsNode->nonTerminal = STATS;
     //call <stat>
     processingNode = stat();
     statsNode->children.push_back(processingNode);
@@ -435,7 +435,7 @@ ParserNode* Parser::mStat()
     if(lookAhead().ID == RWORD && getReservedWord(lookAhead().value) != END)
     {
         mStatsNode = new ParserNode;
-        mStatsNode->nonTerminal = "mStat";
+        mStatsNode->nonTerminal = MSTAT;
         processingNode = stat();
         mStatsNode->children.push_back(processingNode);
 
@@ -466,7 +466,7 @@ ParserNode* Parser::stat()
     if(lookAhead().ID == RWORD)
     {
         statNode = new ParserNode;
-        statNode->nonTerminal = "stat";
+        statNode->nonTerminal = STAT;
         ReservedWords reservedWord = getReservedWord(lookAhead().value);
 
         //switch case for <in>, <out>,<block>,<if>, <loop>, <assign>, <goto>, and <label>.
@@ -535,7 +535,7 @@ ParserNode* Parser::in()
     if(lookAhead().value == "input")
     {
         inputNode = new ParserNode;
-        inputNode->nonTerminal = "in";
+        inputNode->nonTerminal = IN;
 
         processingNode = createTokenNode(getNextToken(), inputNode);
         inputNode->children.push_back(processingNode);
@@ -574,7 +574,7 @@ ParserNode* Parser::out()
     if(lookAhead().ID == RWORD && lookAhead().value == RESERVED_WORDS[OUTPUT])
     {
         outputNode = new ParserNode;
-        outputNode->nonTerminal = "out";
+        outputNode->nonTerminal = OUT;
         processingNode = createTokenNode(getNextToken(), outputNode);
         outputNode->children.push_back(processingNode);
 
@@ -606,7 +606,7 @@ ParserNode* Parser::If()
     if(lookAhead().ID == RWORD && getReservedWord(lookAhead().value) == IF)
     {
         ifNode = new ParserNode;
-        ifNode->nonTerminal = "if";
+        ifNode->nonTerminal = TERMIF;
 
         processingNode = createTokenNode(getNextToken(), ifNode);
         ifNode->children.push_back(processingNode);
@@ -687,7 +687,7 @@ ParserNode* Parser::loop()
     if(lookAhead().ID == RWORD && lookAhead().value == "while")
     {
         loopNode = new ParserNode;
-        loopNode->nonTerminal = "while";
+        loopNode->nonTerminal = LOOP;
         processingNode = createTokenNode(getNextToken(), loopNode);
         loopNode->children.push_back(processingNode);
 
@@ -740,7 +740,7 @@ ParserNode* Parser::assign()
     if(lookAhead().ID == RWORD && getReservedWord(lookAhead().value) == ASSIGN)
     {
         assignNode = new ParserNode;
-        assignNode->nonTerminal = "assign";
+        assignNode->nonTerminal = TERMASSIGN;
 
         processingNode = createTokenNode(getNextToken(), assignNode);
         assignNode->children.push_back(processingNode);
@@ -785,7 +785,7 @@ ParserNode* Parser::RO()
 {
     ParserNode* roNode;
     ParserNode* processingNode;
-    string nonTerminalName = "RO";
+    TerminalEnum nonTerminalName = TERMRO;
     //check for following operators, fail if none exist:
     // >, <, ==, [=](three tokens), !=
     switch(lookAhead().ID)
@@ -843,7 +843,7 @@ ParserNode* Parser::label()
     if(lookAhead().ID == RWORD && getReservedWord(lookAhead().value) == LABEL)
     {
         labelNode = new ParserNode;
-        labelNode->nonTerminal = "label";
+        labelNode->nonTerminal = TERMLABEL;
 
         processingNode = createTokenNode(getNextToken(), labelNode);
         labelNode->children.push_back(processingNode);
@@ -880,7 +880,7 @@ ParserNode* Parser::Goto()
     if(lookAhead().ID == RWORD && getReservedWord(lookAhead().value) == WARP)
     {
         gotoNode = new ParserNode;
-        gotoNode->nonTerminal = "goto";
+        gotoNode->nonTerminal = TERMGOTO;
         processingNode = createTokenNode(getNextToken(), gotoNode);
         gotoNode->children.push_back(processingNode);
         //check for ID token if true

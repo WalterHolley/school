@@ -4,10 +4,60 @@
  * Converts toy source code to ACC Assembler code
  */
 
+#include <stdexcept>
+#include <iostream>
+#include <sstream>
 #include "generator.h"
 
 
-void handleVarNode(ParserNode* node, FILE* outputFile)
+int varScope = 0;
+
+
+
+/**
+ * Converts an integer to a string
+ * @param number the integer to convert
+ * @return the resulting string from the conversion
+ */
+string convertIntToString(int number)
+{
+    stringstream  ss;
+    string result;
+    ss << number;
+    ss >> result;
+
+    return  result;
+}
+
+/**
+ * Generates the source file for ACC Assembler
+ * @param root parse tree node root
+ * @param fileName name of the file to create
+ */
+void Generator::genASMFile(ParserNode* root, std::string fileName)
+{
+    try
+    {
+        fileName = fileName + ".asm";
+        FILE* outputFile = fopen(fileName.c_str(), "w");
+        processNode(root, outputFile);
+        fclose(outputFile);
+    }
+    catch(const std::exception& ex)
+    {
+        cout << "A problem occurred while writing output file" << endl;
+        std::cerr << ex.what() << '\n';
+    }
+
+
+}
+
+/**
+ * Writes syntax derived from <var> non-terminal
+ * @param node
+ * @param outputFile
+ */
+void Generator::handleVarNode(ParserNode* node, FILE* outputFile)
 {
     if(node->children.size() > 0)
     {
@@ -17,7 +67,7 @@ void handleVarNode(ParserNode* node, FILE* outputFile)
             ParserNode* childNode = node->children.at(i);
             if(childNode->value.ID == IDTOKEN)
             {
-                IDTokenName = childNode->value.value;
+                string IDTokenName = childNode->value.value;
                 if(semantics.find(IDTokenName) == -1)
                 {
 
@@ -34,8 +84,8 @@ void handleVarNode(ParserNode* node, FILE* outputFile)
             }
             else if(childNode->value.ID == NUMTOKEN) // write variable
             {
-                fprintf(outputFile, "LOAD %s \n", childNode->value.value );
-                fprintf(outputFile, "STORE %s", var.ID);
+                fprintf(outputFile, "LOAD %s \n", childNode->value.value.c_str() );
+                fprintf(outputFile, "STORE %s", var.ID.c_str());
                 break;
             }
 
@@ -43,12 +93,16 @@ void handleVarNode(ParserNode* node, FILE* outputFile)
     }
 }
 
-void processNode(ParserNode* node, FILE* outputFile)
+//** PRIVATE helper methods **//
+
+
+
+void Generator::processNode(ParserNode* node, FILE* outputFile)
 {
     //check for code generating nodes
     switch(node->nonTerminal)
     {
-        case "vars":
+        case VARS:
             handleVarNode(node, outputFile);
             break;
         default://recurse through child nodes if any
@@ -73,27 +127,5 @@ void processNode(ParserNode* node, FILE* outputFile)
 
     //default(read children)
 }
-
-/**
- * Generates the source file for ACC Assembler
- * @param root parse tree node root
- * @param fileName name of the file to create
- */
-void Generator::genASMFile(ParserNode *root, std::string fileName)
-{
-    try
-    {
-        FILE* outputFile = fopen(fileName.c_str(), "w");
-        fclose(outputFile);
-    }
-    catch(const std::exception& ex)
-    {
-        cout << "A problem occurred while writing output file" << endl;
-        std::cerr << ex.what() << '\n';
-    }
-
-
-}
-
 
 
