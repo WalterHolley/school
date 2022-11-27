@@ -19,6 +19,7 @@ the parsing apparatus responsible for tranlating the program.
 #include "scanner.h"
 #include "parser.h"
 #include "semantics.h"
+#include "generator.h"
 
 using namespace std;
 
@@ -27,6 +28,7 @@ const string TEMP_FILE = "temp.in";
 Scanner scanner;
 Parser parser;
 Semantics semantics;
+Generator generator;
 int varScope = 0;
 
 
@@ -172,7 +174,8 @@ void processFile(string fileName)
     {
         vector<Token> tokens = scanner.scanFile(fileName);
         ParserNode* root = parser.parseTokens(tokens);
-        processParseTree(root,1);
+        generator.genASMFile(root, fileName);
+        //processParseTree(root,1);
 
         delete root;
     }
