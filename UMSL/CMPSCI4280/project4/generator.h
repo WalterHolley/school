@@ -22,6 +22,10 @@ class Generator
         Semantics semantics;
         void processNode(ParserNode* node, FILE* outputFile);
         void handleVarNode(ParserNode* root, FILE* outputFile);
+        void handleInputNode(ParserNode* node, FILE* outputFile);
+        void handleBlock(ParserNode* node, FILE* outputFile);
+        void handleExpr(ParserNode* node, FILE* outputFile);
+        void handleOut(ParserNode* node, FILE* outputFile);
 };
 
 #endif //GENERATOR_H
