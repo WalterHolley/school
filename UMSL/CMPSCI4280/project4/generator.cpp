@@ -17,6 +17,7 @@ int tempCount = 0;
 bool ioUsed = false;
 bool tempUsed = false;
 
+const string IO_VAR = "W";
 
 /**
  * Converts an integer to a string
@@ -414,7 +415,10 @@ void Generator::handleInputNode(ParserNode *node, FILE *outputFile)
             {
                 if(semantics.find(child->value.value) != -1)
                 {
-                    fprintf(outputFile, "READ %s\n", child->value.value.c_str());
+                    fprintf(outputFile, "READ %s\n", IO_VAR.c_str());
+                    fprintf(outputFile, "LOAD %s\n", IO_VAR.c_str());
+                    fprintf(outputFile, "STACKW %s\n", getTokenValue(child->value).c_str());
+                    ioUsed = true;
                 }
                 else
                 {
