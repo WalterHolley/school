@@ -27,7 +27,7 @@ const string TEMP_FILE = "temp.in";
 
 Scanner scanner;
 Parser parser;
-Semantics semantics;
+//Semantics semantics;
 Generator generator;
 //int varScope = 0;
 
@@ -217,7 +217,7 @@ void processTempFile()
 //MAIN ENTRY POINT OF PROGRAM
 int main(int argc, char *argv[])
 {
-    semantics.DEBUG = true;
+    //semantics.DEBUG = true;
     //read file
     if(argc > 1)
     {
