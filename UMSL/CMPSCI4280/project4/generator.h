@@ -10,11 +10,16 @@
 
 #include <fstream>
 #include <string>
+#include <vector>
 #include "parser.h"
-
 
 using namespace std;
 
+struct TokenOperation
+{
+    Token valueToken;
+    TokenState operation;
+};
 
 class Generator
 {
@@ -27,12 +32,13 @@ class Generator
         void handleBlock(ParserNode* node, FILE* outputFile);
         void handleOut(ParserNode* node, FILE* outputFile);
         void handleProgram(ParserNode* node, FILE* outputFile);
-        Token handleExpr(ParserNode* node, FILE* outputFile);
-        Token handleN(ParserNode* node, FILE* outputFile);
-        Token handleA(ParserNode* node, FILE* outputFile);
-        Token handleB(ParserNode* node, FILE* outputFile);
-        Token handleM(ParserNode* node, FILE* outputFile);
-        Token handleR(ParserNode* node, FILE* outputFile);
+        void handleAssign(ParserNode* node, FILE* outputFile);
+        vector<TokenOperation*> handleExpr(ParserNode* node, FILE* outputFile);
+        vector<TokenOperation*> handleN(ParserNode* node, FILE* outputFile);
+        vector<TokenOperation*> handleA(ParserNode* node, FILE* outputFile);
+        vector<TokenOperation*> handleB(ParserNode* node, FILE* outputFile);
+        vector<TokenOperation*> handleM(ParserNode* node, FILE* outputFile);
+        TokenOperation* handleR(ParserNode* node, FILE* outputFile);
 
 };
 

@@ -13,7 +13,8 @@
 
 int varScope = 0;
 Semantics semantics;
-int tempCount = 0;
+Semantics tempSemantics;
+int tempPos = 0;
 bool ioUsed = false;
 bool tempUsed = false;
 
@@ -68,71 +69,109 @@ string getTokenValue(Token token)
 }
 
 /**
- * Writes a math operation in the ASM language
- * @param outputFile file to write to
- * @param leftValue Left side value of the operation
- * @param rightValue right side value of the operation
- * @param operation Math function to perform(supports ADD, SUB, MUL and DIV)
+ * Creates a temp variable to be used
+ * in ACC Assembler
+ * @return
  */
-void writeMathOperation(FILE* outputFile, Token leftValue, Token rightValue, TokenState operation)
+string createTempVar()
 {
-    string op;
-    //get RHS Value
-    switch(rightValue.ID)
-    {
-
-        case IDTOKEN:
-            fprintf(outputFile, "STACKR %s\n", getTokenValue(rightValue).c_str());
-            break;
-        case NUMTOKEN:
-            fprintf(outputFile, "LOAD %s\n", getTokenValue(rightValue).c_str());
-            break;
-        default:
-            break;
-            //throw error
-    }
-
-    //store RHS value
-    fprintf(outputFile, "STORE T0\n"); //always uses temp zero for math operations
-
-    //load LHS value
-    switch(leftValue.ID)
-    {
-        case IDTOKEN:
-            fprintf(outputFile, "STACKR %s\n", getTokenValue(leftValue).c_str());
-            break;
-        case NUMTOKEN:
-            fprintf(outputFile, "LOAD %s\n", getTokenValue(leftValue).c_str());
-            break;
-        default:
-            break;
-            //throw error
-
-    }
-
-    //get operation
-    switch(operation)
-    {
-        case ADD:
-            op = "ADD";
-            break;
-        case SUB:
-            op = "SUB";
-            break;
-        case MUL:
-            op = "MUL";
-            break;
-        case DIV:
-            op = "DIV";
-            break;
-        default:
-            //throw error
-            break;
-    }
-
-    //do operation
-    fprintf(outputFile, "%s T0\n", op.c_str());
+    string newVar = "T" + convertIntToString(tempPos);
+    tempPos++;
+    StackVariable var;
+    var.ID = newVar;
+    tempSemantics.push(var);
+    tempUsed = true;
+    return newVar;
 }
+
+
+void writeMathExpression(FILE* outputFile, vector<TokenOperation*> operations)
+{
+    //setup temp variables
+    string tempLeft = createTempVar();
+    string tempRight = createTempVar();
+    string op;
+
+    for(int i = 0; i < operations.size(); i++)
+    {
+        TokenOperation* currentOperation = operations.at(i);
+
+        //get operation
+        switch(currentOperation->operation)
+        {
+            case ADD:
+                op = "ADD";
+                break;
+            case SUB:
+                op = "SUB";
+                break;
+            case MUL:
+                op = "MULT";
+                break;
+            case DIV:
+                op = "DIV";
+                break;
+            default:
+                op = "";
+                break;
+        }
+
+        if(i == 0)
+        {
+            switch(currentOperation->valueToken.ID)
+            {
+                case NUMTOKEN:
+                    fprintf(outputFile, "LOAD %s\n", getTokenValue(currentOperation->valueToken).c_str());
+                    break;
+                case IDTOKEN:
+                    fprintf(outputFile, "STACKR %s\n", getTokenValue(currentOperation->valueToken).c_str());
+                    break;
+                default:
+                    break;
+            }
+
+        }
+
+        if(currentOperation->operation == ASSN)
+        {
+            continue;
+        }
+
+
+
+
+            //Store current
+            fprintf(outputFile, "STORE %s\n", tempLeft.c_str());
+
+            //load next value
+            switch(currentOperation->valueToken.ID)
+            {
+                case IDTOKEN:
+                    fprintf(outputFile, "STACKR %s\n", getTokenValue(currentOperation->valueToken).c_str());
+                    break;
+                case NUMTOKEN:
+                    fprintf(outputFile, "LOAD %s\n", getTokenValue(currentOperation->valueToken).c_str());
+                    break;
+            }
+
+            //check for negation
+            if(i + 1 < operations.size())
+            {
+                if(operations.at(i + 1)->operation == COLON)
+                {
+                    fprintf(outputFile, "MULT -1\n");
+                    i++;
+                }
+
+            }
+
+            //do operation
+            fprintf(outputFile, "STORE %s\n", tempRight.c_str());
+            fprintf(outputFile, "LOAD %s\n", tempLeft.c_str());
+            fprintf(outputFile, "%s %s\n", op.c_str(), tempRight.c_str());
+    }
+}
+
 
 void writeEndOfDocument(FILE* outputFile)
 {
@@ -143,11 +182,21 @@ void writeEndOfDocument(FILE* outputFile)
     {
         fprintf(outputFile, "W 0\n");
     }
+
+    //Temp vars
+    if(tempUsed)
+    {
+        while(tempSemantics.top().scope != -1)
+        {
+            fprintf(outputFile, "%s 0\n", tempSemantics.top().ID.c_str());
+            tempSemantics.pop();
+        }
+    }
 }
 
-Token Generator::handleR(ParserNode* node, FILE* outputFile)
+TokenOperation* Generator::handleR(ParserNode* node, FILE* outputFile)
 {
-    Token result;
+    TokenOperation* result;
     if(node->children.empty())
     {
             //throw error
@@ -159,7 +208,7 @@ Token Generator::handleR(ParserNode* node, FILE* outputFile)
             ParserNode* child = node->children.at(i);
             if(child->nonTerminal == EXPR)
             {
-                result = handleExpr(child, outputFile);
+                handleExpr(child, outputFile);
                 continue;
             }
             else
@@ -172,7 +221,9 @@ Token Generator::handleR(ParserNode* node, FILE* outputFile)
                         break;
                     case IDTOKEN:
                     case NUMTOKEN:
-                        result = child->value;
+                        result = new TokenOperation;
+                        result->valueToken = child->value;
+                        result->operation = ASSN;
                         break;
                     default:
                         //throw error
@@ -182,7 +233,7 @@ Token Generator::handleR(ParserNode* node, FILE* outputFile)
         }
     }
 
-    if(result.ID != IDTOKEN || result.ID != NUMTOKEN)
+    if(result->valueToken.ID != IDTOKEN || result->valueToken.ID != NUMTOKEN)
     {
         //throw error;
     }
@@ -192,9 +243,12 @@ Token Generator::handleR(ParserNode* node, FILE* outputFile)
 
 
 
-Token Generator::handleM(ParserNode* node, FILE* outputFile)
+vector<TokenOperation*> Generator::handleM(ParserNode* node, FILE* outputFile)
 {
-    Token result;
+    TokenOperation* result;
+    vector<TokenOperation*> mResult;
+
+    vector<TokenOperation*> resultContainer;
 
     if(node->children.empty())
     {
@@ -210,19 +264,27 @@ Token Generator::handleM(ParserNode* node, FILE* outputFile)
                 case COLON:
                     //syntax for negation
                     i++;
-                    result = handleM(node->children.at(i), outputFile);
+                    mResult = handleM(node->children.at(i), outputFile);
+                    result = mResult.at(0);
+                    result->operation = COLON;
+                    resultContainer.push_back(result);
+                    //resultContainer.insert(resultContainer.end(), mResult.begin(), mResult.end());
                     break;
                 default:
                     result = handleR(child, outputFile);
+                    resultContainer.push_back(result);
+                    break;
             }
         }
     }
-    return result;
+    return resultContainer;
 }
 
-Token Generator::handleA(ParserNode* node, FILE* outputFile)
+vector<TokenOperation*> Generator::handleA(ParserNode* node, FILE* outputFile)
 {
-    Token result;
+
+    vector<TokenOperation*> operations;
+    vector<TokenOperation*> incomingOperations;
     if(node->children.empty())
     {
         //throw error
@@ -235,10 +297,12 @@ Token Generator::handleA(ParserNode* node, FILE* outputFile)
             switch(child->nonTerminal)
             {
                 case TERMM://handle M
-                    result = handleM(child, outputFile);
+                     incomingOperations = handleM(child, outputFile);
+                     operations.insert(operations.end(), incomingOperations.begin(), incomingOperations.end());
                     break;
                 case TERMB://handle B
-                    //handle B
+                    incomingOperations = handleB(child, outputFile);
+                    operations.insert(operations.end(), incomingOperations.begin(), incomingOperations.end());
                     break;
             }
         }
@@ -246,7 +310,7 @@ Token Generator::handleA(ParserNode* node, FILE* outputFile)
 
 
 
-    return result;
+    return operations;
 }
 
 /**
@@ -255,9 +319,12 @@ Token Generator::handleA(ParserNode* node, FILE* outputFile)
  * @param outputFile
  * @return variable or value of result
  */
-Token Generator::handleN(ParserNode* node, FILE* outputFile)
+vector<TokenOperation*> Generator::handleN(ParserNode* node, FILE* outputFile)
 {
     Token result;
+    vector<TokenOperation*> operations;
+    vector<TokenOperation*> incomingOperations;
+    TokenOperation* nextOperation;
     if(node->children.size() == 0)
     {
         //throw error
@@ -270,67 +337,82 @@ Token Generator::handleN(ParserNode* node, FILE* outputFile)
             switch(child->nonTerminal)
             {
                 case TERMA:
-                    result = handleA(child, outputFile);
+                    incomingOperations = handleA(child, outputFile);
+                    operations.insert(operations.end(), incomingOperations.begin(), incomingOperations.end());
                     break;
-                default:
+                case TERMN:
                     if(child->value.ID == ADD || child->value.ID == MUL)
                     {
-                        i++;
-                        if(result.ID != IDTOKEN || result.ID != NUMTOKEN)
-                        {
-                            Token nValue = handleN(node->children.at(i), outputFile);
-                            writeMathOperation(outputFile, result, nValue, child->value.ID);
-                        }
-                        else
-                        {
-                            //throw error
-                        }
+                        nextOperation = new TokenOperation;
+                        nextOperation->operation = child->value.ID;
                     }
                     else
                     {
-                        //throw error
+                        vector<TokenOperation*> nContent = handleN(node->children.at(i), outputFile);
+                        nextOperation->valueToken = nContent.at(0)->valueToken;
+                        operations.push_back(nextOperation);
+                        operations.insert(operations.end(),nContent.begin(), nContent.end());
                     }
+
+                default:
+                    break;
+
             }
         }
     }
 
 
-    return result;
+    return operations;
 }
 
-Token Generator::handleB(ParserNode* node, FILE* outputFile)
+vector<TokenOperation*> Generator::handleB(ParserNode* node, FILE* outputFile)
 {
-    Token result;
-    if(!node->children.empty())
+    vector<TokenOperation*> resultContainer;
+    vector<TokenOperation*> bResult;
+    vector<TokenOperation*> mResult;
+    TokenOperation* operation;
+    if(node->children.empty())
+    {
+        //throw error
+    }
+    else
     {
         for(int i = 0; i < node->children.size(); i++)
         {
             ParserNode* child = node->children.at(i);
-            if(child->value.ID == DIV) //perform division
+            if(i == 0)
             {
-                fprintf(outputFile, "DIV ");
-                i++;
-                try
+                if(child->value.ID != DIV)
                 {
-                    child = node->children.at(i);
-                    if(child->nonTerminal == TERMM)
-                    {
-                        result = handleM(child, outputFile);
-                        fprintf(outputFile, "%s\n", getTokenValue(result).c_str());
-                        i++;
-                        child = node->children.at(i);
-                        handleB(child, outputFile);
-                    }
+                    break;
                 }
-                catch(const exception& e )
+                else
                 {
-                    //Throw error
+                    operation = new TokenOperation;
+                    operation->operation = DIV;
                 }
             }
+            switch(child->nonTerminal)
+            {
+                case TERMM:
+                    mResult = handleM(child, outputFile);
+                    operation->valueToken = mResult.at(0)->valueToken;
+                    resultContainer.push_back(operation);
+                    resultContainer.insert(resultContainer.end(),mResult.begin(),mResult.end());
+                    break;
+                case TERMB:
+                    bResult = handleB(child, outputFile);
+                    if(!bResult.empty())
+                    {
+                        resultContainer.insert(resultContainer.end(), bResult.begin(), bResult.end());
+                    }
+                    break;
+            }
         }
+
     }
 
-    return result;
+    return resultContainer;
 }
 
 /**
@@ -460,9 +542,11 @@ void Generator::handleBlock(ParserNode* node, FILE* outputFile)
  * @param outputFile
  * @return stack value of the stored expression result
  */
-Token Generator::handleExpr(ParserNode* node, FILE* outputFile)
+vector<TokenOperation*> Generator::handleExpr(ParserNode* node, FILE* outputFile)
 {
-    Token result;
+    vector<TokenOperation*> operations;
+    vector<TokenOperation*> incomingOperations;
+    TokenOperation* tokenOp;
     if(node->children.empty())
     {
         //throw error
@@ -476,31 +560,31 @@ Token Generator::handleExpr(ParserNode* node, FILE* outputFile)
             switch(child->nonTerminal)
             {
                 case TERMN:
-                    result = handleN(child, outputFile);
+                    incomingOperations = handleN(child, outputFile);
+                    operations.insert(operations.end(), incomingOperations.begin(), incomingOperations.end());
                     break;
-                default:
+                case EXPR:
                     if(child->value.ID == SUB)
                     {
-                        i++;
-                        if(result.ID != NUMTOKEN || result.ID != IDTOKEN)
-                        {
-                            Token exprValue = handleExpr(node->children.at(i), outputFile);
-                            writeMathOperation(outputFile, result, exprValue, SUB);
-                        }
-                        else
-                        {
-                            //throw error
-                        }
-
+                        tokenOp = new TokenOperation;
+                        tokenOp->operation = SUB;
                     }
+                    else
+                    {
+                        incomingOperations = handleExpr(node->children.at(i), outputFile);
+                        tokenOp->valueToken = incomingOperations.at(0)->valueToken;
+                        operations.push_back(tokenOp);
+                        operations.insert(operations.end(), incomingOperations.begin(), incomingOperations.end());
+                    }
+                    break;
+                default:
+                    //throw error
                     break;
 
             }
         }
     }
-
-
-    return result;
+    return operations;
 }
 
 void Generator::handleOut(ParserNode *node, FILE *outputFile)
@@ -517,7 +601,7 @@ void Generator::handleOut(ParserNode *node, FILE *outputFile)
             ParserNode*  child = node->children.at(i);
             if(child->nonTerminal == EXPR)
             {
-                Token result = handleExpr(child, outputFile);
+                Token result = handleExpr(child, outputFile).at(0)->valueToken;
                 fprintf(outputFile, "STACKR %s\n", getTokenValue(result).c_str());
                 fprintf(outputFile, "STORE W\n");
                 fprintf(outputFile, "WRITE W\n");
@@ -558,6 +642,75 @@ void Generator::handleProgram(ParserNode *node, FILE *outputFile)
 }
 
 /**
+ * Translates <assign> non-terminals to ACC assembler
+ * @param node node of ASSIGN
+ * @param outputFile file for statement output
+ */
+void Generator::handleAssign(ParserNode *node, FILE *outputFile)
+{
+    int stackPos;
+    Token exprValue;
+    vector<TokenOperation*> exprs;
+    if(node->children.empty())
+    {
+        //throw error
+    }
+    else
+    {
+        for(int i = 0; i < node->children.size(); i++)
+        {
+            ParserNode* child = node->children.at(i);
+            switch(child->nonTerminal)
+            {
+                case TERMASSIGN:
+                    if(child->value.ID == IDTOKEN)
+                    {
+                        stackPos = semantics.find(child->value.value);
+                    }
+                    break;
+                case EXPR:
+                    exprs = handleExpr(child, outputFile);
+                    exprValue = exprs.at(0)->valueToken;
+                    break;
+
+            }
+
+        }
+        if(stackPos == -1)
+        {
+            //throw error
+        }
+        else if(exprValue.ID != IDTOKEN || exprValue.ID != NUMTOKEN)
+        {
+            //throw error
+        }
+
+        if(exprs.size() > 1)
+        {
+            writeMathExpression(outputFile, exprs);
+        }
+        else
+        {
+            switch(exprValue.ID)
+            {
+                case IDTOKEN:
+                    fprintf(outputFile, "STACKR %s\n", getTokenValue(exprValue).c_str());
+                    break;
+                case NUMTOKEN:
+                    fprintf(outputFile, "LOAD %s\n", getTokenValue(exprValue).c_str());
+                    break;
+                default:
+                    //throw error
+                    break;
+            }
+        }
+
+
+        fprintf(outputFile, "STACKW %s\n", convertIntToString(stackPos).c_str());
+    }
+}
+
+/**
  * General node processing.  Identifies nodes in the
  * parse tree and routes handling of the given node
  * @param node
@@ -570,6 +723,9 @@ void Generator::processNode(ParserNode* node, FILE* outputFile)
     {
         case VARS:
             handleVarNode(node, outputFile);
+            break;
+        case TERMASSIGN:
+            handleAssign(node, outputFile);
             break;
         case BLOCK:
             handleBlock(node, outputFile);
