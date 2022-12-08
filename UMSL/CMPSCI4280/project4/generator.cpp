@@ -168,11 +168,8 @@ void writeConditionalOperator(Token relation, string failureConditionLabel, FILE
  * @param outputFile
  * @param operations
  */
-void writeMathExpression(FILE* outputFile, vector<TokenOperation*> operations)
+void writeMathExpression(FILE* outputFile, vector<TokenOperation*> operations, string tempLeft, string tempRight)
 {
-    //setup temp variables
-    string tempLeft = createTempVar();
-    string tempRight = createTempVar();
     string op;
 
     for(int i = 0; i < operations.size(); i++)
@@ -674,13 +671,13 @@ void Generator::handleConditional(ParserNode *node, FILE *outputFile)
                 case EXPR:
                     if(exprCount == 0)
                     {
-                        writeMathExpression(outputFile, handleExpr(child, outputFile));
+                        writeMathExpression(outputFile, handleExpr(child, outputFile), leftTemp, rightTemp);
                         fprintf(outputFile, "STORE %s\n", leftTemp.c_str());
                         exprCount++;
                     }
                     else if(exprCount == 1)
                     {
-                        writeMathExpression(outputFile, handleExpr(child, outputFile));
+                        writeMathExpression(outputFile, handleExpr(child, outputFile), rightTemp, createTempVar());
                         fprintf(outputFile, "STORE %s\n", rightTemp.c_str());
                         exprCount++;
                         string oper = "SUB";
@@ -853,7 +850,7 @@ void Generator::handleProgram(ParserNode *node, FILE *outputFile)
  */
 void Generator::handleAssign(ParserNode *node, FILE *outputFile)
 {
-    int stackPos;
+    string stackVar;
     Token exprValue;
     vector<TokenOperation*> exprs;
     if(node->children.empty())
@@ -870,7 +867,7 @@ void Generator::handleAssign(ParserNode *node, FILE *outputFile)
                 case TERMASSIGN:
                     if(child->value.ID == IDTOKEN)
                     {
-                        stackPos = semantics.find(child->value.value);
+                        stackVar = getTokenValue(child->value);
                     }
                     break;
                 case EXPR:
@@ -881,18 +878,10 @@ void Generator::handleAssign(ParserNode *node, FILE *outputFile)
             }
 
         }
-        if(stackPos == -1)
-        {
-            //throw error
-        }
-        else if(exprValue.ID != IDTOKEN || exprValue.ID != NUMTOKEN)
-        {
-            //throw error
-        }
 
         if(exprs.size() > 1)
         {
-            writeMathExpression(outputFile, exprs);
+            writeMathExpression(outputFile, exprs, createTempVar(), createTempVar());
         }
         else
         {
@@ -911,8 +900,82 @@ void Generator::handleAssign(ParserNode *node, FILE *outputFile)
         }
 
 
-        fprintf(outputFile, "STACKW %s\n", convertIntToString(stackPos).c_str());
+        fprintf(outputFile, "STACKW %s\n", stackVar.c_str());
     }
+}
+
+void Generator::handleLoop(ParserNode* node, FILE* outputFile)
+{
+    vector<ParserNode*> expressions;
+    int statementIndex = 0;
+    string leftTemp = createTempVar();
+    string rightTemp = createTempVar();
+    string intTemp = createTempVar();
+    string loopLabel;
+    string condLabel;
+    string oper = "SUB";
+    Token relation;
+
+    //get loop properties
+    for(int i = 0; i < node->children.size(); i++)
+    {
+        ParserNode* child = node->children.at(i);
+
+        switch(child->nonTerminal)
+        {
+            case EXPR:
+                expressions.push_back(child);
+                break;
+            case TERMRO:
+                if(child->children.size() == 3 && child->children.at(0)->value.ID == LBRACKET && child->children.at(1)->value.ID == ASSN && child->children.at(2)->value.ID == RBRACKET)
+                {
+                    relation.ID = COMP;
+                }
+                else
+                {
+                    relation = child->children.at(0)->value;
+                }
+                break;
+            case STAT:
+                statementIndex = i;
+
+        }
+    }
+
+    //
+
+    //get loop and exit labels
+    loopLabel = createLoopLabel();
+    condLabel = createConditionLabel();
+
+    //start loop
+    fprintf(outputFile, "%s: ", loopLabel.c_str());
+    //math expressions for loop condition
+    writeMathExpression(outputFile, handleExpr(expressions.at(0), outputFile), leftTemp, rightTemp);
+    fprintf(outputFile, "STORE %s\n", leftTemp.c_str());
+    writeMathExpression(outputFile, handleExpr(expressions.at(1), outputFile), rightTemp, intTemp);
+    fprintf(outputFile, "STORE %s\n", rightTemp.c_str());
+
+    //write loop relational operator
+
+    //calculate ACC
+    fprintf(outputFile, "LOAD %s\n", leftTemp.c_str());
+    if(relation.ID == COMP)
+    {
+        oper = "MULT";
+    }
+    //evaluate
+    fprintf(outputFile, "%s %s\n", oper.c_str(), rightTemp.c_str());
+
+    writeConditionalOperator(relation, condLabel, outputFile);
+    //loop statements
+    processNode(node->children.at(statementIndex), outputFile);
+    //jump to start of loop
+    fprintf(outputFile, "BR %s\n", loopLabel.c_str());
+    //exit point
+    fprintf(outputFile, "%s: NOOP\n", condLabel.c_str());
+
+
 }
 
 /**
@@ -929,7 +992,7 @@ void Generator::processNode(ParserNode* node, FILE* outputFile)
         case VARS:
             handleVarNode(node, outputFile);
             break;
-        case TERMASSIGN:
+        case TERMASSIGN:   //assign node
             handleAssign(node, outputFile);
             break;
         case BLOCK:
@@ -943,6 +1006,9 @@ void Generator::processNode(ParserNode* node, FILE* outputFile)
             break;
         case TERMIF:
             handleConditional(node, outputFile);
+            break;
+        case LOOP:
+            handleLoop(node, outputFile);
             break;
         case STAT:
             if(node->children.size() > 0)
@@ -972,7 +1038,7 @@ void Generator::processNode(ParserNode* node, FILE* outputFile)
 
 
 
-    //assign node
+
 
     //loop node
 
