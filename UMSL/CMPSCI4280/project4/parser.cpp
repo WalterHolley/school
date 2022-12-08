@@ -496,6 +496,9 @@ ParserNode* Parser::stat()
             case WARP:
                 processingNode = Goto();
                 break;
+            case LABEL:
+                processingNode = label();
+                break;
             default:
                 throw std::invalid_argument(createErrorMessage(lookAhead()));
         }

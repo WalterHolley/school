@@ -979,6 +979,64 @@ void Generator::handleLoop(ParserNode* node, FILE* outputFile)
 }
 
 /**
+ * Translates the <mStat> non-terminal for
+ * the ACC Assembler
+ * @param node
+ * @param outputFile
+ */
+void Generator::handleMStats(ParserNode *node, FILE *outputFile)
+{
+    for(int i = 0; i < node->children.size(); i++)
+    {
+        ParserNode* child = node->children.at(i);
+        switch(child->nonTerminal)
+        {
+            case STAT:
+                processNode(child, outputFile);
+                break;
+            case MSTAT:
+                handleMStats(child, outputFile);
+        }
+    }
+}
+
+/**
+ * Translates the <label> non-terminal for the
+ * ACC assembler
+ * @param node
+ * @param outputFile
+ */
+void Generator::handleLabel(ParserNode *node, FILE *outputFile)
+{
+    for(int i = 0; i < node->children.size(); i++)
+    {
+        ParserNode* child = node->children.at(i);
+        if(child->value.ID == IDTOKEN)
+        {
+            fprintf(outputFile, "%s: NOOP\n", child->value.value.c_str());
+        }
+    }
+}
+
+/**
+ * Handles the <goto> non-terminal for
+ * the ACC assembler
+ * @param node
+ * @param outputFile
+ */
+void Generator::handleGoto(ParserNode *node, FILE *outputFile)
+{
+    for(int i = 0; i < node->children.size(); i++)
+    {
+        ParserNode* child = node->children.at(i);
+        if(child->value.ID == IDTOKEN)
+        {
+            fprintf(outputFile, "BR %s\n", child->value.value.c_str());
+        }
+    }
+}
+
+/**
  * General node processing.  Identifies nodes in the
  * parse tree and routes handling of the given node
  * @param node
@@ -1010,6 +1068,9 @@ void Generator::processNode(ParserNode* node, FILE* outputFile)
         case LOOP:
             handleLoop(node, outputFile);
             break;
+        case MSTAT:
+            handleMStats(node, outputFile);
+            break;
         case STAT:
             if(node->children.size() > 0)
             {
@@ -1022,6 +1083,12 @@ void Generator::processNode(ParserNode* node, FILE* outputFile)
             {
                 //throw error
             }
+            break;
+        case TERMLABEL:
+            handleLabel(node, outputFile);
+            break;
+        case TERMGOTO:
+            handleGoto(node, outputFile);
             break;
         case TERMPROGRAM:
             handleProgram(node, outputFile);
@@ -1036,17 +1103,6 @@ void Generator::processNode(ParserNode* node, FILE* outputFile)
             }
     }
 
-
-
-
-
-    //loop node
-
-    //math operation node
-
-    //conditional node
-
-    //default(read children)
 }
 
 
