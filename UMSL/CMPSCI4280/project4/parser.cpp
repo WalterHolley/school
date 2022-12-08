@@ -180,6 +180,9 @@ ParserNode* Parser::vars()
                         processingNode = createTokenNode(getNextToken(), varsNode);
 
                         varsNode->children.push_back(processingNode);
+
+                        //check for next <vars> node
+                        varsNode->children.push_back(vars());
                     }
                     else
                     {

@@ -71,11 +71,12 @@ int Semantics::find(string varName)
         if(searchStack.top().ID != varName)
         {
             searchStack.pop();
+
         }
         else
         {
             printDebug(searchStack.top(), "FOUND");
-            result = i;
+            result = searchStack.size() - 1;
             break;
         }
     }

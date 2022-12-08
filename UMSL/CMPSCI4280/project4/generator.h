@@ -33,6 +33,7 @@ class Generator
         void handleOut(ParserNode* node, FILE* outputFile);
         void handleProgram(ParserNode* node, FILE* outputFile);
         void handleAssign(ParserNode* node, FILE* outputFile);
+        void handleConditional(ParserNode* node, FILE* outputFile);
         vector<TokenOperation*> handleExpr(ParserNode* node, FILE* outputFile);
         vector<TokenOperation*> handleN(ParserNode* node, FILE* outputFile);
         vector<TokenOperation*> handleA(ParserNode* node, FILE* outputFile);

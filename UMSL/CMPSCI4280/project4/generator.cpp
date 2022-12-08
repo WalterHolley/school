@@ -15,6 +15,8 @@ int varScope = 0;
 Semantics semantics;
 Semantics tempSemantics;
 int tempPos = 0;
+int conditionCount = 0;
+int loopCount = 0;
 bool ioUsed = false;
 bool tempUsed = false;
 
@@ -84,7 +86,85 @@ string createTempVar()
     return newVar;
 }
 
+/**
+ * Creates a unique label for conditional statements.
+ *
+ * @return
+ */
+string createConditionLabel()
+{
+    string condLabel = "COND" + convertIntToString(conditionCount);
+    conditionCount++;
+    return condLabel;
+}
 
+/**
+ * Creates a unique label for loops.
+ *
+ * @return
+ */
+string createLoopLabel()
+{
+    string loopLabel = "LOOP" + convertIntToString(conditionCount);
+    loopCount++;
+    return loopLabel;
+}
+
+/**
+ * Gets the ACC assembler equivalent of a conditional operator
+ * @param relationOperator
+ * @return
+ */
+string getRelationalOperator(Token relationOperator)
+{
+    string accOperator;
+    switch(relationOperator.ID)
+    {
+        case LT:
+            accOperator = "BRZPOS";
+            break;
+        case GT:
+            accOperator = "BRZNEG";
+            break;
+            break;
+        case COMP:
+            accOperator = "BRNEG";
+        case NEQ:
+            accOperator = "BRZERO";
+            break;
+        default:
+            //throw error
+            break;
+    }
+
+    return accOperator;
+}
+
+/**
+ * Writes an ACC conditional operator to a file.
+ * partially translates the <if> non-terminal
+ * @param relation
+ * @param failureConditionLabel
+ * @param outputFile
+ */
+void writeConditionalOperator(Token relation, string failureConditionLabel, FILE* outputFile)
+{
+    if(relation.ID == EQ)
+    {
+        fprintf(outputFile, "BRPOS %s\n", failureConditionLabel.c_str());
+        fprintf(outputFile, "BRNEG %s\n", failureConditionLabel.c_str());
+    }
+    else
+    {
+        fprintf(outputFile, "%s %s\n", getRelationalOperator(relation).c_str(), failureConditionLabel.c_str());
+    }
+}
+
+/**
+ * Writes a math expression for the ACC Assembler
+ * @param outputFile
+ * @param operations
+ */
 void writeMathExpression(FILE* outputFile, vector<TokenOperation*> operations)
 {
     //setup temp variables
@@ -172,7 +252,10 @@ void writeMathExpression(FILE* outputFile, vector<TokenOperation*> operations)
     }
 }
 
-
+/**
+ * Writes the end of the ACC Assembler document
+ * @param outputFile
+ */
 void writeEndOfDocument(FILE* outputFile)
 {
     fprintf(outputFile, "STOP\n");
@@ -193,6 +276,7 @@ void writeEndOfDocument(FILE* outputFile)
         }
     }
 }
+
 
 TokenOperation* Generator::handleR(ParserNode* node, FILE* outputFile)
 {
@@ -451,7 +535,12 @@ void Generator::handleVarNode(ParserNode* node, FILE* outputFile)
         string tokenPosition;
         for(int i = 0; i < node->children.size(); i++)
         {
+
             ParserNode* childNode = node->children.at(i);
+            if(childNode == NULL)
+            {
+                continue;
+            }
             if(childNode->value.ID == IDTOKEN)
             {
                 string IDTokenName = childNode->value.value;
@@ -474,7 +563,12 @@ void Generator::handleVarNode(ParserNode* node, FILE* outputFile)
                 fprintf(outputFile, "LOAD %s\n", childNode->value.value.c_str() );
                 fprintf(outputFile, "PUSH\n");
                 fprintf(outputFile, "STACKW %s\n", tokenPosition.c_str());
-                break;
+                continue;
+            }
+
+            if(!childNode->children.empty())
+            {
+                handleVarNode(childNode, outputFile);
             }
 
         }
@@ -532,6 +626,90 @@ void Generator::handleBlock(ParserNode* node, FILE* outputFile)
         else //process additional nodes
         {
             processNode(child, outputFile);
+        }
+    }
+}
+
+/**
+ * Writes ACC syntax for <if> non-terminal
+ * @param node
+ * @param outputFile
+ */
+void Generator::handleConditional(ParserNode *node, FILE *outputFile)
+{
+    Token relation;
+    string leftTemp = createTempVar();
+    string rightTemp = createTempVar();
+    string condLabel;
+    int exprCount = 0;
+    bool exitCondWritten = false;
+
+    if(node->children.empty())
+    {
+        //throw error
+    }
+    else
+    {
+        for(int i = 0; i < node->children.size(); i++)
+        {
+            ParserNode* child = node->children.at(i);
+            switch(child->nonTerminal)
+            {
+                case TERMIF:
+                    if(child->value.value == "pick")
+                    {
+                        //jump to next condition
+                        //write statement
+                    }
+                    break;
+                case TERMRO:
+                    relation = child->children.at(0)->value;
+                    break;
+                case EXPR:
+                    if(exprCount == 0)
+                    {
+                        writeMathExpression(outputFile, handleExpr(child, outputFile));
+                        fprintf(outputFile, "STORE %s\n", leftTemp.c_str());
+                        exprCount++;
+                    }
+                    else if(exprCount == 1)
+                    {
+                        writeMathExpression(outputFile, handleExpr(child, outputFile));
+                        fprintf(outputFile, "STORE %s\n", rightTemp.c_str());
+                        exprCount++;
+                        string oper = "SUB";
+                        //calculate ACC
+                        fprintf(outputFile, "LOAD %s\n", leftTemp.c_str());
+                        if(relation.ID == NEQ)
+                        {
+                            oper = "MULT";
+                        }
+                        //evaluate
+                        fprintf(outputFile, "%s %s\n", oper.c_str(), rightTemp.c_str());
+                        //write operator
+                        condLabel = createConditionLabel();
+                        writeConditionalOperator(relation, condLabel, outputFile);
+                    }
+                    else
+                    {
+                        //throw error
+                    }
+                    break;
+                case STAT:
+                    processNode(child, outputFile);
+                    if(!exitCondWritten)
+                    {
+                        fprintf(outputFile, "%s: NOOP\n", condLabel.c_str());
+                        exitCondWritten = true;
+                    }
+
+                    break;
+                default:
+                    //throw error
+                    break;
+
+
+            }
         }
     }
 }
@@ -735,6 +913,22 @@ void Generator::processNode(ParserNode* node, FILE* outputFile)
             break;
         case OUT:
             handleOut(node, outputFile);
+            break;
+        case TERMIF:
+            handleConditional(node, outputFile);
+            break;
+        case STAT:
+            if(node->children.size() > 0)
+            {
+                for(int i = 0; i < node->children.size(); i++)
+                {
+                    processNode(node->children.at(i), outputFile);
+                }
+            }
+            else
+            {
+                //throw error
+            }
             break;
         case TERMPROGRAM:
             handleProgram(node, outputFile);
