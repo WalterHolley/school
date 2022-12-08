@@ -38,7 +38,7 @@ string convertIntToString(int number)
 }
 
 /**
- * Retrieves the stack value for an IDTOKEN, or the
+ * Retrieves the ACC Assembler stack value for an IDTOKEN, or the
  * numeric value for a NUMTOKEN
  * @param token
  * @return
@@ -55,6 +55,9 @@ string getTokenValue(Token token)
         }
         else
         {
+            //in ACC TOP of stack index is zero
+            int topIndex = semantics.find(semantics.top().ID);
+            stackPos = topIndex - stackPos;
             result = convertIntToString(stackPos);
         }
     }
@@ -126,9 +129,9 @@ string getRelationalOperator(Token relationOperator)
         case GT:
             accOperator = "BRZNEG";
             break;
-            break;
         case COMP:
             accOperator = "BRNEG";
+            break;
         case NEQ:
             accOperator = "BRZERO";
             break;
@@ -640,9 +643,9 @@ void Generator::handleConditional(ParserNode *node, FILE *outputFile)
     Token relation;
     string leftTemp = createTempVar();
     string rightTemp = createTempVar();
-    string condLabel;
+    vector<ParserNode*> statements;
+    vector<string> conditionLabels;
     int exprCount = 0;
-    bool exitCondWritten = false;
 
     if(node->children.empty())
     {
@@ -656,14 +659,17 @@ void Generator::handleConditional(ParserNode *node, FILE *outputFile)
             switch(child->nonTerminal)
             {
                 case TERMIF:
-                    if(child->value.value == "pick")
-                    {
-                        //jump to next condition
-                        //write statement
-                    }
                     break;
                 case TERMRO:
-                    relation = child->children.at(0)->value;
+                    if(child->children.size() == 3 && child->children.at(0)->value.ID == LBRACKET && child->children.at(1)->value.ID == ASSN && child->children.at(2)->value.ID == RBRACKET)
+                    {
+                        relation.ID = COMP;
+                    }
+                    else
+                    {
+                        relation = child->children.at(0)->value;
+                    }
+
                     break;
                 case EXPR:
                     if(exprCount == 0)
@@ -680,15 +686,13 @@ void Generator::handleConditional(ParserNode *node, FILE *outputFile)
                         string oper = "SUB";
                         //calculate ACC
                         fprintf(outputFile, "LOAD %s\n", leftTemp.c_str());
-                        if(relation.ID == NEQ)
+                        if(relation.ID == COMP)
                         {
                             oper = "MULT";
                         }
                         //evaluate
                         fprintf(outputFile, "%s %s\n", oper.c_str(), rightTemp.c_str());
-                        //write operator
-                        condLabel = createConditionLabel();
-                        writeConditionalOperator(relation, condLabel, outputFile);
+
                     }
                     else
                     {
@@ -696,13 +700,7 @@ void Generator::handleConditional(ParserNode *node, FILE *outputFile)
                     }
                     break;
                 case STAT:
-                    processNode(child, outputFile);
-                    if(!exitCondWritten)
-                    {
-                        fprintf(outputFile, "%s: NOOP\n", condLabel.c_str());
-                        exitCondWritten = true;
-                    }
-
+                    statements.push_back(child);
                     break;
                 default:
                     //throw error
@@ -710,6 +708,28 @@ void Generator::handleConditional(ParserNode *node, FILE *outputFile)
 
 
             }
+        }
+
+        //generate label(s)
+        for(int i = 0; i < statements.size(); i++)
+        {
+            conditionLabels.push_back(createConditionLabel());
+        }
+        //write conditional operator and statements
+        if(conditionLabels.size() > 1)
+        {
+            writeConditionalOperator(relation, conditionLabels.at(0), outputFile);
+            processNode(statements.at(0), outputFile);
+            fprintf(outputFile, "BR %s\n", conditionLabels.at(1).c_str());
+            fprintf(outputFile, "%s: ", conditionLabels.at(0).c_str());
+            processNode(statements.at(1), outputFile);
+            fprintf(outputFile, "%s: NOOP\n", conditionLabels.at(1).c_str());
+        }
+        else
+        {
+            writeConditionalOperator(relation, conditionLabels.at(0), outputFile);
+            processNode(statements.at(0), outputFile);
+            fprintf(outputFile, "%s: NOOP\n", conditionLabels.at(0).c_str());
         }
     }
 }
@@ -780,7 +800,14 @@ void Generator::handleOut(ParserNode *node, FILE *outputFile)
             if(child->nonTerminal == EXPR)
             {
                 Token result = handleExpr(child, outputFile).at(0)->valueToken;
-                fprintf(outputFile, "STACKR %s\n", getTokenValue(result).c_str());
+                if(result.ID == NUMTOKEN)
+                {
+                    fprintf(outputFile, "LOAD %s\n", getTokenValue(result).c_str());
+                }
+                else
+                {
+                    fprintf(outputFile, "STACKR %s\n", getTokenValue(result).c_str());
+                }
                 fprintf(outputFile, "STORE W\n");
                 fprintf(outputFile, "WRITE W\n");
                 ioUsed = true;
