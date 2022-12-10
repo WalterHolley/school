@@ -38,6 +38,7 @@ class Generator
         void handleMStats(ParserNode* node, FILE* outputFile);
         void handleLabel(ParserNode* node, FILE* outputFile);
         void handleGoto(ParserNode* node, FILE* outputFile);
+        void handleStats(ParserNode* node, FILE* outputFile);
         vector<TokenOperation*> handleExpr(ParserNode* node, FILE* outputFile);
         vector<TokenOperation*> handleN(ParserNode* node, FILE* outputFile);
         vector<TokenOperation*> handleA(ParserNode* node, FILE* outputFile);

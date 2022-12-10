@@ -11,14 +11,11 @@ the parsing apparatus responsible for tranlating the program.
 */
 
 #include <iostream>
-#include <sstream>
-#include <fstream>
 #include <vector>
 #include <string>
 #include <stdexcept>
 #include "scanner.h"
 #include "parser.h"
-#include "semantics.h"
 #include "generator.h"
 
 using namespace std;
@@ -27,9 +24,7 @@ const string TEMP_FILE = "temp.in";
 
 Scanner scanner;
 Parser parser;
-//Semantics semantics;
 Generator generator;
-//int varScope = 0;
 
 
 /**
@@ -43,131 +38,6 @@ void cleanup()
 }
 
 /**
- * Converts an integer to a string
- * @param number the integer to convert
- * @return the resulting string from the conversion
- */
- /*
-string convertIntToString(int number)
-{
-    stringstream  ss;
-    string result;
-    ss << number;
-    ss >> result;
-
-    return  result;
-}
-*/
-
-/**
- * @brief Review a node and its child contents in pre-order
- * @param node the node to print
- * @param depth depth of the node
- */
- /*
-void processParseTree(ParserNode* node, int depth)
-{
-    vector<ParserNode*>::iterator iter = node->children.begin();
-    string IDTokenName;
-    StackVariable var;
-
-    if(node->nonTerminal == VARS) //vars node
-    {
-        if(node->children.size() > 0)
-        {
-            for(int i = 0; i < node->children.size(); i++)
-            {
-                ParserNode* childNode = node->children.at(i);
-                if(childNode->value.ID == IDTOKEN)
-                {
-                    IDTokenName = childNode->value.value;
-                    if(semantics.find(IDTokenName) == -1)
-                    {
-
-                        var.scope = varScope;
-                        var.ID = IDTokenName;
-                        var.line = childNode->value.line;
-                        semantics.push(var);
-                    }
-                    else
-                    {
-                        throw std::invalid_argument("Cannot redefine variable '" + IDTokenName + "' at line " + convertIntToString(childNode->value.line));
-                        break;
-                    }
-                }
-            }
-        }
-    }
-    else if(node->value.ID != IDTOKEN) //recurse through all children
-    {
-        if(node->value.value == "begin")
-        {
-            varScope++;
-            if(semantics.DEBUG)
-            {
-                printf("Start of scope %i \n", varScope);
-            }
-
-        }
-        if(node->children.size() > 0)
-        {
-            for(iter; iter < node->children.end(); iter++)
-            {
-                processParseTree(*iter, depth + 1);
-            }
-        }
-
-        if(node->value.value == "end") //clear current scope and decrement
-        {
-            if(semantics.DEBUG)
-            {
-                printf("End of scope %i reached \n", varScope);
-            }
-
-            if(varScope >= 0)
-            {
-
-                while(semantics.top().scope == varScope)
-                {
-                    semantics.pop();
-                }
-                varScope--;
-
-            }
-            else
-            {
-                //clear remaining variables
-                cout << "End of program" << endl;
-            }
-
-        }
-
-        if(node->value.ID == EOFTOKEN) //end of file.  clear global tokens if any
-        {
-            if(semantics.DEBUG)
-            {
-                printf("End of scope %i reached \n", varScope);
-            }
-
-            while(semantics.top().scope != -1)
-            {
-                semantics.pop();
-            }
-        }
-    }
-    else if(node->value.ID == IDTOKEN)
-    {
-        //check for existing token
-        IDTokenName = node->value.value;
-        if(semantics.find(IDTokenName) == -1) //Error if item not found in list
-        {
-            throw std::invalid_argument("Unknown variable '" + IDTokenName + "' at line " + convertIntToString(node->value.line));
-        }
-    }
-}
-*/
-
-/**
  * @brief processes a file parameter passed to the program
  * @param fileName
  */
@@ -178,7 +48,6 @@ void processFile(string fileName)
         vector<Token> tokens = scanner.scanFile(fileName);
         ParserNode* root = parser.parseTokens(tokens);
         generator.genASMFile(root, fileName);
-        //processParseTree(root,1);
 
         delete root;
     }

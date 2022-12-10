@@ -51,7 +51,7 @@ string getTokenValue(Token token)
         int stackPos = semantics.find(token.value);
         if(stackPos == -1)
         {
-            //throw error
+            throw std::invalid_argument("Identifier not found: " + token.value);
         }
         else
         {
@@ -67,7 +67,7 @@ string getTokenValue(Token token)
     }
     else
     {
-        //throw error
+        throw std::invalid_argument("Integer/Identifier not found");
     }
 
     return result;
@@ -136,7 +136,7 @@ string getRelationalOperator(Token relationOperator)
             accOperator = "BRZERO";
             break;
         default:
-            //throw error
+            throw std::invalid_argument("Operator not found");
             break;
     }
 
@@ -283,7 +283,7 @@ TokenOperation* Generator::handleR(ParserNode* node, FILE* outputFile)
     TokenOperation* result;
     if(node->children.empty())
     {
-            //throw error
+        throw std::invalid_argument("Children for <R> not found");
     }
     else
     {
@@ -310,16 +310,15 @@ TokenOperation* Generator::handleR(ParserNode* node, FILE* outputFile)
                         result->operation = ASSN;
                         break;
                     default:
-                        //throw error
-                        break;
+                        throw std::invalid_argument("Invalid expression/value token found:" + child->value.name);
                 }
             }
         }
     }
 
-    if(result->valueToken.ID != IDTOKEN || result->valueToken.ID != NUMTOKEN)
+    if(result->valueToken.ID != IDTOKEN && result->valueToken.ID != NUMTOKEN)
     {
-        //throw error;
+        throw std::invalid_argument("Invalid identifier/integer found: " + result->valueToken.value);
     }
 
     return result;
@@ -336,7 +335,7 @@ vector<TokenOperation*> Generator::handleM(ParserNode* node, FILE* outputFile)
 
     if(node->children.empty())
     {
-        //throw error
+        throw std::invalid_argument("Children for <M> not found");
     }
     else
     {
@@ -352,7 +351,6 @@ vector<TokenOperation*> Generator::handleM(ParserNode* node, FILE* outputFile)
                     result = mResult.at(0);
                     result->operation = COLON;
                     resultContainer.push_back(result);
-                    //resultContainer.insert(resultContainer.end(), mResult.begin(), mResult.end());
                     break;
                 default:
                     result = handleR(child, outputFile);
@@ -371,7 +369,7 @@ vector<TokenOperation*> Generator::handleA(ParserNode* node, FILE* outputFile)
     vector<TokenOperation*> incomingOperations;
     if(node->children.empty())
     {
-        //throw error
+        throw std::invalid_argument("Children for <A> not found");
     }
     else
     {
@@ -411,7 +409,7 @@ vector<TokenOperation*> Generator::handleN(ParserNode* node, FILE* outputFile)
     TokenOperation* nextOperation;
     if(node->children.size() == 0)
     {
-        //throw error
+        throw std::invalid_argument("Children for <N> not found");
     }
     else
     {
@@ -455,48 +453,41 @@ vector<TokenOperation*> Generator::handleB(ParserNode* node, FILE* outputFile)
     vector<TokenOperation*> bResult;
     vector<TokenOperation*> mResult;
     TokenOperation* operation;
-    if(node->children.empty())
-    {
-        //throw error
-    }
-    else
-    {
-        for(int i = 0; i < node->children.size(); i++)
-        {
-            ParserNode* child = node->children.at(i);
-            if(i == 0)
-            {
-                if(child->value.ID != DIV)
-                {
-                    break;
-                }
-                else
-                {
-                    operation = new TokenOperation;
-                    operation->operation = DIV;
-                }
-            }
-            switch(child->nonTerminal)
-            {
-                case TERMM:
-                    mResult = handleM(child, outputFile);
-                    operation->valueToken = mResult.at(0)->valueToken;
-                    resultContainer.push_back(operation);
-                    resultContainer.insert(resultContainer.end(),mResult.begin(),mResult.end());
-                    break;
-                case TERMB:
-                    bResult = handleB(child, outputFile);
-                    if(!bResult.empty())
-                    {
-                        resultContainer.insert(resultContainer.end(), bResult.begin(), bResult.end());
-                    }
-                    break;
-            }
-        }
 
-    }
+   for(int i = 0; i < node->children.size(); i++)
+   {
+       ParserNode* child = node->children.at(i);
+       if(i == 0)
+       {
+           if(child->value.ID != DIV)
+           {
+               break;
+           }
+           else
+           {
+               operation = new TokenOperation;
+               operation->operation = DIV;
+           }
+       }
+       switch(child->nonTerminal)
+       {
+           case TERMM:
+               mResult = handleM(child, outputFile);
+               operation->valueToken = mResult.at(0)->valueToken;
+               resultContainer.push_back(operation);
+               resultContainer.insert(resultContainer.end(),mResult.begin(),mResult.end());
+               break;
+           case TERMB:
+               bResult = handleB(child, outputFile);
+               if(!bResult.empty())
+               {
+                   resultContainer.insert(resultContainer.end(), bResult.begin(), bResult.end());
+               }
+               break;
+       }
+   }
 
-    return resultContainer;
+   return resultContainer;
 }
 
 /**
@@ -646,7 +637,7 @@ void Generator::handleConditional(ParserNode *node, FILE *outputFile)
 
     if(node->children.empty())
     {
-        //throw error
+        throw std::invalid_argument("Children in <if> not found");
     }
     else
     {
@@ -689,18 +680,19 @@ void Generator::handleConditional(ParserNode *node, FILE *outputFile)
                         }
                         //evaluate
                         fprintf(outputFile, "%s %s\n", oper.c_str(), rightTemp.c_str());
+                        exprCount++;
 
                     }
                     else
                     {
-                        //throw error
+                        throw std::invalid_argument("Invalid number of expressions in <if>");
                     }
                     break;
                 case STAT:
                     statements.push_back(child);
                     break;
                 default:
-                    //throw error
+                    throw std::invalid_argument("Unrecognized token in <if>");
                     break;
 
 
@@ -744,7 +736,7 @@ vector<TokenOperation*> Generator::handleExpr(ParserNode* node, FILE* outputFile
     TokenOperation* tokenOp;
     if(node->children.empty())
     {
-        //throw error
+        throw std::invalid_argument("children in <expr> not found");
     }
     else
     {
@@ -773,7 +765,7 @@ vector<TokenOperation*> Generator::handleExpr(ParserNode* node, FILE* outputFile
                     }
                     break;
                 default:
-                    //throw error
+                    throw std::invalid_argument("Invalid non-terminal in <expr>");
                     break;
 
             }
@@ -787,7 +779,7 @@ void Generator::handleOut(ParserNode *node, FILE *outputFile)
 
     if(node->children.empty())
     {
-        //throw error
+        throw std::invalid_argument("Children in <out> not found");
     }
     else
     {
@@ -818,7 +810,7 @@ void Generator::handleProgram(ParserNode *node, FILE *outputFile)
 {
     if(node->children.empty())
     {
-        //throw error
+        throw std::invalid_argument("Children in <program> not found");
     }
     else
     {
@@ -834,8 +826,7 @@ void Generator::handleProgram(ParserNode *node, FILE *outputFile)
                 case TERMPROGRAM:
                     break;
                 default:
-                    //throw error
-                    break;
+                    throw std::invalid_argument("Invalid non-terminal in <program>");
             }
         }
         //finalize document
@@ -855,7 +846,7 @@ void Generator::handleAssign(ParserNode *node, FILE *outputFile)
     vector<TokenOperation*> exprs;
     if(node->children.empty())
     {
-        //throw error
+        throw std::invalid_argument("Children in <ASSIGN> not found");
     }
     else
     {
@@ -894,8 +885,7 @@ void Generator::handleAssign(ParserNode *node, FILE *outputFile)
                     fprintf(outputFile, "LOAD %s\n", getTokenValue(exprValue).c_str());
                     break;
                 default:
-                    //throw error
-                    break;
+                    throw std::invalid_argument("Invalid token in  <ASSIGN> non-terminal");
             }
         }
 
@@ -1037,6 +1027,30 @@ void Generator::handleGoto(ParserNode *node, FILE *outputFile)
 }
 
 /**
+ * Handles <stats> non-terminal translation for the ACC Assembler
+ * @param node
+ * @param outputFile
+ */
+void Generator::handleStats(ParserNode *node, FILE *outputFile)
+{
+    for(int i = 0; i < node->children.size(); i++)
+    {
+        ParserNode* child = node->children.at(i);
+
+        switch(child->nonTerminal)
+        {
+            case STAT:
+            case MSTAT:
+                processNode(child, outputFile);
+                break;
+            default:
+                throw std::invalid_argument("Invalid non-terminal in <stats>");
+        }
+    }
+}
+
+
+/**
  * General node processing.  Identifies nodes in the
  * parse tree and routes handling of the given node
  * @param node
@@ -1068,6 +1082,9 @@ void Generator::processNode(ParserNode* node, FILE* outputFile)
         case LOOP:
             handleLoop(node, outputFile);
             break;
+        case STATS:
+            handleStats(node, outputFile);
+            break;
         case MSTAT:
             handleMStats(node, outputFile);
             break;
@@ -1079,9 +1096,9 @@ void Generator::processNode(ParserNode* node, FILE* outputFile)
                     processNode(node->children.at(i), outputFile);
                 }
             }
-            else
+            else if(node->value.ID != SEMICOLON)
             {
-                //throw error
+                throw std::invalid_argument("No statements in <stat> found");
             }
             break;
         case TERMLABEL:
