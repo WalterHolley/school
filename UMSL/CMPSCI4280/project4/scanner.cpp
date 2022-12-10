@@ -103,51 +103,14 @@ int stringToInt(string number)
 TokenState getOpTokenState(string token, int tokenPosition)
 {
     TokenState result = ERROR;
-    char startingToken = token.at(tokenPosition);
-    char nextToken;
-    string finalToken;
 
-    finalToken.push_back(startingToken);
-
-
-    switch(startingToken)
+    for(int i = 0; i < OP_TOKEN_COUNT; i++)
     {
-        case '=':
-        case ':':
-        case '!':
-        case '|':
-        case '&':
-            if(tokenPosition + 1 < token.length())
-            {
-                nextToken = token.at(tokenPosition + 1);
-                finalToken.push_back(nextToken);
-            }
-        default:
-            for(int i = 0; i < OP_TOKEN_COUNT; i++)
-            {
-                if(finalToken == OPTOKENS[i][0])
-                {
-                    int tokenId = stringToInt(OPTOKENS[i][1]);
-                    result = (TokenState)tokenId;
-                    break;
-                }
-            }
-
-    }
-
-    //check single character operators
-    if(result == ERROR && finalToken.length() == 2)
-    {
-        finalToken.erase(finalToken.end());
-
-        for(int i = 0; i < OP_TOKEN_COUNT; i++)
+        if(token == OPTOKENS[i][0])
         {
-            if(finalToken == OPTOKENS[i][0])
-            {
-                int tokenId = stringToInt(OPTOKENS[i][1]);
-                result = (TokenState)tokenId;
-                break;
-            }
+            int tokenId = stringToInt(OPTOKENS[i][1]);
+            result = (TokenState)tokenId;
+            break;
         }
     }
 
@@ -436,7 +399,15 @@ vector<Token> Scanner::verifyTokens(string token, int lineNumber)
                 else if (state == OPTOKEN)
                 {
                     nextToken.ID = getOpTokenState(token, tokenSize - 1);
-                    nextToken.name = getTokenName(nextToken.ID);
+                    if(nextToken.ID == ERROR)
+                    {
+                        throw std::invalid_argument("Unrecognized operation token '" + token + "'");
+                    }
+                    else
+                    {
+                        nextToken.name = getTokenName(nextToken.ID);
+                    }
+
 
                 }
 

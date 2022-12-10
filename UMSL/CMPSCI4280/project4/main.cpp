@@ -53,7 +53,7 @@ void processFile(string fileName)
     }
     catch (const exception& e )
     {
-        cout << 'A problem occurred during file analysis' <<endl;
+        cout << "A problem occurred during file analysis" <<endl;
         cerr << e.what() <<endl;
     }
 

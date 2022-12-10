@@ -160,8 +160,8 @@ ParserNode* Parser::vars()
 
             varsNode->children.push_back(processingNode);
 
-            //check for comp
-            if(lookAhead().ID == COMP)
+            //check for INIT
+            if(lookAhead().ID == INIT)
             {
                 processingNode = createTokenNode(getNextToken(), varsNode);
 
