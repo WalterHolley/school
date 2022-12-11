@@ -48,6 +48,7 @@ void processFile(string fileName)
         vector<Token> tokens = scanner.scanFile(fileName);
         ParserNode* root = parser.parseTokens(tokens);
         generator.genASMFile(root, fileName);
+        cout << fileName + ".asm created"<< endl;
 
         delete root;
     }

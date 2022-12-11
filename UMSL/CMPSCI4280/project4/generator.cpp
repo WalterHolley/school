@@ -612,6 +612,11 @@ void Generator::handleBlock(ParserNode* node, FILE* outputFile)
         }
         else if(child->value.value == "end") //decrease variable scope. remove vars from stack
         {
+            while(semantics.top().scope == varScope)
+            {
+                semantics.pop();
+                fprintf(outputFile, "POP\n");
+            }
             varScope--;
         }
         else //process additional nodes
