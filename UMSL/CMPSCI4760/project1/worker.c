@@ -1,8 +1,6 @@
 
 #include <stdio.h>
-//#include <unistd.h>
 
-//void printWorkerInfo(int iteration, int pid, int ppid);
 void printWorkerInfo(int iteration, int pid, int ppid)
 {
     printf("WORKER PID:%i PPID:%i Iteration:%i ", pid, ppid, iteration);

@@ -2,10 +2,12 @@
 
 #include <stdio.h>
 #include <unistd.h>
+#include <stdlib.h>
 
 //globals
 int totalWorkers;
 int maxIterations;
+int maxSimultaneous;
 
 int main(int argCount, char *argv[])
 {
@@ -16,18 +18,18 @@ int main(int argCount, char *argv[])
         {
             case 'h':
                 printf("help option \n");
-                break;
+                return 0;
             case 'n':
             case 's':
             case 't':
-                printf("%s value: %s\n", options, optarg);
+                printf("%c value: %s\n", options, optarg);
                 break;
             case ':':
                 printf("Missing option value\n");
                 break;
             case '?':
             default:
-                printf("Unknown option: %s\n", options);
+                printf("Unknown option: %c\n", optopt);
 
         }
     }
