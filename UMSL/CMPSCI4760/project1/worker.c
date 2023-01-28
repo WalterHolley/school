@@ -1,12 +1,13 @@
 
 #include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
+//#include <unistd.h>
 
+//void printWorkerInfo(int iteration, int pid, int ppid);
 void printWorkerInfo(int iteration, int pid, int ppid)
 {
-    printf("WORKER PID:%s PPID:%s Iteration:%n ");
+    printf("WORKER PID:%i PPID:%i Iteration:%i ", pid, ppid, iteration);
 }
+
 
 int main(int argc, char* argv[])
 {
@@ -34,3 +35,5 @@ int main(int argc, char* argv[])
     }
     return 0;
 }
+
+

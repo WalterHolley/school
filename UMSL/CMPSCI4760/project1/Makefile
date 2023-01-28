@@ -1,11 +1,12 @@
 CC=gcc
+CFLAGS=-g -o
 EXEC1=oss
 EXEC2=worker
 
 all: oss worker
 
 oss: oss.c
-	$(CC) oss.c -o -g $(EXEC1)
+	$(CC) $(CFLAGS) $(EXEC1) oss.c
 
 worker: worker.c
-	$(CC) worker.c -o -g $(EXEC2)
+	$(CC) $(CFLAGS) $(EXEC2) worker.c
