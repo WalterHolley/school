@@ -1,5 +1,6 @@
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 
 void printWorkerInfo(int iteration, int pid, int ppid)
