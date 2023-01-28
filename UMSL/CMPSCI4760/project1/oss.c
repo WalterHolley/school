@@ -3,35 +3,90 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <string.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 
 //globals
 int totalWorkers;
-int maxIterations;
+char* maxIterations;
 int maxSimultaneous;
 
-int main(int argCount, char *argv[])
+/** Handles incoming parameters **/
+int handleParams(int argCount, char *argString[])
 {
+    int result = 0;
     int options;
-    while((options = getopt(argCount, argv, ":hn:s:t:")) != -1)
+    while((options = getopt(argCount, argString, ":hn:s:t:")) != -1)
     {
         switch(options)
         {
             case 'h':
                 printf("help option \n");
-                return 0;
+                result = -1;
+                break;
             case 'n':
+                totalWorkers = atoi(optarg);
+                break;
             case 's':
+                maxSimultaneous = atoi(optarg);
+                break;
             case 't':
-                printf("%c value: %s\n", options, optarg);
+                maxIterations = optarg;
                 break;
             case ':':
-                printf("Missing option value\n");
+                printf("%c missing option value\n", optopt);
                 break;
             case '?':
             default:
                 printf("Unknown option: %c\n", optopt);
+                result = -1;
+                break;
 
         }
+
+        if(result == -1)
+        {
+            printf("Ending program\n");
+            break;
+        }
+    }
+
+    return result;
+}
+
+
+void executeWorkers()
+{
+    char* args[] = {"./worker",maxIterations,NULL};
+    pid_t childPid;
+    int waitStatus;
+
+    childPid = fork();
+
+    if(childPid == -1) // error
+    {
+        perror("An error occurred during fork");
+        exit(1);
+    }
+    else if(childPid == 0) //this is the child node.  run program
+    {
+        execvp(args[0], args);
+    }
+    else //parent. wait for child to complete
+    {
+        wait(NULL);
+    }
+
+
+}
+
+int main(int argCount, char *argv[])
+{
+    if(handleParams(argCount, argv) != -1)
+    {
+        //spin up workers
+        executeWorkers();
     }
     return 0;
 }
