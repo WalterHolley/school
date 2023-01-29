@@ -60,23 +60,31 @@ void executeWorkers()
 {
     char* args[] = {"./worker",maxIterations,NULL};
     pid_t childPid;
-    int waitStatus;
+    int i;
+    for(i = 0; i < totalWorkers; i++)
+    {
+        childPid = fork();
+        if(childPid == -1) // error
+        {
+            perror("An error occurred during fork");
+            exit(1);
+        }
+        else if(childPid == 0) //this is the child node.  run program
+        {
+            execvp(args[0], args);
+        }
+        else //parent. wait for child to complete
+        {
+            if(i == totalWorkers - 1)
+            {
+                wait(NULL);
+            }
 
-    childPid = fork();
+        }
+    }
 
-    if(childPid == -1) // error
-    {
-        perror("An error occurred during fork");
-        exit(1);
-    }
-    else if(childPid == 0) //this is the child node.  run program
-    {
-        execvp(args[0], args);
-    }
-    else //parent. wait for child to complete
-    {
-        wait(NULL);
-    }
+
+
 
 
 }
