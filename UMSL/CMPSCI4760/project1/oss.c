@@ -1,6 +1,7 @@
 #define MAX_CONCURRENT_WORKERS 19
 
 #include <stdio.h>
+#include <stdbool.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
@@ -60,7 +61,57 @@ void executeWorkers()
 {
     char* args[] = {"./worker",maxIterations,NULL};
     pid_t childPid;
+    bool runLimit = maxSimultaneous > 0 ? true : false;
+    int status;
+    int workersStarted = 0;
+    int workersExecuted = 0;
+    int workersRunning = 0;
     int i;
+    while(workersExecuted != totalWorkers) {
+        childPid = fork();
+        if (childPid == -1) // error
+        {
+            perror("An error occurred during fork");
+            exit(1);
+        }
+        else if (childPid == 0) //this is the child node.  run program
+        {
+            execvp(args[0], args);
+        }
+        else //parent. manage child status
+        {
+            workersStarted++;
+            workersRunning++;
+
+            if (runLimit && workersRunning >= maxSimultaneous)
+            {
+                if (!WIFEXITED(status))
+                {
+                    do
+                    {
+                        wait(&status);
+                    }
+                    while (!WIFEXITED(status));
+                    workersRunning--;
+                    workersExecuted++;
+                }
+            }
+
+            if (workersStarted == totalWorkers)
+            {
+                do
+                {
+                    wait(&status);
+                    if (WIFEXITED(status))
+                    {
+                        workersExecuted++;
+                    }
+                }
+                while (workersExecuted != totalWorkers);
+            }
+        }
+    }
+    /*
     for(i = 0; i < totalWorkers; i++)
     {
         childPid = fork();
@@ -71,18 +122,24 @@ void executeWorkers()
         }
         else if(childPid == 0) //this is the child node.  run program
         {
+            printf("Make Child\n");
             execvp(args[0], args);
         }
         else //parent. wait for child to complete
         {
-            if(i == totalWorkers - 1)
+
+            if((conLimit && ((i + 1) >= maxSimultaneous)) || (i == (totalWorkers - 1)))
             {
-                wait(NULL);
+                do
+                {
+                       wait(&status);
+                }
+                while(!WIFEXITED(status));
             }
 
         }
     }
-
+*/
 
 
 
