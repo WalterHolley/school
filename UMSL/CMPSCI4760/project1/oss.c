@@ -66,7 +66,7 @@ void executeWorkers()
     int workersStarted = 0;
     int workersExecuted = 0;
     int workersRunning = 0;
-    int i;
+
     while(workersExecuted != totalWorkers) {
         childPid = fork();
         if (childPid == -1) // error
@@ -111,39 +111,6 @@ void executeWorkers()
             }
         }
     }
-    /*
-    for(i = 0; i < totalWorkers; i++)
-    {
-        childPid = fork();
-        if(childPid == -1) // error
-        {
-            perror("An error occurred during fork");
-            exit(1);
-        }
-        else if(childPid == 0) //this is the child node.  run program
-        {
-            printf("Make Child\n");
-            execvp(args[0], args);
-        }
-        else //parent. wait for child to complete
-        {
-
-            if((conLimit && ((i + 1) >= maxSimultaneous)) || (i == (totalWorkers - 1)))
-            {
-                do
-                {
-                       wait(&status);
-                }
-                while(!WIFEXITED(status));
-            }
-
-        }
-    }
-*/
-
-
-
-
 }
 
 int main(int argCount, char *argv[])
