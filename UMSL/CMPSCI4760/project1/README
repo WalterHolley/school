@@ -1,11 +1,31 @@
 Walter Holley III
 Spring 2023
-CMPSCI 4769 - Operating Systems
+CMPSCI 4760 - Operating Systems
 
 PROJECT 1: Parent/Child Process Management in C
 A parent command line application(oss) takes in parameters that are used to facilitate a series
 of child processes(worker) through their execution.
 
+Installation
+run 'make' command
+
 Invocation
 oss [-n <num> -s <num> -t <num>]
 For additional information on application use, use the help(oss -h) command
+
+EXAMPLE OUTPUT
+command: oss -n 3 -s 0 -t 2 (executes three worker processes, all simultaneously, each process iterates two times)
+The oss application will create child processes that executes the following command: ./worker 2
+Output similar to what's below will occur:
+WORKER PID:19024 PPID:19012 Iteration:1 before sleeping
+WORKER PID:19024 PPID:19012 Iteration:1 after sleeping
+WORKER PID:19024 PPID:19012 Iteration:2 before sleeping
+WORKER PID:19024 PPID:19012 Iteration:2 after sleeping
+WORKER PID:19025 PPID:19012 Iteration:1 before sleeping
+WORKER PID:19025 PPID:19012 Iteration:1 after sleeping
+WORKER PID:19025 PPID:19012 Iteration:2 before sleeping
+WORKER PID:19025 PPID:19012 Iteration:2 after sleeping
+WORKER PID:19026 PPID:19012 Iteration:1 before sleeping
+WORKER PID:19026 PPID:19012 Iteration:1 after sleeping
+WORKER PID:19026 PPID:19012 Iteration:2 before sleeping
+WORKER PID:19026 PPID:19012 Iteration:2 after sleeping

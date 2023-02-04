@@ -7,9 +7,9 @@ DESCRIPTION
     range from 0 - 18(inclusive), otherwise an error will be thrown.
 
     Options:
-        -n  required: the number of child worker processes to be created by oss
-        -s  required: the max number of child worker processes to be executed concurrently
-        -t  required: the number of iterations each child worker process will perform before terminating
+        -n  required: the number of child worker processes to be created by oss. 0 = no workers will be started.
+        -s  required: the max number of child worker processes to be executed concurrently. 0 = no maximum.
+        -t  required: the number of iterations each child worker process will perform before terminating. 0 = no iterations.
 
 EXAMPLES
     oss -n 3 -s 0 -t 2  => 3 workers will be executed, all workers will be executed concurrently, each worker
