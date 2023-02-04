@@ -1,0 +1,11 @@
+Walter Holley III
+Spring 2023
+CMPSCI 4769 - Operating Systems
+
+PROJECT 1: Parent/Child Process Management in C
+A parent command line application(oss) takes in parameters that are used to facilitate a series
+of child processes(worker) through their execution.
+
+Invocation
+oss [-n <num> -s <num> -t <num>]
+For additional information on application use, use the help(oss -h) command
