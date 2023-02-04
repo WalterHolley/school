@@ -13,6 +13,22 @@ int totalWorkers;
 char* maxIterations;
 int maxSimultaneous;
 
+void printHelp()
+{
+    FILE *fp;
+    char* buffer;
+    ssize_t read;
+    size_t len = 0;
+
+    fp = fopen("help", "r");
+
+    while((read = getline(&buffer, &len, fp)) != -1)
+    {
+        printf("%s", buffer);
+    }
+    fclose(fp);
+}
+
 /** Handles incoming parameters **/
 int handleParams(int argCount, char *argString[])
 {
@@ -23,7 +39,7 @@ int handleParams(int argCount, char *argString[])
         switch(options)
         {
             case 'h':
-                printf("help option \n");
+                printHelp();
                 result = -1;
                 break;
             case 'n':
@@ -56,7 +72,10 @@ int handleParams(int argCount, char *argString[])
     return result;
 }
 
-
+/*
+ * executes the worker process using the
+ * parameters supplied by the user
+ */
 void executeWorkers()
 {
     char* args[] = {"./worker",maxIterations,NULL};
