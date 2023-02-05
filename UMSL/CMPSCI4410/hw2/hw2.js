@@ -21,8 +21,8 @@ var FSHADER_SOURCE =`#version 300 es
 }`;
 
 //Rotation angle
-let ROTATION_ANGLE = 1.0;
-let ROTATION_SPEED = 1.0;
+let ROTATION_ANGLE = 45.0;
+
  let shapeCount = 20; //number of polygons to draw
 //polygon properties array
 let polygons = [];
@@ -65,10 +65,10 @@ var g_last = Date.now();
 function animate(angle) {
   // Calculate the elapsed time
   var now = Date.now();
-  var elapsed = (now - g_last) *  0.0001;
+  var elapsed = (now - g_last);
   g_last = now;
   // Update the current rotation angle (adjusted by the elapsed time)
-  var newAngle = angle + (ROTATION_ANGLE * elapsed) * ROTATION_SPEED;
+  var newAngle = angle + (ROTATION_ANGLE * elapsed) / 1000.00;
   return newAngle %= 360;
 }
 
@@ -174,11 +174,9 @@ function draw(gl, shaderModelMatrix){
       
 
        //compute position matrix
-       
-       polygons[i].matrix.translate(-centerY, -centerX, 0);
-       //polygons[i].matrix.scale(polygons[i].scale,polygons[i].scale,1);
        polygons[i].matrix.rotate(polygons[i].angle,0,0,1);
-       polygons[i].matrix.translate(centerX, centerY, 0);
+       polygons[i].matrix.setTranslate(centerX, centerY, 0);
+
        //polygons[i].matrix.setIdentity();
       
        
