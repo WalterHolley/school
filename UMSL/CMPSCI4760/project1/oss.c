@@ -28,7 +28,16 @@ void printHelp()
     }
     fclose(fp);
 }
+int validateParam(char* param)
+{
+    int i = atoi(param);
+    if( i < 0 || i > 18)
+    {
+        i = -1;
+    }
 
+    return i;
+}
 /** Handles incoming parameters **/
 int handleParams(int argCount, char *argString[])
 {
@@ -43,10 +52,12 @@ int handleParams(int argCount, char *argString[])
                 result = -1;
                 break;
             case 'n':
-                totalWorkers = atoi(optarg);
+                totalWorkers = validateParam(optarg);
+                totalWorkers == -1 ? result = -1 :false;
                 break;
             case 's':
                 maxSimultaneous = atoi(optarg);
+                maxSimultaneous == -1 ? result = -1 :false;
                 break;
             case 't':
                 maxIterations = optarg;
@@ -64,6 +75,7 @@ int handleParams(int argCount, char *argString[])
 
         if(result == -1)
         {
+            printf("Program did not run.  see help (oss -h) for execution details\n");
             printf("Ending program\n");
             break;
         }
