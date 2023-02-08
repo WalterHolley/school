@@ -114,6 +114,7 @@ void executeWorkers()
             workersStarted++;
             workersRunning++;
 
+            //if max simultaneous reached, wait for a process to end
             if (runLimit && workersRunning >= maxSimultaneous)
             {
                 if (!WIFEXITED(status))
@@ -128,6 +129,7 @@ void executeWorkers()
                 }
             }
 
+            //all workers started. wait for execution to complete
             if (workersStarted == totalWorkers)
             {
                 do
