@@ -1,4 +1,4 @@
-#define MAX_CONCURRENT_WORKERS 19
+#define MAX_CONCURRENT_WORKERS 18
 
 #include <stdio.h>
 #include <stdbool.h>
@@ -115,7 +115,7 @@ void executeWorkers()
             workersRunning++;
 
             //if max simultaneous reached, wait for a process to end
-            if (runLimit && workersRunning >= maxSimultaneous)
+            if ((runLimit && workersRunning >= maxSimultaneous) || workersRunning >= MAX_CONCURRENT_WORKERS)
             {
                 if (!WIFEXITED(status))
                 {
