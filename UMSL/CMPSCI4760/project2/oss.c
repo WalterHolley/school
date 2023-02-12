@@ -7,11 +7,18 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <sys/shm.h>
+#include <sys/ipc.h>
 
 //globals
 int totalWorkers;
 char* maxIterations;
 int maxSimultaneous;
+
+struct runclock {
+    int seconds;
+    int nanoseconds;
+};
 
 void printHelp()
 {
@@ -92,29 +99,79 @@ int handleParams(int argCount, char *argString[])
 void executeWorkers()
 {
     char* args[] = {"./worker",maxIterations,NULL};
-    pid_t childPid;
-    bool runLimit = maxSimultaneous > 0 ? true : false;
-    int status;
+    pid_t childPid; // process ID of a child executable
+    bool runLimit = maxSimultaneous > 0 ? true : false; //indicates a limit exists for simultaneous executions
+    int status, sharedMemId;
+    struct runclock *osclock;
     int workersStarted = 0;
     int workersExecuted = 0;
     int workersRunning = 0;
 
-    while(workersExecuted != totalWorkers) {
-        childPid = fork();
-        if (childPid == -1) // error
+    //setup shared memory
+    sharedMemId = shmget(IPC_PRIVATE, sizeof(struct runclock), 0666|IPC_CREAT);
+    osclock = (struct runclock*)shmat(sharedMemId, (void*)0, 0);
+    osclock->seconds = 0;
+    osclock->nanoseconds = 0;
+    shmdt(osclock);
+
+
+    if(sharedMemId != -1)
+    {
+        while(workersExecuted != totalWorkers)
         {
-            perror("An error occurred during fork");
+            childPid = fork();
+            if (childPid == -1) // error
+            {
+                perror("An error occurred during fork");
+                exit(1);
+            }
+            else if (childPid == 0) //this is the child node.  run program
+            {
+                osclock = (struct runclock*)shmat(sharedMemId, (void*)0, 0);
+                printf("count: %d\n", osclock->seconds);
+
+                if(shmdt(osclock) != -1)
+                {
+                    //execvp(args[0], args);
+                    exit(0);
+                }
+                else
+                {
+                    perror("A child could not detach from shared memory.");
+                    exit(1);
+                }
+
+            }
+            else //parent. manage child status
+            {
+                workersExecuted++;
+                osclock = (struct runclock*)shmat(sharedMemId, (void*)0, 0);
+                osclock->seconds += 1;
+                shmdt(osclock);
+                do
+                {
+                    wait(&status);
+                }while(!WIFEXITED(status));
+
+            }
+        }
+
+        if(shmctl(sharedMemId, IPC_RMID,NULL) == -1)
+        {
+            perror("Parent could not destroy shared memory.");
             exit(1);
         }
-        else if (childPid == 0) //this is the child node.  run program
+        else
         {
-            execvp(args[0], args);
-        }
-        else //parent. manage child status
-        {
-
+            printf("Shared memory destroyed\n");
         }
     }
+    else
+    {
+        perror("A problem occurred while setting up shared memory");
+    }
+
+
 }
 
 int main(int argCount, char *argv[])
