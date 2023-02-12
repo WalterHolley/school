@@ -12,7 +12,7 @@
 
 //globals
 int totalWorkers;
-char* maxIterations;
+int timelimit;
 int maxSimultaneous;
 
 struct runclock {
@@ -68,7 +68,7 @@ int handleParams(int argCount, char *argString[])
                 maxSimultaneous == -1 ? result = -1 :false;
                 break;
             case 't':
-                maxIterations = optarg;
+                timelimit = atoi(optarg);
                 break;
             case ':':
                 printf("%c missing option value\n", optopt);

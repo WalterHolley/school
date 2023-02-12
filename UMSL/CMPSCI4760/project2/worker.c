@@ -9,23 +9,17 @@ void printWorkerInfo(int iteration, int pid, int ppid)
 
 int main(int argc, char* argv[])
 {
-    int iterations;
+    int seconds;
+    int nanoseconds;
 
-    if(argc > 1)
+    if(argc > 2)
     {
-        iterations = atoi(argv[1]);
+        seconds = atoi(argv[1]);
+        nanoseconds = atoi(argv[2]);
         int pid = getpid();
         int ppid = getppid();
         int i;
-        for(i = 0; i < iterations; i++)
-        {
-            printWorkerInfo(i + 1, pid, ppid);
-            printf("before sleeping\n");
-            sleep(1);
-            printWorkerInfo(i + 1, pid, ppid);
-            printf("after sleeping\n");
 
-        }
     }
     else
     {

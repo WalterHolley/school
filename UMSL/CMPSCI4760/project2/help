@@ -7,12 +7,14 @@ DESCRIPTION
     range from 0 - 18(inclusive), otherwise an error will be thrown.
 
     Options:
-        -n  required: the number of child worker processes to be created by oss. 0 = no workers will be started.
+        -n  required: the number of child worker processes to be created by oss.  Range from 0 - 18(inclusive).
+            0 = no workers will be started.
         -s  required: the max number of child worker processes to be executed concurrently. 0 = no maximum.
-        -t  required: the number of iterations each child worker process will perform before terminating. 0 = no iterations.
+        -t  required: the maximum number of seconds each child worker process will run before terminating. Minimum value of
+            1 second is allowed.  Runtime is randomly determined between zero(exclusive) and the provided value(inclusive).
 
 EXAMPLES
     oss -n 3 -s 0 -t 2  => 3 workers will be executed, all workers will be executed concurrently, each worker
-                           will perform 2 iterations before terminating.
+                           can potentially exist for a max of 2 seconds before terminating.
     oss -n 4 -s 2 -t 4  => 4 workers will be executed, up to two workers will be executed concurrently, each
-                           worker will perform 4 iterations before terminating
+                           worker can potentially exist for a max of 4 seconds before terminating.
