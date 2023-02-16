@@ -9,16 +9,17 @@
 #include <sys/wait.h>
 #include <sys/shm.h>
 #include <sys/ipc.h>
+#include "osclock.h"
+
+
+#define SMEM_KEY 0x3357
 
 //globals
 int totalWorkers;
 int timelimit;
 int maxSimultaneous;
+struct sysclock* osclock;
 
-struct runclock {
-    int seconds;
-    int nanoseconds;
-};
 
 void printHelp()
 {
@@ -98,21 +99,20 @@ int handleParams(int argCount, char *argString[])
  */
 void executeWorkers()
 {
-    char* args[] = {"./worker",maxIterations,NULL};
+    char* args[] = {"./worker","3", "450000", NULL};
     pid_t childPid; // process ID of a child executable
     bool runLimit = maxSimultaneous > 0 ? true : false; //indicates a limit exists for simultaneous executions
     int status, sharedMemId;
-    struct runclock *osclock;
     int workersStarted = 0;
     int workersExecuted = 0;
     int workersRunning = 0;
 
     //setup shared memory
-    sharedMemId = shmget(IPC_PRIVATE, sizeof(struct runclock), 0666|IPC_CREAT);
-    osclock = (struct runclock*)shmat(sharedMemId, (void*)0, 0);
+    sharedMemId = shmget(SMEM_KEY, sizeof(struct sysclock), 0644|IPC_CREAT);
+    osclock = (struct sysclock*)shmat(sharedMemId, (void *)0, 0);
     osclock->seconds = 0;
     osclock->nanoseconds = 0;
-    shmdt(osclock);
+    //shmdt(osclock);
 
 
     if(sharedMemId != -1)
@@ -127,31 +127,19 @@ void executeWorkers()
             }
             else if (childPid == 0) //this is the child node.  run program
             {
-                osclock = (struct runclock*)shmat(sharedMemId, (void*)0, 0);
-                printf("count: %d\n", osclock->seconds);
-
-                if(shmdt(osclock) != -1)
-                {
-                    //execvp(args[0], args);
-                    exit(0);
-                }
-                else
-                {
-                    perror("A child could not detach from shared memory.");
-                    exit(1);
-                }
+                execvp(args[0], args);
 
             }
             else //parent. manage child status
             {
                 workersExecuted++;
-                osclock = (struct runclock*)shmat(sharedMemId, (void*)0, 0);
-                osclock->seconds += 1;
-                shmdt(osclock);
-                do
+                //osclock = (struct sysclock*)shmat(sharedMemId, (void*)0, 0);
+                osclock->seconds = osclock->seconds + 1;
+                osclock->nanoseconds = osclock->nanoseconds + 4500;
+                /*if(workersExecuted == totalWorkers)
                 {
-                    wait(&status);
-                }while(!WIFEXITED(status));
+                    shmdt(osclock);
+                }*/
 
             }
         }
