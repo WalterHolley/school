@@ -94,6 +94,7 @@ int handleParams(int argCount, char *argString[])
     return result;
 }
 
+/** Increments the simulated clock of the system **/
 void incrementClock()
 {
     int nanos = osclock->nanoseconds;
@@ -110,6 +111,7 @@ void executeWorkers()
 {
     char* args[] = {"./worker","3", "450000", NULL};
     pid_t childPid; // process ID of a child executable
+    struct shmid_ds* smemStats;
     bool runLimit = maxSimultaneous > 0 ? true : false; //indicates a limit exists for simultaneous executions
     int status, sharedMemId;
     int workersStarted = 0;
@@ -121,6 +123,7 @@ void executeWorkers()
     osclock = (struct sysclock*)shmat(sharedMemId, (void *)0, 0);
     osclock->seconds = 0;
     osclock->nanoseconds = 0;
+
 
 
     if(sharedMemId != -1)
@@ -136,7 +139,6 @@ void executeWorkers()
             else if (childPid == 0) //this is the child node.  run program
             {
                 execvp(args[0], args);
-
             }
             else //parent. handle clock and execution
             {
@@ -166,6 +168,7 @@ void executeWorkers()
                         if (WIFEXITED(status))
                         {
                             workersExecuted++;
+                            printf("Workers execute: %i\n", workersExecuted);
                         }
                         incrementClock();
                     }
@@ -179,6 +182,16 @@ void executeWorkers()
 
             }
         }
+
+        //wait for shared memory to detach
+        do
+        {
+            shmctl(sharedMemId, IPC_STAT, smemStats);
+            //printf("Waiting for memory to detach\n");
+            incrementClock();
+
+        }while(smemStats->shm_nattch > 1);
+
 
         if(shmctl(sharedMemId, IPC_RMID,NULL) == -1)
         {
