@@ -18,6 +18,7 @@
 int totalWorkers;
 int timelimit;
 int maxSimultaneous;
+int nanoIncrement = 1000;
 struct sysclock* osclock;
 
 
@@ -93,6 +94,14 @@ int handleParams(int argCount, char *argString[])
     return result;
 }
 
+void incrementClock()
+{
+    int nanos = osclock->nanoseconds;
+    nanos += nanoIncrement;
+    osclock->seconds = osclock->seconds + (nanos / NANOS_IN_SECOND);
+    osclock->nanoseconds = nanos % NANOS_IN_SECOND;
+}
+
 /*
  * executes the worker process using the
  * parameters supplied by the user
@@ -112,7 +121,6 @@ void executeWorkers()
     osclock = (struct sysclock*)shmat(sharedMemId, (void *)0, 0);
     osclock->seconds = 0;
     osclock->nanoseconds = 0;
-    //shmdt(osclock);
 
 
     if(sharedMemId != -1)
@@ -130,16 +138,44 @@ void executeWorkers()
                 execvp(args[0], args);
 
             }
-            else //parent. manage child status
+            else //parent. handle clock and execution
             {
-                workersExecuted++;
-                //osclock = (struct sysclock*)shmat(sharedMemId, (void*)0, 0);
-                osclock->seconds = osclock->seconds + 1;
-                osclock->nanoseconds = osclock->nanoseconds + 4500;
-                /*if(workersExecuted == totalWorkers)
+                workersStarted++;
+                workersRunning++;
+
+                //if max simultaneous reached, wait for a process to end
+                if ((runLimit && workersRunning >= maxSimultaneous) || workersRunning >= MAX_CONCURRENT_WORKERS)
                 {
-                    shmdt(osclock);
-                }*/
+                    if (!WIFEXITED(status))
+                    {
+                        do
+                        {
+                            waitpid(-1, &status, WNOHANG);
+                            incrementClock();
+                        }
+                        while (!WIFEXITED(status));
+                        workersRunning--;
+                        workersExecuted++;
+                    }
+                }
+                else if (workersStarted == totalWorkers) //all workers started. wait for execution to complete
+                {
+                    do
+                    {
+                        waitpid(-1, &status, WNOHANG);;
+                        if (WIFEXITED(status))
+                        {
+                            workersExecuted++;
+                        }
+                        incrementClock();
+                    }
+                    while (workersExecuted != totalWorkers);
+                }
+                else
+                {
+                    incrementClock();
+                }
+
 
             }
         }

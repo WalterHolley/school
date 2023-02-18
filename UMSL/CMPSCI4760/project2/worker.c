@@ -9,7 +9,6 @@
 int smemId;
 int pid;
 int ppid;
-int secondInNano = 1000000000;
 int seconds;
 int nanoseconds;
 struct sysclock* osClock;
@@ -25,13 +24,15 @@ void printWorkerInfo(int pid, int ppid, int termSeconds, int termNano)
 struct sysclock elapsedTime(struct sysclock startTime, struct sysclock* endTime)
 {
     struct sysclock result;
-    int deltaNanos = endTime->nanoseconds - startTime.nanoseconds;
-    int deltaSeconds = endTime->seconds - startTime.seconds;
+    int endNanos = endTime->nanoseconds;
+    int endSeconds = endTime->seconds;
+    int deltaNanos = endNanos - startTime.nanoseconds;
+    int deltaSeconds = endSeconds - startTime.seconds;
 
     if(deltaNanos < 0 && deltaSeconds > 0)
     {
         deltaSeconds = deltaSeconds - 1;
-        deltaNanos = startTime.nanoseconds - endTime->nanoseconds;
+        deltaNanos = startTime.nanoseconds - endNanos;
     }
 
     result.nanoseconds = deltaNanos;
@@ -56,7 +57,7 @@ int doTerminate()
 
     if(result)
     {
-        printWorkerInfo(pid, ppid, seconds, nanoseconds);
+        printWorkerInfo(pid, ppid, processEndTime.seconds, processEndTime.nanoseconds);
         printf("--Terminating\n");
     }
 
@@ -75,7 +76,7 @@ int setup(int argc, char* argv[])
 
         //get shared memory for os clock
         smemId = shmget(SMEM_KEY, sizeof(struct sysclock), 0644|IPC_CREAT);
-        osClock = (struct sysclock*)shmat(smemId, NULL, 0);
+        osClock = (struct sysclock*)shmat(smemId, (void *)0, 0);
 
         //record start time
         processStartTime.nanoseconds = osClock->nanoseconds;
@@ -83,8 +84,8 @@ int setup(int argc, char* argv[])
 
         //set end time
         processEndTime = processStartTime;
-        processEndTime.seconds += seconds + ((nanoseconds + processStartTime.nanoseconds) / secondInNano);
-        processEndTime.nanoseconds = ((nanoseconds + processStartTime.nanoseconds) % secondInNano);
+        processEndTime.seconds += seconds + ((nanoseconds + processStartTime.nanoseconds) / NANOS_IN_SECOND);
+        processEndTime.nanoseconds += ((nanoseconds + processStartTime.nanoseconds) % NANOS_IN_SECOND);
         result = 1;
     }
     else
@@ -105,7 +106,7 @@ int main(int argc, char* argv[])
 
 
 
-        printWorkerInfo(pid, ppid, seconds, nanoseconds);
+        printWorkerInfo(pid, ppid, processEndTime.seconds, processEndTime.nanoseconds);
         printf("--Just Starting\n");
 
         //loop until process time has expired
@@ -116,7 +117,7 @@ int main(int argc, char* argv[])
             if(i < timeElapsed.seconds)
             {
                 i = timeElapsed.seconds;
-                printWorkerInfo(pid, ppid, seconds, nanoseconds);
+                printWorkerInfo(pid, ppid, processEndTime.seconds, processEndTime.nanoseconds);
                 printf("--%i seconds have passed since starting\n", i);
             }
         }while(!doTerminate());

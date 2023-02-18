@@ -10,4 +10,5 @@ struct sysclock {
     int seconds;
 };
 
+const int NANOS_IN_SECOND = 1000000000;
 #endif //OSCLOCK_H
