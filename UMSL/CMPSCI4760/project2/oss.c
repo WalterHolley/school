@@ -9,18 +9,36 @@
 #include <sys/wait.h>
 #include <sys/shm.h>
 #include <sys/ipc.h>
+#include <signal.h>
 #include "osclock.h"
 
 
 #define SMEM_KEY 0x3357
 
+//process structure
+struct process {
+    int occupied;   //indicates if record space is occupied
+    pid_t pid;
+    int startSeconds;
+    int startNano;
+};
+
+
 //globals
 int totalWorkers;
 int timelimit;
 int maxSimultaneous;
-int nanoIncrement = 1000;
-struct sysclock* osclock;
 
+int nanoIncrement = 1000;
+int TERM_FLAG = 0;
+struct sysclock* osclock;
+struct process processTable[18];
+size_t procTableSize = sizeof(processTable) / sizeof(struct process);
+
+void termFlag()
+{
+    TERM_FLAG = 1;
+}
 
 void printHelp()
 {
@@ -94,6 +112,24 @@ int handleParams(int argCount, char *argString[])
     return result;
 }
 
+void printProcessTable()
+{
+        int i;
+        //print OSS message
+        printf("OSS PID: %i SysClockS: %i SysclockNano: %i\n", getppid(), osclock->seconds, osclock->nanoseconds);
+        printf("Process Table:\n");
+
+        //print header
+        printf("%-10s%-10s%-10s%-10s%s\n", "Entry", "Occupied", "PID", "StartS", "StartN");
+
+        //print rows
+        for(i = 0; i < procTableSize; i++)
+        {
+            printf("%-10i%-10i%-10i%-10i%i\n", i, processTable[i].occupied, processTable[i].pid, processTable[i].startSeconds, processTable[i].startNano);
+        }
+
+}
+
 /** Increments the simulated clock of the system **/
 void incrementClock()
 {
@@ -101,9 +137,85 @@ void incrementClock()
     nanos += nanoIncrement;
     osclock->seconds = osclock->seconds + (nanos / NANOS_IN_SECOND);
     osclock->nanoseconds = nanos % NANOS_IN_SECOND;
+
+    if(osclock->nanoseconds % NANOS_HALF_SECOND == 0)
+    {
+        printProcessTable();
+    }
+
+
+}
+/** Adds a process record to the process table**/
+int addProcess(pid_t childPid)
+{
+    struct process newProc;
+    int i, result = 0;
+
+    newProc.occupied = 1;
+    newProc.pid = childPid;
+    newProc.startNano = osclock->nanoseconds;
+    newProc.startSeconds = osclock->seconds;
+
+    for(i = 0; i < procTableSize; i++)
+    {
+        if(!processTable[i].occupied)
+        {
+            processTable[i] = newProc;
+            result = 1;
+            break;
+        }
+    }
+    return result;
 }
 
-/*
+/** Removes the given pid from the process table**/
+int removeProcess(pid_t processId)
+{
+    int i, result = 0;
+
+
+    for(i = 0; i < procTableSize; i++)
+    {
+        if(processTable[i].pid == processId)
+        {
+            processTable[i].occupied = 0;
+            processTable[i].startSeconds = 0;
+            processTable[i].startNano = 0;
+            processTable[i].pid = 0;
+            result = 1;
+            printf("Process Removed\n");
+            break;
+        }
+    }
+
+    return result;
+}
+
+void termChild()
+{
+
+}
+
+/** Loops until a child process is terminated.
+ * Increments OS clock
+ * @return -1 for error
+ * process Id of child on success
+ */
+int waitForTerm()
+{
+    int result = 0;
+    int pidStatus;
+    do
+    {
+        result = waitpid(-1, &pidStatus, WNOHANG);
+        incrementClock();
+    }while(result == 0);
+
+
+    return result;
+}
+
+/**
  * executes the worker process using the
  * parameters supplied by the user
  */
@@ -113,7 +225,7 @@ void executeWorkers()
     pid_t childPid; // process ID of a child executable
     struct shmid_ds* smemStats;
     bool runLimit = maxSimultaneous > 0 ? true : false; //indicates a limit exists for simultaneous executions
-    int status, sharedMemId;
+    int status, sharedMemId, pid;
     int workersStarted = 0;
     int workersExecuted = 0;
     int workersRunning = 0;
@@ -130,6 +242,10 @@ void executeWorkers()
     {
         while(workersExecuted != totalWorkers)
         {
+            if(TERM_FLAG)
+            {
+                //kill child processes
+            }
             childPid = fork();
             if (childPid == -1) // error
             {
@@ -145,51 +261,60 @@ void executeWorkers()
                 workersStarted++;
                 workersRunning++;
 
-                //if max simultaneous reached, wait for a process to end
-                if ((runLimit && workersRunning >= maxSimultaneous) || workersRunning >= MAX_CONCURRENT_WORKERS)
+                //update process table
+                if(addProcess(childPid))
                 {
-                    if (!WIFEXITED(status))
+                    //if max simultaneous reached, wait for a process to end
+                    if ((runLimit && workersRunning >= maxSimultaneous) || workersRunning >= MAX_CONCURRENT_WORKERS)
                     {
+                        if (!WIFEXITED(status))
+                        {
+                            do
+                            {
+                               pid = waitpid(-1, &status, WNOHANG);
+                                incrementClock();
+                            }
+                            while (!WIFEXITED(status));
+                            workersRunning--;
+                            workersExecuted++;
+                            removeProcess(pid);
+                        }
+                    }
+                    else if (workersStarted == totalWorkers) //all workers started. wait for execution to complete
+                    {
+                        pid_t pid;
                         do
                         {
-                            waitpid(-1, &status, WNOHANG);
-                            incrementClock();
-                        }
-                        while (!WIFEXITED(status));
-                        workersRunning--;
-                        workersExecuted++;
-                    }
-                }
-                else if (workersStarted == totalWorkers) //all workers started. wait for execution to complete
-                {
-                    do
-                    {
-                        waitpid(-1, &status, WNOHANG);;
-                        if (WIFEXITED(status))
-                        {
+
+                            pid = waitForTerm();
+                            removeProcess(pid);
                             workersExecuted++;
-                            printf("Workers execute: %i\n", workersExecuted);
                         }
+                        while (workersExecuted != totalWorkers);
+                    }
+                    else
+                    {
                         incrementClock();
                     }
-                    while (workersExecuted != totalWorkers);
                 }
                 else
                 {
-                    incrementClock();
+                    printf("An error occurred while updating the process table\n");
+                    //destroy children and end app
                 }
-
-
             }
         }
+
 
         //wait for shared memory to detach
         do
         {
-            shmctl(sharedMemId, IPC_STAT, smemStats);
-            //printf("Waiting for memory to detach\n");
+            if(shmctl(sharedMemId, IPC_STAT, smemStats) < 1)
+            {
+                break;
+            }
             incrementClock();
-
+            //TODO:  attach not reporting correct value.  resolve
         }while(smemStats->shm_nattch > 1);
 
 
@@ -207,14 +332,14 @@ void executeWorkers()
     {
         perror("A problem occurred while setting up shared memory");
     }
-
-
 }
 
 int main(int argCount, char *argv[])
 {
     if(handleParams(argCount, argv) != -1)
     {
+        //register signal interrupt
+        signal(SIGINT, termFlag);
         //spin up workers
         executeWorkers();
     }
