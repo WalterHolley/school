@@ -28,6 +28,7 @@ struct process {
 int totalWorkers;
 int timelimit;
 int maxSimultaneous;
+const int MAX_RUN_TIME = 60;
 
 int nanoIncrement = 1000;
 int TERM_FLAG = 0;
@@ -112,11 +113,27 @@ int handleParams(int argCount, char *argString[])
     return result;
 }
 
+/** checks to see if at least one process is running **/
+int isWorkerRunning()
+{
+    int i, result = 0;
+
+    for(i; i < procTableSize; i++)
+    {
+        if(processTable[i].occupied)
+        {
+            result = 1;
+            break;
+        }
+    }
+    return result;
+}
+
 void printProcessTable()
 {
         int i;
         //print OSS message
-        printf("OSS PID: %i SysClockS: %i SysclockNano: %i\n", getppid(), osclock->seconds, osclock->nanoseconds);
+        printf("OSS PID: %i SysClockS: %i SysclockNano: %i\n", getpid(), osclock->seconds, osclock->nanoseconds);
         printf("Process Table:\n");
 
         //print header
@@ -183,7 +200,6 @@ int removeProcess(pid_t processId)
             processTable[i].startNano = 0;
             processTable[i].pid = 0;
             result = 1;
-            printf("Process Removed\n");
             break;
         }
     }
@@ -191,8 +207,19 @@ int removeProcess(pid_t processId)
     return result;
 }
 
-void termChild()
+/** terminates all child processes**/
+void killChildren()
 {
+    printf("Terminating process\n");
+    int i;
+
+    for(i = 0; i < procTableSize; i++)
+    {
+        if(processTable[i].occupied)
+        {
+            kill(processTable[i].pid, SIGTERM);
+        }
+    }
 
 }
 
@@ -221,7 +248,7 @@ int waitForTerm()
  */
 void executeWorkers()
 {
-    char* args[] = {"./worker","3", "450000", NULL};
+
     pid_t childPid; // process ID of a child executable
     struct shmid_ds* smemStats;
     bool runLimit = maxSimultaneous > 0 ? true : false; //indicates a limit exists for simultaneous executions
@@ -229,6 +256,9 @@ void executeWorkers()
     int workersStarted = 0;
     int workersExecuted = 0;
     int workersRunning = 0;
+    char seconds[3];
+    char nanos[10];
+    time_t t;
 
     //setup shared memory
     sharedMemId = shmget(SMEM_KEY, sizeof(struct sysclock), 0644|IPC_CREAT);
@@ -240,83 +270,96 @@ void executeWorkers()
 
     if(sharedMemId != -1)
     {
-        while(workersExecuted != totalWorkers)
+        while(workersStarted != totalWorkers)
         {
             if(TERM_FLAG)
             {
                 //kill child processes
+                killChildren();
+                break;
             }
-            childPid = fork();
-            if (childPid == -1) // error
+            else
             {
-                perror("An error occurred during fork");
-                exit(1);
-            }
-            else if (childPid == 0) //this is the child node.  run program
-            {
-                execvp(args[0], args);
-            }
-            else //parent. handle clock and execution
-            {
-                workersStarted++;
-                workersRunning++;
 
-                //update process table
-                if(addProcess(childPid))
+
+                //fork new process
+                childPid = fork();
+                if (childPid == -1) // error
                 {
-                    //if max simultaneous reached, wait for a process to end
-                    if ((runLimit && workersRunning >= maxSimultaneous) || workersRunning >= MAX_CONCURRENT_WORKERS)
-                    {
-                        if (!WIFEXITED(status))
-                        {
-                            do
-                            {
-                               pid = waitpid(-1, &status, WNOHANG);
-                                incrementClock();
-                            }
-                            while (!WIFEXITED(status));
-                            workersRunning--;
-                            workersExecuted++;
-                            removeProcess(pid);
-                        }
-                    }
-                    else if (workersStarted == totalWorkers) //all workers started. wait for execution to complete
-                    {
-                        pid_t pid;
-                        do
-                        {
+                    perror("An error occurred during fork");
+                    exit(1);
+                }
+                else if (childPid == 0) //this is the child node.  run program
+                {
+                    //randomize runtime values for child process
+                    srand((unsigned) time(&t));
 
-                            pid = waitForTerm();
-                            removeProcess(pid);
-                            workersExecuted++;
-                        }
-                        while (workersExecuted != totalWorkers);
+                    sprintf(seconds, "%i",rand() % timelimit);
+                    if(atoi(seconds) == timelimit)
+                    {
+                        nanos[0] = '0';
                     }
                     else
                     {
-                        incrementClock();
+                        sprintf(nanos, "%c",rand() % (NANOS_IN_SECOND - 1));
+                    }
+
+                    char* args[] = {"./worker",seconds, nanos, NULL};
+
+                    execvp(args[0], args);
+                }
+                else //parent. handle clock and execution
+                {
+                    workersStarted++;
+                    workersRunning++;
+
+                    //update process table
+                    if(addProcess(childPid))
+                    {
+                        //if max simultaneous reached, wait for a process to end
+                        if ((runLimit && workersRunning >= maxSimultaneous) || workersRunning >= MAX_CONCURRENT_WORKERS)
+                        {
+                            do
+                            {
+                                pid = waitForTerm();
+                                if(pid != -1)
+                                {
+                                    workersRunning--;
+                                    workersExecuted++;
+                                    removeProcess(pid);
+                                }
+                                else
+                                {
+                                    //error.  kill children and end oss
+                                }
+
+                            }while(workersRunning >= maxSimultaneous);
+                        }
+                        else
+                        {
+                            incrementClock();
+                        }
+                    }
+                    else
+                    {
+                        printf("An error occurred while updating the process table\n");
+                        //destroy children and end app
                     }
                 }
-                else
-                {
-                    printf("An error occurred while updating the process table\n");
-                    //destroy children and end app
-                }
             }
+
         }
 
-
-        //wait for shared memory to detach
+        //wait for remaining workers to finish
+        pid_t pid;
         do
         {
-            if(shmctl(sharedMemId, IPC_STAT, smemStats) < 1)
-            {
-                break;
-            }
-            incrementClock();
-            //TODO:  attach not reporting correct value.  resolve
-        }while(smemStats->shm_nattch > 1);
-
+            pid = waitForTerm();
+            removeProcess(pid);
+            workersExecuted++;
+            workersRunning--;
+        }
+        while (isWorkerRunning());
 
         if(shmctl(sharedMemId, IPC_RMID,NULL) == -1)
         {
@@ -331,6 +374,7 @@ void executeWorkers()
     else
     {
         perror("A problem occurred while setting up shared memory");
+        killChildren();
     }
 }
 

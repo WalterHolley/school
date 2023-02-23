@@ -29,10 +29,10 @@ struct sysclock elapsedTime(struct sysclock startTime, struct sysclock* endTime)
     int deltaNanos = endNanos - startTime.nanoseconds;
     int deltaSeconds = endSeconds - startTime.seconds;
 
-    if(deltaNanos < 0 && deltaSeconds > 0)
+    if(deltaNanos < 0)
     {
         deltaSeconds = deltaSeconds - 1;
-        deltaNanos = startTime.nanoseconds - endNanos;
+        deltaNanos =  NANOS_IN_SECOND + deltaNanos;
     }
 
     result.nanoseconds = deltaNanos;
