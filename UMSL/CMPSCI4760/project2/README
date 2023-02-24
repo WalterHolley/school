@@ -19,15 +19,13 @@ The oss application will create child processes that executes the following comm
 Every half-second, a process table will display with current process information.  The worker processes will also display
 status information every second, until they reach their termination time, or are terminated early by the oss process.
 Output similar to what's below will occur:
-WORKER PID:19024 PPID:19012 Iteration:1 before sleeping
-WORKER PID:19024 PPID:19012 Iteration:1 after sleeping
-WORKER PID:19024 PPID:19012 Iteration:2 before sleeping
-WORKER PID:19024 PPID:19012 Iteration:2 after sleeping
-WORKER PID:19025 PPID:19012 Iteration:1 before sleeping
-WORKER PID:19025 PPID:19012 Iteration:1 after sleeping
-WORKER PID:19025 PPID:19012 Iteration:2 before sleeping
-WORKER PID:19025 PPID:19012 Iteration:2 after sleeping
-WORKER PID:19026 PPID:19012 Iteration:1 before sleeping
-WORKER PID:19026 PPID:19012 Iteration:1 after sleeping
-WORKER PID:19026 PPID:19012 Iteration:2 before sleeping
-WORKER PID:19026 PPID:19012 Iteration:2 after sleeping
+WORKER PID:27223 PPID:27222 SysClockS: 0 SysClockNano: 535000 TermTimeS: 0 TermTimeNano: 1070000
+--Just Starting
+WORKER PID:27223 PPID:27222 SysClockS: 0 SysClockNano: 1070000 TermTimeS: 0 TermTimeNano: 1070000
+--Terminating
+OSS PID: 27305 SysClockS: 0 SysclockNano: 500000000
+Process Table:
+Entry     Occupied  PID       StartS    StartN
+0         1         27315     0         263008000
+1         0         0         0         0
+2         0         0         0         0

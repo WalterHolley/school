@@ -33,6 +33,7 @@ const int MAX_RUN_TIME = 60;
 int nanoIncrement = 1000;
 int TERM_FLAG = 0;
 struct sysclock* osclock;
+struct sysclock nextPrint;
 struct process processTable[18];
 size_t procTableSize = sizeof(processTable) / sizeof(struct process);
 
@@ -60,7 +61,7 @@ void printHelp()
 int validateParam(char* param)
 {
     int i = atoi(param);
-    if( i < 0 || i > 18)
+    if( i < 0)
     {
         i = -1;
     }
@@ -87,6 +88,7 @@ int handleParams(int argCount, char *argString[])
             case 's':
                 maxSimultaneous = atoi(optarg);
                 maxSimultaneous == -1 ? result = -1 :false;
+                maxSimultaneous == 0 ? maxSimultaneous = MAX_CONCURRENT_WORKERS :false;
                 break;
             case 't':
                 timelimit = atoi(optarg);
@@ -155,9 +157,23 @@ void incrementClock()
     osclock->seconds = osclock->seconds + (nanos / NANOS_IN_SECOND);
     osclock->nanoseconds = nanos % NANOS_IN_SECOND;
 
-    if(osclock->nanoseconds % NANOS_HALF_SECOND == 0)
+    //Max run time reached. application must terminate
+    if(osclock->seconds >= MAX_RUN_TIME)
+    {
+        termFlag();
+        printf("Execution time has expired\n");
+    }
+
+    //print process table and increment time for next printing
+    if(osclock->nanoseconds >= nextPrint.nanoseconds && osclock->seconds >= nextPrint.seconds)
     {
         printProcessTable();
+        nextPrint.nanoseconds += NANOS_HALF_SECOND;
+        if(nextPrint.nanoseconds == NANOS_IN_SECOND)
+        {
+            nextPrint.seconds++;
+            nextPrint.nanoseconds = 0;
+        }
     }
 
 
@@ -266,7 +282,9 @@ void executeWorkers()
     osclock->seconds = 0;
     osclock->nanoseconds = 0;
 
-
+    //init processTable clock
+    nextPrint.nanoseconds = NANOS_HALF_SECOND;
+    nextPrint.seconds = 0;
 
     if(sharedMemId != -1)
     {
@@ -280,7 +298,6 @@ void executeWorkers()
             }
             else
             {
-
 
                 //fork new process
                 childPid = fork();
@@ -325,25 +342,26 @@ void executeWorkers()
                                 if(pid != -1)
                                 {
                                     workersRunning--;
-                                    workersExecuted++;
                                     removeProcess(pid);
                                 }
                                 else
                                 {
                                     //error.  kill children and end oss
+                                    killChildren();
+                                    exit(1);
                                 }
 
                             }while(workersRunning >= maxSimultaneous);
                         }
-                        else
-                        {
-                            incrementClock();
-                        }
+                        incrementClock();
                     }
                     else
                     {
-                        printf("An error occurred while updating the process table\n");
                         //destroy children and end app
+                        printf("An error occurred while updating the process table\n");
+                        killChildren();
+                        break;
+
                     }
                 }
             }
@@ -356,14 +374,13 @@ void executeWorkers()
         {
             pid = waitForTerm();
             removeProcess(pid);
-            workersExecuted++;
-            workersRunning--;
         }
         while (isWorkerRunning());
 
         if(shmctl(sharedMemId, IPC_RMID,NULL) == -1)
         {
             perror("Parent could not destroy shared memory.");
+            killChildren();
             exit(1);
         }
         else
@@ -375,6 +392,7 @@ void executeWorkers()
     {
         perror("A problem occurred while setting up shared memory");
         killChildren();
+        exit(1);
     }
 }
 

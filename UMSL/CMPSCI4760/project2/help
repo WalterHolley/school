@@ -9,7 +9,7 @@ DESCRIPTION
     Options:
         -n  required: the number of child worker processes to be created by oss.  Range from 0 - 18(inclusive).
             0 = no workers will be started.
-        -s  required: the max number of child worker processes to be executed concurrently. 0 = no maximum.
+        -s  required: the max number of child worker processes to be executed concurrently. 0 = system maximum(18).
         -t  required: the maximum number of seconds each child worker process will run before terminating. Minimum value of
             1 second is allowed.  Runtime is randomly determined between zero(exclusive) and the provided value(inclusive).
 
