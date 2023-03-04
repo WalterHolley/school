@@ -8,17 +8,22 @@ import androidx.recyclerview.widget.RecyclerView
 
 class ContactAdapter(private val contactList: ArrayList<String>): RecyclerView.Adapter<ViewHolder>() {
 
+    private val data:ArrayList<String>
+
+    init{
+        data = contactList
+    }
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val view: View = LayoutInflater.from(parent.context).inflate(R.layout.main_cardlayout,parent, false)
         return ViewHolder(view)
     }
 
     override fun getItemCount(): Int {
-        return contactList.size
+        return data.size
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        holder.contactName.text = contactList[position]
+        holder.contactName.text = data[position].toString()
     }
 
 
