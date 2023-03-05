@@ -1,0 +1,20 @@
+NAME
+    oss - Operating System Simulator: a unix/linux application used for simulating simple OS behavior.
+SYNOPSIS
+    oss [-nst] [-n <num> -s <num> -t <num>]
+DESCRIPTION
+    All commands with corresponding parameters are required. The number used for each parameter must
+    range from 0 - 18(inclusive), otherwise an error will be thrown.
+
+    Options:
+        -n  required: the number of child worker processes to be created by oss.  Range from 0 - 18(inclusive).
+            0 = no workers will be started.
+        -s  required: the max number of child worker processes to be executed concurrently. 0 = system maximum(18).
+        -t  required: the maximum number of seconds each child worker process will run before terminating. Minimum value of
+            1 second is allowed.  Runtime is randomly determined between zero(exclusive) and the provided value(inclusive).
+
+EXAMPLES
+    oss -n 3 -s 0 -t 2  => 3 workers will be executed, all workers will be executed concurrently, each worker
+                           can potentially exist for a max of 2 seconds before terminating.
+    oss -n 4 -s 2 -t 4  => 4 workers will be executed, up to two workers will be executed concurrently, each
+                           worker can potentially exist for a max of 4 seconds before terminating.
