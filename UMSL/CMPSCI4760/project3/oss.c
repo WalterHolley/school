@@ -7,8 +7,8 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/wait.h>
-#include <sys/shm.h>
 #include <sys/ipc.h>
+#include <sys/msg.h>
 #include <signal.h>
 #include "osclock.h"
 
@@ -36,6 +36,7 @@ struct sysclock* osclock;
 struct sysclock nextPrint;
 struct process processTable[18];
 size_t procTableSize = sizeof(processTable) / sizeof(struct process);
+char* logFile;
 
 void termFlag()
 {
@@ -157,6 +158,8 @@ void incrementClock()
     osclock->seconds = osclock->seconds + (nanos / NANOS_IN_SECOND);
     osclock->nanoseconds = nanos % NANOS_IN_SECOND;
 
+    //notify child processes
+
     //Max run time reached. application must terminate
     if(osclock->seconds >= MAX_RUN_TIME)
     {
@@ -276,9 +279,7 @@ void executeWorkers()
     char nanos[10];
     time_t t;
 
-    //setup shared memory
-    sharedMemId = shmget(SMEM_KEY, sizeof(struct sysclock), 0644|IPC_CREAT);
-    osclock = (struct sysclock*)shmat(sharedMemId, (void *)0, 0);
+    //init clock
     osclock->seconds = 0;
     osclock->nanoseconds = 0;
 
@@ -333,6 +334,8 @@ void executeWorkers()
                     //update process table
                     if(addProcess(childPid))
                     {
+                        //send run time to child
+
                         //if max simultaneous reached, wait for a process to end
                         if ((runLimit && workersRunning >= maxSimultaneous) || workersRunning >= MAX_CONCURRENT_WORKERS)
                         {
@@ -377,16 +380,6 @@ void executeWorkers()
         }
         while (isWorkerRunning());
 
-        if(shmctl(sharedMemId, IPC_RMID,NULL) == -1)
-        {
-            perror("Parent could not destroy shared memory.");
-            killChildren();
-            exit(1);
-        }
-        else
-        {
-            printf("Shared memory destroyed\n");
-        }
     }
     else
     {
