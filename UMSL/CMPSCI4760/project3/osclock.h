@@ -10,6 +10,11 @@ struct sysclock {
     int seconds;
 };
 
+struct clockmsg {
+    long msgType;
+    char message[15];
+};
+
 const int NANOS_IN_SECOND = 1000000000;
 const int NANOS_HALF_SECOND = 500000000;
 #endif //OSCLOCK_H

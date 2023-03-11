@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <sys/ipc.h>
 #include <sys/msg.h>
+#include<string.h>
 #include "osclock.h"
 
 int pid;
@@ -16,6 +17,23 @@ struct sysclock processEndTime;
 void printWorkerInfo(int pid, int ppid, int termSeconds, int termNano)
 {
     printf("WORKER PID:%i PPID:%i SysClockS: %i SysClockNano: %i TermTimeS: %i TermTimeNano: %i\n", pid, ppid, osClock.seconds, osClock.nanoseconds, termSeconds, termNano);
+}
+
+/**
+ * Converts a clock message value into a sysclock object
+ * @param msg
+ * @return
+ */
+struct sysclock clockMsgToSysClock(struct clockmsg msg)
+{
+    struct sysclock result;
+    char* token = strtok(msg.message, ",");
+
+    result.seconds = atoi(token);
+    token = strtok(NULL,",");
+    result.nanoseconds = atoi(token);
+
+    return result;
 }
 
 //Determines how much time has elapsed
@@ -66,16 +84,19 @@ int setup(int argc, char* argv[])
 {
     int result = 0;
     struct sysclock runTime;
+    struct clockmsg msg;
 
     pid = getpid();
     ppid = getppid();
 
     //get run time for process
     mqId = msgget(pid, 0666 | IPC_CREAT);
-    msgrcv(mqId, &runTime, sizeof(runTime), 1, 0);
+    msgrcv(mqId, &msg, sizeof(msg), 1, 0);
+    runTime = clockMsgToSysClock(msg);
 
     //get current os time
-    msgrcv(mqId, &osClock, sizeof(osClock), 1, 0);
+    msgrcv(mqId, &msg, sizeof(msg), 1, 0);
+    osClock = clockMsgToSysClock(msg);
 
     //record start time
     processStartTime.nanoseconds = osClock.nanoseconds;
@@ -83,8 +104,8 @@ int setup(int argc, char* argv[])
 
     //set end time
     processEndTime = processStartTime;
-    processEndTime.seconds += seconds + ((nanoseconds + processStartTime.nanoseconds) / NANOS_IN_SECOND);
-    processEndTime.nanoseconds += ((nanoseconds + processStartTime.nanoseconds) % NANOS_IN_SECOND);
+    processEndTime.seconds += runTime.seconds + ((runTime.nanoseconds + processStartTime.nanoseconds) / NANOS_IN_SECOND);
+    processEndTime.nanoseconds += ((runTime.nanoseconds + processStartTime.nanoseconds) % NANOS_IN_SECOND);
     result = 1;
 
     return result;
@@ -98,6 +119,7 @@ int main(int argc, char* argv[])
     {
         int i = 0;
         struct sysclock timeElapsed;
+        struct clockmsg msg;
 
 
 
@@ -107,7 +129,8 @@ int main(int argc, char* argv[])
         //loop until process time has expired
         do
         {
-            msgrcv(mqId, &osClock, sizeof(osClock), 1, 0);
+            msgrcv(mqId, &msg, sizeof(msg), 1, 0);
+            osClock = clockMsgToSysClock(msg);
             timeElapsed = elapsedTime(processStartTime, osClock);
             if(i < timeElapsed.seconds)
             {
@@ -116,6 +139,9 @@ int main(int argc, char* argv[])
                 printf("--%i seconds have passed since starting\n", i);
             }
         }while(!doTerminate());
+
+        //destroy MQ
+        msgctl(mqId, IPC_RMID, NULL);
 
     }
     else

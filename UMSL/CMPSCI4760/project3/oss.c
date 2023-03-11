@@ -29,9 +29,9 @@ int timelimit;
 int maxSimultaneous;
 const int MAX_RUN_TIME = 60;
 
-int nanoIncrement = 1000;
+int nanoIncrement = 100000;
 int TERM_FLAG = 0;
-struct sysclock* osclock;
+struct sysclock osclock;
 struct sysclock nextPrint;
 struct process processTable[18];
 size_t procTableSize = sizeof(processTable) / sizeof(struct process);
@@ -115,6 +115,17 @@ int handleParams(int argCount, char *argString[])
     return result;
 }
 
+/** Creates clockmsg object from a sysclock object**/
+struct clockmsg buildClockMessage(struct sysclock clock)
+{
+    struct clockmsg message;
+    message.msgType = 1;
+    sprintf(message.message, "%d,%d", clock.seconds, clock.nanoseconds);
+
+
+    return message;
+}
+
 /** checks to see if at least one process is running **/
 int isWorkerRunning()
 {
@@ -135,7 +146,7 @@ void printProcessTable()
 {
         int i;
         //print OSS message
-        printf("OSS PID: %i SysClockS: %i SysclockNano: %i\n", getpid(), osclock->seconds, osclock->nanoseconds);
+        printf("OSS PID: %i SysClockS: %i SysclockNano: %i\n", getpid(), osclock.seconds, osclock.nanoseconds);
         printf("Process Table:\n");
 
         //print header
@@ -156,11 +167,12 @@ void printProcessTable()
 void notifyChildren()
 {
     int i;
+    struct clockmsg clockMsg = buildClockMessage(osclock);
     for(i = 0; i < procTableSize; i++)
     {
         if(processTable[i].occupied)
         {
-            msgsnd(processTable[i].mqId, &osclock, sizeof(osclock), 0);
+            msgsnd(processTable[i].mqId, &clockMsg, sizeof(clockMsg), 0);
         }
     }
 }
@@ -168,22 +180,24 @@ void notifyChildren()
 /** Increments the simulated clock of the system **/
 void incrementClock()
 {
-    int nanos = osclock->nanoseconds;
+    int nanos = osclock.nanoseconds;
     nanos += nanoIncrement;
-    osclock->seconds = osclock->seconds + (nanos / NANOS_IN_SECOND);
-    osclock->nanoseconds = nanos % NANOS_IN_SECOND;
+    osclock.seconds = osclock.seconds + (nanos / NANOS_IN_SECOND);
+    osclock.nanoseconds = nanos % NANOS_IN_SECOND;
+
+    //printf("Time: %d : %d\n", osclock.seconds, osclock.nanoseconds);
 
     //notify child processes
     notifyChildren();
     //Max run time reached. application must terminate
-    if(osclock->seconds >= MAX_RUN_TIME)
+    if(osclock.seconds >= MAX_RUN_TIME)
     {
         termFlag();
         printf("Execution time has expired\n");
     }
 
     //print process table and increment time for next printing
-    if(osclock->nanoseconds >= nextPrint.nanoseconds && osclock->seconds >= nextPrint.seconds)
+    if(osclock.nanoseconds >= nextPrint.nanoseconds && osclock.seconds >= nextPrint.seconds)
     {
         printProcessTable();
         nextPrint.nanoseconds += NANOS_HALF_SECOND;
@@ -206,10 +220,8 @@ int addProcess(pid_t childPid)
     char seconds[3];
     char nanos[10];
     struct sysclock runningTime;
-    time_t t;
+    struct clockmsg mqMsg;
 
-    //randomize runtime values for child process
-    srand((unsigned) time(&t));
     sprintf(seconds, "%i",rand() % timelimit);
 
     if(atoi(seconds) == timelimit)
@@ -218,8 +230,10 @@ int addProcess(pid_t childPid)
     }
     else
     {
-        sprintf(nanos, "%c",rand() % (NANOS_IN_SECOND - 1));
+        sprintf(nanos, "%i",(rand() % (NANOS_IN_SECOND / nanoIncrement)) * nanoIncrement);
     }
+
+
 
     runningTime.nanoseconds = atoi(nanos);
     runningTime.seconds = atoi(seconds);
@@ -227,12 +241,14 @@ int addProcess(pid_t childPid)
     newProc.mqId = msgget(childPid, 0666 | IPC_CREAT);
     newProc.occupied = 1;
     newProc.pid = childPid;
-    newProc.startNano = osclock->nanoseconds;
-    newProc.startSeconds = osclock->seconds;
+    newProc.startNano = osclock.nanoseconds;
+    newProc.startSeconds = osclock.seconds;
+    mqMsg = buildClockMessage(runningTime);
 
     //send running time and current system time
-    msgsnd(newProc.mqId, &runningTime, sizeof(runningTime), 0);
-    msgsnd(newProc.mqId, &osclock, sizeof(osclock), 0);
+    msgsnd(newProc.mqId, &mqMsg, sizeof(mqMsg), 0);
+    mqMsg = buildClockMessage(osclock);
+    msgsnd(newProc.mqId, &mqMsg, sizeof(mqMsg), 0);
 
     for(i = 0; i < procTableSize; i++)
     {
@@ -317,8 +333,8 @@ void executeWorkers()
     int workersRunning = 0;
 
     //init clock
-    osclock->seconds = 0;
-    osclock->nanoseconds = 0;
+    osclock.seconds = 0;
+    osclock.nanoseconds = 0;
 
     //init processTable clock
     nextPrint.nanoseconds = NANOS_HALF_SECOND;
@@ -405,6 +421,11 @@ int main(int argCount, char *argv[])
     {
         //register signal interrupt
         signal(SIGINT, termFlag);
+
+        //init randomgen
+        time_t t;
+        srand((unsigned) time(&t));
+
         //spin up workers
         executeWorkers();
     }
