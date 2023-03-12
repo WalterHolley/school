@@ -4,7 +4,7 @@ SYNOPSIS
     oss [-nst] [-n <num> -s <num> -t <num> -f<logfile>]
 DESCRIPTION
     Executes a series of child processes for up to 60 simulated seconds.  OS clock is simulated by the
-    parent process, and observed by the child processes via a message queue.
+    parent process, and observed by the child processes via message queue.
 
     Options:
         -n  required: the number of child worker processes to be created by oss.  Range from 0 - 18(inclusive).

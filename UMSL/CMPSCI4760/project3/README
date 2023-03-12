@@ -18,8 +18,9 @@ oss [-n <num> -s <num> -t <num> -f <logfile>]
 For additional information on application use, use the help(oss -h) command
 
 EXAMPLE OUTPUT
-command: oss -n 3 -s 0 -t 2 -f ossproc.log (executes three worker processes, all simultaneously, each process will run for a maximum of 2 seconds)
-The oss application will create child processes that executes the following command: ./worker <seconds> <nanoseconds>
+command: oss -n 3 -s 0 -t 2 -f ossproc.log (executes three worker processes, all simultaneously, each process will run for a maximum of 2 seconds, and the oss parent output
+will be written to the ossproc.log file)
+The oss application will create child processes that executes the following command: ./worker
 Every half-second, a process table will display with current process information.  The worker processes will also display
 status information every second, until they reach their termination time, or are terminated early by the oss process.
 Output similar to what's below will occur:
