@@ -30,6 +30,7 @@ int maxSimultaneous;
 const int MAX_RUN_TIME = 60;
 
 int nanoIncrement = 100000;
+int workersExited = 0;
 int TERM_FLAG = 0;
 struct sysclock osclock;
 struct sysclock nextPrint;
@@ -143,6 +144,7 @@ int isWorkerRunning()
             break;
         }
     }
+
     return result;
 }
 
@@ -171,22 +173,22 @@ void printProcessTable()
         int i;
         char line[100];
         //print OSS message
-        sprintf(line, "OSS PID: %d SysClockS: %d SysclockNano: %d\n", getpid(), osclock.seconds, osclock.nanoseconds);
+        sprintf(line, "OSS PID: %d SysClockS: %d SysclockNano: %d", getpid(), osclock.seconds, osclock.nanoseconds);
         logToFile(line);
         printf(line);
-        sprintf(line, "Process Table:\n");
+        sprintf(line, "Process Table:");
         logToFile(line);
         printf(line);
 
         //print header
-        sprintf(line,"%-10s%-10s%-10s%-10s%s\n", "Entry", "Occupied", "PID", "StartS", "StartN");
+        sprintf(line,"%-10s%-10s%-10s%-10s%s", "Entry", "Occupied", "PID", "StartS", "StartN");
         logToFile(line);
         printf(line);
 
         //print rows
         for(i = 0; i < procTableSize; i++)
         {
-            sprintf(line, "%-10i%-10i%-10i%-10i%i\n", i, processTable[i].occupied, processTable[i].pid, processTable[i].startSeconds, processTable[i].startNano);
+            sprintf(line, "%-10i%-10i%-10i%-10i%i", i, processTable[i].occupied, processTable[i].pid, processTable[i].startSeconds, processTable[i].startNano);
             logToFile(line);
             printf(line);
         }
@@ -217,16 +219,20 @@ void incrementClock()
     nanos += nanoIncrement;
     osclock.seconds = osclock.seconds + (nanos / NANOS_IN_SECOND);
     osclock.nanoseconds = nanos % NANOS_IN_SECOND;
+    char* message = "Execution time has expired";
 
-    //printf("Time: %d : %d\n", osclock.seconds, osclock.nanoseconds);
 
     //notify child processes
     notifyChildren();
     //Max run time reached. application must terminate
     if(osclock.seconds >= MAX_RUN_TIME)
     {
+
+        logToFile(message);
+        printf(message);
         termFlag();
-        printf("Execution time has expired\n");
+
+
     }
 
     //print process table and increment time for next printing
@@ -300,7 +306,6 @@ int removeProcess(pid_t processId)
 {
     int i, result = 0;
 
-
     for(i = 0; i < procTableSize; i++)
     {
         if(processTable[i].pid == processId)
@@ -349,7 +354,7 @@ int waitForTerm()
         result = waitpid(-1, &pidStatus, WNOHANG);
         incrementClock();
     }while(result == 0);
-
+    workersExited++;
 
     return result;
 }
@@ -444,13 +449,13 @@ void executeWorkers()
 
     }
 
-        //wait for remaining workers to finish
-        do
-        {
-            pid = waitForTerm();
-            removeProcess(pid);
-        }
-        while (isWorkerRunning());
+    //wait for remaining workers to finish
+    do
+    {
+        pid = waitForTerm();
+        removeProcess(pid);
+    }
+    while (workersExited != totalWorkers);
 }
 
 int main(int argCount, char *argv[])
