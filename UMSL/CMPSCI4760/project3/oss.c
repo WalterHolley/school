@@ -35,7 +35,8 @@ struct sysclock osclock;
 struct sysclock nextPrint;
 struct process processTable[18];
 size_t procTableSize = sizeof(processTable) / sizeof(struct process);
-char* logFile;
+char* logFile = "oss.log";
+FILE *logfp;
 
 void termFlag()
 {
@@ -73,7 +74,7 @@ int handleParams(int argCount, char *argString[])
 {
     int result = 0;
     int options;
-    while((options = getopt(argCount, argString, ":hn:s:t:")) != -1)
+    while((options = getopt(argCount, argString, ":hn:s:t:f:")) != -1)
     {
         switch(options)
         {
@@ -92,6 +93,9 @@ int handleParams(int argCount, char *argString[])
                 break;
             case 't':
                 timelimit = atoi(optarg);
+                break;
+            case 'f':
+                logFile = optarg;
                 break;
             case ':':
                 printf("%c missing option value\n", optopt);
@@ -142,20 +146,49 @@ int isWorkerRunning()
     return result;
 }
 
+void logToFile(char* entry)
+{
+    int len = strlen(entry);
+    if(len >= 2)
+    {
+        if(entry[len - 2] != "\\" || entry[len - 1] != "n")
+        {
+            strcat(entry, "\n");
+        }
+        fprintf(logfp, entry);
+    }
+    else if(len > 0)
+    {
+        strcat(entry, "\n");
+        fprintf(logfp, entry);
+    }
+
+
+}
+
 void printProcessTable()
 {
         int i;
+        char line[100];
         //print OSS message
-        printf("OSS PID: %i SysClockS: %i SysclockNano: %i\n", getpid(), osclock.seconds, osclock.nanoseconds);
-        printf("Process Table:\n");
+        sprintf(line, "OSS PID: %d SysClockS: %d SysclockNano: %d\n", getpid(), osclock.seconds, osclock.nanoseconds);
+        logToFile(line);
+        printf(line);
+        sprintf(line, "Process Table:\n");
+        logToFile(line);
+        printf(line);
 
         //print header
-        printf("%-10s%-10s%-10s%-10s%s\n", "Entry", "Occupied", "PID", "StartS", "StartN");
+        sprintf(line,"%-10s%-10s%-10s%-10s%s\n", "Entry", "Occupied", "PID", "StartS", "StartN");
+        logToFile(line);
+        printf(line);
 
         //print rows
         for(i = 0; i < procTableSize; i++)
         {
-            printf("%-10i%-10i%-10i%-10i%i\n", i, processTable[i].occupied, processTable[i].pid, processTable[i].startSeconds, processTable[i].startNano);
+            sprintf(line, "%-10i%-10i%-10i%-10i%i\n", i, processTable[i].occupied, processTable[i].pid, processTable[i].startSeconds, processTable[i].startNano);
+            logToFile(line);
+            printf(line);
         }
 
 }
@@ -298,6 +331,8 @@ void killChildren()
         }
     }
 
+    fclose(logfp);
+
 }
 
 /** Loops until a child process is terminated.
@@ -355,7 +390,9 @@ void executeWorkers()
             childPid = fork();
             if (childPid == -1) // error
             {
+                logToFile("An error occurred during fork");
                 perror("An error occurred during fork");
+                killChildren();
                 exit(1);
             }
             else if (childPid == 0) //this is the child node.  run program
@@ -396,6 +433,7 @@ void executeWorkers()
                 else
                 {
                     //destroy children and end app
+                    logToFile("An error occurred while updating the process table\n");
                     printf("An error occurred while updating the process table\n");
                     killChildren();
                     break;
@@ -426,8 +464,13 @@ int main(int argCount, char *argv[])
         time_t t;
         srand((unsigned) time(&t));
 
+        //init log file
+        logfp = fopen(logFile, "w+");
         //spin up workers
         executeWorkers();
+
+        //end logging
+        fclose(logfp);
     }
     return 0;
 }
