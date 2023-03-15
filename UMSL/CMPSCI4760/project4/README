@@ -2,7 +2,7 @@ Walter Holley III
 Spring 2023
 CMPSCI 4760 - Operating Systems
 
-Github: https://github.com/WalterHolley/school/tree/master/UMSL/CMPSCI4760/project3
+Github: https://github.com/WalterHolley/school/tree/master/UMSL/CMPSCI4760/project4
 
 PROJECT 3: Parent/Child communication with a message queue in C.
 A simulated Operating System clock will be managed by a parent process, and
