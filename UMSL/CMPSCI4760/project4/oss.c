@@ -9,6 +9,7 @@
 #include <sys/wait.h>
 #include <sys/ipc.h>
 #include <sys/msg.h>
+#include <sys/queue.h>
 #include <signal.h>
 #include "osclock.h"
 
@@ -22,6 +23,11 @@ struct process {
     int mqId;
 };
 
+//element for process queues
+struct queue_entry {
+    int processId;
+    TAILQ_ENTRY(struct queue_entry) entries;
+};
 
 //globals
 int totalWorkers;
@@ -30,7 +36,6 @@ int maxSimultaneous;
 const int MAX_RUN_TIME = 60;
 
 int nanoIncrement = 100000;
-int workersExited = 0;
 int TERM_FLAG = 0;
 struct sysclock osclock;
 struct sysclock nextPrint;
@@ -168,6 +173,10 @@ void logToFile(char* entry)
 
 }
 
+/**
+ * Prints the process table to
+ * the console
+ */
 void printProcessTable()
 {
         int i;
@@ -246,9 +255,8 @@ void incrementClock()
             nextPrint.nanoseconds = 0;
         }
     }
-
-
 }
+
 /** Adds a process record to the process table
  * sends initial MQ message to child process
  * **/
@@ -322,8 +330,11 @@ int removeProcess(pid_t processId)
     return result;
 }
 
-/** terminates all child processes**/
-void killChildren()
+/**
+ * Cleanup of the processes and resources
+ * used by this application
+ */
+void cleanup()
 {
     printf("Terminating process\n");
     int i;
@@ -354,7 +365,6 @@ int waitForTerm()
         result = waitpid(-1, &pidStatus, WNOHANG);
         incrementClock();
     }while(result == 0);
-    workersExited++;
 
     return result;
 }
@@ -367,12 +377,70 @@ void executeWorkers()
 {
 
     pid_t childPid; // process ID of a child executable
-    bool runLimit = maxSimultaneous > 0 ? true : false; //indicates a limit exists for simultaneous executions
-    int pid;
-    int workersStarted = 0;
-    int workersRunning = 0;
+    bool spawnChildren = true;
 
-    //init clock
+
+    while(spawnChildren)
+    {
+        if(TERM_FLAG)
+        {
+            //kill child processes
+            cleanup();
+            break;
+        }
+        else
+        {
+            //TODO: -> Make random decision to spawn new worker
+            bool spawnChild = true;
+
+            if(spawnChild)
+            {
+                //fork new process
+                childPid = fork();
+                if (childPid == -1) // error
+                {
+                    logToFile("An error occurred during fork");
+                    perror("An error occurred during fork");
+                    cleanup();
+                    exit(1);
+                }
+                else if (childPid == 0) //this is the child node.  run program
+                {
+                    char* args[] = {"./worker", NULL};
+                    execvp(args[0], args);
+                }
+                else //parent. add child to ready queue. increment clock 3x
+                {
+                    //update process queue
+                }
+
+            }
+
+        }
+
+        //manage ready and blocked queues
+
+        //check for expired spawn time
+
+    }
+
+    //manage ready and blocked queues until end of execution time
+
+}
+
+void init()
+{
+    //register signal interrupt
+    signal(SIGINT, termFlag);
+
+    //init randomgen
+    time_t t;
+    srand((unsigned) time(&t));
+
+    //init log file
+    logfp = fopen(logFile, "w+");
+
+    //init 'OS' clock
     osclock.seconds = 0;
     osclock.nanoseconds = 0;
 
@@ -380,97 +448,15 @@ void executeWorkers()
     nextPrint.nanoseconds = NANOS_HALF_SECOND;
     nextPrint.seconds = 0;
 
-    while(workersStarted != totalWorkers)
-    {
-        if(TERM_FLAG)
-        {
-            //kill child processes
-            killChildren();
-            break;
-        }
-        else
-        {
-
-            //fork new process
-            childPid = fork();
-            if (childPid == -1) // error
-            {
-                logToFile("An error occurred during fork");
-                perror("An error occurred during fork");
-                killChildren();
-                exit(1);
-            }
-            else if (childPid == 0) //this is the child node.  run program
-            {
-                char* args[] = {"./worker", NULL};
-                execvp(args[0], args);
-            }
-            else //parent. handle clock and execution
-            {
-                workersStarted++;
-                workersRunning++;
-
-                //update process table
-                if(addProcess(childPid))
-                {
-                    //if max simultaneous reached, wait for a process to end
-                    if ((runLimit && workersRunning >= maxSimultaneous) || workersRunning >= MAX_CONCURRENT_WORKERS)
-                    {
-                        do
-                        {
-                            pid = waitForTerm();
-                            if(pid != -1)
-                            {
-                                workersRunning--;
-                                removeProcess(pid);
-                            }
-                            else
-                            {
-                                //error.  kill children and end oss
-                                killChildren();
-                                exit(1);
-                            }
-
-                        }while(workersRunning >= maxSimultaneous);
-                    }
-                    incrementClock();
-                }
-                else
-                {
-                    //destroy children and end app
-                    logToFile("An error occurred while updating the process table\n");
-                    printf("An error occurred while updating the process table\n");
-                    killChildren();
-                    break;
-
-                }
-            }
-        }
-
-    }
-
-    //wait for remaining workers to finish
-    do
-    {
-        pid = waitForTerm();
-        removeProcess(pid);
-    }
-    while (workersExited != totalWorkers);
+    //TODO: setup shared memory for os clock
 }
 
 int main(int argCount, char *argv[])
 {
     if(handleParams(argCount, argv) != -1)
     {
-        //register signal interrupt
-        signal(SIGINT, termFlag);
+        init();
 
-        //init randomgen
-        time_t t;
-        srand((unsigned) time(&t));
-
-        //init log file
-        logfp = fopen(logFile, "w+");
         //spin up workers
         executeWorkers();
 

@@ -4,11 +4,13 @@ CMPSCI 4760 - Operating Systems
 
 Github: https://github.com/WalterHolley/school/tree/master/UMSL/CMPSCI4760/project4
 
-PROJECT 3: Parent/Child communication with a message queue in C.
-A simulated Operating System clock will be managed by a parent process, and
-the iteration of that clock will be communicated to the child processes through
-a message queue.  The parent command line application(oss) takes in parameters
-that are used to facilitate a series of child processes(worker) through their execution.
+PROJECT 4: OS Scheduler simulator written in C.
+A simulated Operating System clock will be managed by a parent process(oss).
+At random intervals, oss will start a worker processes, and communicate back
+and forth with these processes through a pair of message queues.  OSS will communicate
+time allowed for execution to each worker process, while the worker process will
+return the amount of time it used. OSS will have to determine if the process has terminated,
+properly used its time, or is blocked for "I/O"
 
 Installation
 run 'make' command

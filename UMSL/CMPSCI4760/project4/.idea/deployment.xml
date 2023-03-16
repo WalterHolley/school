@@ -19,7 +19,7 @@
       <paths name="UMSL_CS">
         <serverdata>
           <mappings>
-            <mapping deploy="/project3" local="$PROJECT_DIR$" web="/" />
+            <mapping deploy="/project4" local="$PROJECT_DIR$" web="/" />
           </mappings>
         </serverdata>
       </paths>
