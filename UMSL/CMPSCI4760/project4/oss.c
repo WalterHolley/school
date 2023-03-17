@@ -80,25 +80,13 @@ int handleParams(int argCount, char *argString[])
 {
     int result = 0;
     int options;
-    while((options = getopt(argCount, argString, ":hn:s:t:f:")) != -1)
+    while((options = getopt(argCount, argString, ":hf:")) != -1)
     {
         switch(options)
         {
             case 'h':
                 printHelp();
                 result = -1;
-                break;
-            case 'n':
-                totalWorkers = validateParam(optarg);
-                totalWorkers == -1 ? result = -1 :false;
-                break;
-            case 's':
-                maxSimultaneous = atoi(optarg);
-                maxSimultaneous == -1 ? result = -1 :false;
-                maxSimultaneous == 0 ? maxSimultaneous = MAX_CONCURRENT_WORKERS :false;
-                break;
-            case 't':
-                timelimit = atoi(optarg);
                 break;
             case 'f':
                 logFile = optarg;
@@ -204,22 +192,6 @@ void printProcessTable()
 
 }
 
-/**
- * Updates each active child process
- * with the current OS time
- */
-void notifyChildren()
-{
-    int i;
-    struct clockmsg clockMsg = buildClockMessage(osclock);
-    for(i = 0; i < procTableSize; i++)
-    {
-        if(processTable[i].occupied)
-        {
-            msgsnd(processTable[i].mqId, &clockMsg, sizeof(clockMsg), 0);
-        }
-    }
-}
 
 /** Increments the simulated clock of the system **/
 void incrementClock()
@@ -409,16 +381,21 @@ void executeWorkers()
                     char* args[] = {"./worker", NULL};
                     execvp(args[0], args);
                 }
-                else //parent. add child to ready queue. increment clock 3x
+                else //parent. add child to ready queue. increment clock
                 {
-                    //update process queue
+                    //check for max running processes
+                    //update ready queue. increment clock
+
+                    //increment time for creating process
                 }
 
             }
 
         }
 
-        //manage ready and blocked queues
+        //manage ready queue. incrememt clock
+
+        //manage blocked queue. incrememt clock
 
         //check for expired spawn time
 
@@ -448,7 +425,7 @@ void init()
     nextPrint.nanoseconds = NANOS_HALF_SECOND;
     nextPrint.seconds = 0;
 
-    //TODO: setup shared memory for os clock
+    //TODO: setup shared memory for os clock and MQ Ids
 }
 
 int main(int argCount, char *argv[])
