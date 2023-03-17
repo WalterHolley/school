@@ -7,16 +7,16 @@
 
 int pid;
 int ppid;
-int mqId;
+int listenerMQId, replyMQId;
 int seconds;
 int nanoseconds;
-struct sysclock osClock;
+struct sysclock* osClock;
 struct sysclock processStartTime;
 struct sysclock processEndTime;
 
-void printWorkerInfo(int pid, int ppid, int termSeconds, int termNano)
+void printWorkerInfo()
 {
-    printf("WORKER PID:%i PPID:%i SysClockS: %i SysClockNano: %i TermTimeS: %i TermTimeNano: %i\n", pid, ppid, osClock.seconds, osClock.nanoseconds, termSeconds, termNano);
+    printf("WORKER PID:%i PPID:%i SysClockS: %i SysClockNano: %i \n", pid, ppid, osClock.seconds, osClock.nanoseconds);
 }
 
 /**
@@ -59,28 +59,42 @@ struct sysclock elapsedTime(struct sysclock startTime, struct sysclock endTime)
 
 /*Determines if the time criteria has been met, and
  * indicates if the process can be terminated*/
-int doTerminate()
+int doTerminate(struct sysclock runTime)
 {
-    int result = 0;
-    if(processEndTime.seconds == osClock.seconds && processEndTime.nanoseconds <= osClock.nanoseconds)
+    int result, randVal = 0;
+    //generate random 0 - 99(inclusive)
+
+
+
+
+
+    if(randVal >= 0 && randVal < 30)//0 - 29, end program
     {
+        //change runtime value, send negative
         result = 1;
     }
-    else if(processEndTime.seconds < osClock.seconds)
+    else if(randVal >= 30 && randVal <= 69) //30 - 69, continue running
     {
-        result = 1;
+        //'work' until time elapses, then continue
+        //send back original runTime value
+    }
+    else //70 - 99,  I/O blocked
+    {
+        //change runtime value
     }
 
     if(result)
     {
-        printWorkerInfo(pid, ppid, processEndTime.seconds, processEndTime.nanoseconds);
+        printWorkerInfo();
         printf("--Terminating\n");
     }
+
+    //send resulting runtime to reply queue
 
     return result;
 }
 
-int setup(int argc, char* argv[])
+int setup()
 {
     int result = 0;
     struct sysclock runTime;
@@ -89,23 +103,16 @@ int setup(int argc, char* argv[])
     pid = getpid();
     ppid = getppid();
 
-    //get run time for process
-    mqId = msgget(pid, 0666 | IPC_CREAT);
-    msgrcv(mqId, &msg, sizeof(msg), 1, 0);
-    runTime = clockMsgToSysClock(msg);
+    //get shared resources(osclock, reply queue ID, listener queue ID)
 
-    //get current os time
-    msgrcv(mqId, &msg, sizeof(msg), 1, 0);
-    osClock = clockMsgToSysClock(msg);
+    //get listener queue
 
-    //record start time
-    processStartTime.nanoseconds = osClock.nanoseconds;
-    processStartTime.seconds = osClock.seconds;
+    //get response queue
 
-    //set end time
-    processEndTime = processStartTime;
-    processEndTime.seconds += runTime.seconds + ((runTime.nanoseconds + processStartTime.nanoseconds) / NANOS_IN_SECOND);
-    processEndTime.nanoseconds += ((runTime.nanoseconds + processStartTime.nanoseconds) % NANOS_IN_SECOND);
+
+
+    //get run time for process?
+
     result = 1;
 
     return result;
@@ -115,33 +122,28 @@ int main(int argc, char* argv[])
 {
 
 
-    if(setup(argc, argv))
+    if(setup())
     {
-        int i = 0;
-        struct sysclock timeElapsed;
+
         struct clockmsg msg;
+        struct clockmsg workTime;
 
 
 
         printWorkerInfo(pid, ppid, processEndTime.seconds, processEndTime.nanoseconds);
         printf("--Just Starting\n");
 
-        //loop until process time has expired
+        //listen for message from parent
         do
         {
-            msgrcv(mqId, &msg, sizeof(msg), 1, 0);
-            osClock = clockMsgToSysClock(msg);
-            timeElapsed = elapsedTime(processStartTime, osClock);
-            if(i < timeElapsed.seconds)
-            {
-                i = timeElapsed.seconds;
-                printWorkerInfo(pid, ppid, processEndTime.seconds, processEndTime.nanoseconds);
-                printf("--%i seconds have passed since starting\n", i);
-            }
-        }while(!doTerminate());
 
-        //destroy MQ
-        msgctl(mqId, IPC_RMID, NULL);
+            msgrcv(mqId, &msg, sizeof(msg), 1, 0);
+            workTime = clockMsgToSysClock(msg);
+
+
+        }while(!doTerminate(workTime));
+
+        //disconnect from shared resources
 
     }
     else
