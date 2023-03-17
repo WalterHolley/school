@@ -65,16 +65,7 @@ void printHelp()
     fclose(fp);
 }
 
-int validateParam(char* param)
-{
-    int i = atoi(param);
-    if( i < 0)
-    {
-        i = -1;
-    }
 
-    return i;
-}
 /** Handles incoming parameters **/
 int handleParams(int argCount, char *argString[])
 {
@@ -122,23 +113,6 @@ struct clockmsg buildClockMessage(struct sysclock clock)
 
 
     return message;
-}
-
-/** checks to see if at least one process is running **/
-int isWorkerRunning()
-{
-    int i, result = 0;
-
-    for(i; i < procTableSize; i++)
-    {
-        if(processTable[i].occupied)
-        {
-            result = 1;
-            break;
-        }
-    }
-
-    return result;
 }
 
 void logToFile(char* entry)
