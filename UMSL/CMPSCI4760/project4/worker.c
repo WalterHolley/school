@@ -5,18 +5,47 @@
 #include<string.h>
 #include "osclock.h"
 
+time_t t;
 int pid;
 int ppid;
-int listenerMQId, replyMQId;
+int listenerMQId, replyMQId, ossMemId;
 int seconds;
 int nanoseconds;
-struct sysclock* osClock;
+
 struct sysclock processStartTime;
 struct sysclock processEndTime;
+struct ossProperties* parentProperties;
 
 void printWorkerInfo()
 {
-    printf("WORKER PID:%i PPID:%i SysClockS: %i SysClockNano: %i \n", pid, ppid, osClock.seconds, osClock.nanoseconds);
+    printf("WORKER PID:%i PPID:%i SysClockS: %i SysClockNano: %i \n", pid, ppid, parentProperties->osClock.seconds, parentProperties->osClock.nanoseconds);
+}
+
+/**
+ * Simulates work for the given length of time
+ */
+void doWork(struct sysclock workTime)
+{
+    struct sysclock stopTime;
+    stopTime.seconds = parentProperties->osClock.seconds;
+    stopTime.nanoseconds = parentProperties->osClock.nanoseconds + workTime.nanoseconds;
+
+    if(stopTime.nanoseconds > NANOS_IN_SECOND)
+    {
+        stopTime.seconds = stopTime.seconds + 1;
+        stopTime.nanoseconds = NANOS_IN_SECOND % stopTime.nanoseconds;
+    }
+
+    while(parentProperties->osClock.seconds <= stopTime.seconds)
+    {
+        if(stopTime.nanoseconds <= parentProperties->osClock.nanoseconds)
+        {
+            if(stopTime.seconds >= parentProperties->osClock.seconds)
+            {
+                break;
+            }
+        }
+    }
 }
 
 /**
@@ -33,6 +62,22 @@ struct sysclock clockMsgToSysClock(struct clockmsg msg)
     token = strtok(NULL,",");
     result.nanoseconds = atoi(token);
 
+    return result;
+}
+
+/**
+ * Convert system clock to
+ * clock message for MQ
+ * @param clock
+ * @return clockmsg structure
+ */
+struct clockmsg SysClockToclockmsg(struct sysclock clock)
+{
+    struct clockmsg result;
+    char* messageText;
+    sprintf(messageText, "%i,%i", clock.seconds, clock.nanoseconds);
+    result.msgType = 1;
+    result.message = messageText;
     return result;
 }
 
@@ -57,30 +102,39 @@ struct sysclock elapsedTime(struct sysclock startTime, struct sysclock endTime)
     return result;
 }
 
-/*Determines if the time criteria has been met, and
- * indicates if the process can be terminated*/
+/**
+ * Determines if the time criteria has been met, and
+ * indicates if the process can be terminated
+ */
 int doTerminate(struct sysclock runTime)
 {
-    int result, randVal = 0;
+    int result, randVal, newTime = 0;
+    struct clockmsg message;
+
     //generate random 0 - 99(inclusive)
-
-
-
+    randVal = rand() % 100;
 
 
     if(randVal >= 0 && randVal < 30)//0 - 29, end program
     {
         //change runtime value, send negative
+        randVal == 0? randVal = 1 : false;
+        runTime.nanoseconds = (runTime.nanoseconds / randVal);
+
+        doWork(runTime);
+        runTime.nanoseconds = runTime.nanoseconds * -1;
         result = 1;
     }
     else if(randVal >= 30 && randVal <= 69) //30 - 69, continue running
     {
         //'work' until time elapses, then continue
-        //send back original runTime value
+        doWork(runTime);
     }
     else //70 - 99,  I/O blocked
     {
         //change runtime value
+        runTime.nanoseconds = (runTime.nanoseconds / randVal);
+        doWork(runTime);
     }
 
     if(result)
@@ -90,7 +144,9 @@ int doTerminate(struct sysclock runTime)
     }
 
     //send resulting runtime to reply queue
-
+    runTime.seconds = pid;
+    message = SysClockToclockmsg(runTime);
+    msgsnd(replyMQId, &message, sizeof(message), 0);
     return result;
 }
 
@@ -103,17 +159,41 @@ int setup()
     pid = getpid();
     ppid = getppid();
 
+    //init randomgen
+    srand((unsigned) time(&t));
+
     //get shared resources(osclock, reply queue ID, listener queue ID)
+    ossMemId = shmget(SMEM_KEY, sizeof(struct ossProperties), 0644 | IPC_CREAT);
 
-    //get listener queue
+    if(ossMemId == -1)
+    {
+        perror("Worker could not retrieve shared memory");
+    }
+    else
+    {
+        parentProperties = shmat(ossMemId, NULL, 0);
 
-    //get response queue
+        if(parentProperties == (void *) -1)
+        {
+            perror("Worker could not attach to shared memory");
+        }
+        else
+        {
+            //get MQs
+            replyMQId = msgget(parentProperties->replyQueue, 0666 | IPC_CREAT);
+            listenerMQId = msgget(parentProperties->listenerQueue, 0666 | IPC_CREAT);
 
+            if(replyMQId == -1 || listenerMQId == -1)
+            {
+                perror("Worker could not access message queues");
+            }
+            else
+            {
+                result = 1;
+            }
 
-
-    //get run time for process?
-
-    result = 1;
+        }
+    }
 
     return result;
 }
@@ -124,11 +204,8 @@ int main(int argc, char* argv[])
 
     if(setup())
     {
-
         struct clockmsg msg;
         struct clockmsg workTime;
-
-
 
         printWorkerInfo(pid, ppid, processEndTime.seconds, processEndTime.nanoseconds);
         printf("--Just Starting\n");
@@ -137,13 +214,13 @@ int main(int argc, char* argv[])
         do
         {
 
-            msgrcv(mqId, &msg, sizeof(msg), 1, 0);
+            msgrcv(listenerMQId, &msg, sizeof(msg), pid, 0);
             workTime = clockMsgToSysClock(msg);
-
 
         }while(!doTerminate(workTime));
 
         //disconnect from shared resources
+        shmdt(parentProperties);
 
     }
     else

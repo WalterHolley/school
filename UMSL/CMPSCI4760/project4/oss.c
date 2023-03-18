@@ -1,4 +1,5 @@
 #define MAX_CONCURRENT_WORKERS 18
+#define MAX_SPAWN_TIME 3
 
 #include <stdio.h>
 #include <stdbool.h>
@@ -10,7 +11,9 @@
 #include <sys/ipc.h>
 #include <sys/msg.h>
 #include <sys/queue.h>
+#include <sys/shm.h>
 #include <signal.h>
+#include <time.h>
 #include "osclock.h"
 
 
@@ -23,6 +26,8 @@ struct process {
     int mqId;
 };
 
+
+
 //element for process queues
 struct queue_entry {
     int processId;
@@ -30,14 +35,15 @@ struct queue_entry {
 };
 
 //globals
+time_t t;
 int totalWorkers;
 int timelimit;
-int maxSimultaneous;
+int ossMemId, replyMQId, sendMQId;
 const int MAX_RUN_TIME = 60;
 
 int nanoIncrement = 100000;
 int TERM_FLAG = 0;
-struct sysclock osclock;
+struct ossProperties* properties;
 struct sysclock nextPrint;
 struct process processTable[18];
 size_t procTableSize = sizeof(processTable) / sizeof(struct process);
@@ -316,6 +322,25 @@ int waitForTerm()
 }
 
 /**
+ * Determines if child processes can be spawned
+ * @return true if child processes can be spawned.
+ * otherwise false
+ */
+bool spawnChildren()
+{
+    bool result = false;
+    time_t now;
+    time(&now);
+
+    if(now - t <= 3 || totalWorkers < 100)
+    {
+        result = true;
+    }
+
+    return  result;
+}
+
+/**
  * executes the worker process using the
  * parameters supplied by the user
  */
@@ -323,10 +348,9 @@ void executeWorkers()
 {
 
     pid_t childPid; // process ID of a child executable
-    bool spawnChildren = true;
 
 
-    while(spawnChildren)
+    while(spawnChildren())
     {
         if(TERM_FLAG)
         {
@@ -385,21 +409,27 @@ void init()
     signal(SIGINT, termFlag);
 
     //init randomgen
-    time_t t;
     srand((unsigned) time(&t));
 
     //init log file
     logfp = fopen(logFile, "w+");
 
-    //init 'OS' clock
-    osclock.seconds = 0;
-    osclock.nanoseconds = 0;
+    //init 'OS' clock and shared resources
+    ossMemId = shmget(SMEM_KEY, sizeof(struct ossProperties), 0666|IPC_CREAT);
+    properties = (struct ossProperties*)shmat(ossMemId, (void*)0, 0);
+    properties->osClock.seconds = 0;
+    properties->osClock.nanoseconds = 0;
+    properties->listenerQueue = ftok("oss.c", 1);
+    properties->replyQueue = ftok("oss.c", 3);
+
+    //init MQs
+    replyMQId = msgget(properties->listenerQueue, 0666 | IPC_CREAT);
+    sendMQId = msgget(properties->replyQueue, 0666 | IPC_CREAT);
 
     //init processTable clock
     nextPrint.nanoseconds = NANOS_HALF_SECOND;
     nextPrint.seconds = 0;
 
-    //TODO: setup shared memory for os clock and MQ Ids
 }
 
 int main(int argCount, char *argv[])
