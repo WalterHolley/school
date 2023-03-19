@@ -31,17 +31,19 @@ struct process {
 //element for process queues
 struct queue_entry {
     int processId;
-    TAILQ_ENTRY(struct queue_entry) entries;
+    TAILQ_ENTRY(queue_entry) entries;
 };
+
+TAILQ_HEAD(readyhead, queue_entry) readyQueue;
+TAILQ_HEAD(blockedhead, queue_entry) blockedQueue;
 
 //globals
 time_t t;
-int totalWorkers;
-int timelimit;
+int totalWorkers = 0;
 int ossMemId, replyMQId, sendMQId;
 const int MAX_RUN_TIME = 60;
 
-int nanoIncrement = 100000;
+const int NANO_INCREMENT = 10000;
 int TERM_FLAG = 0;
 struct ossProperties* properties;
 struct sysclock nextPrint;
@@ -111,11 +113,11 @@ int handleParams(int argCount, char *argString[])
 }
 
 /** Creates clockmsg object from a sysclock object**/
-struct clockmsg buildClockMessage(struct sysclock clock)
+struct clockmsg buildClockMessage(struct sysclock clock, int childPid)
 {
     struct clockmsg message;
-    message.msgType = 1;
-    sprintf(message.message, "%d,%d", clock.seconds, clock.nanoseconds);
+    message.msgType = childPid;
+    sprintf(message.message, "%d", clock.nanoseconds);
 
 
     return message;
@@ -150,7 +152,7 @@ void printProcessTable()
         int i;
         char line[100];
         //print OSS message
-        sprintf(line, "OSS PID: %d SysClockS: %d SysclockNano: %d", getpid(), osclock.seconds, osclock.nanoseconds);
+        sprintf(line, "OSS PID: %d SysClockS: %d SysclockNano: %d", getpid(), properties->osClock.seconds, properties->osClock.nanoseconds);
         logToFile(line);
         printf(line);
         sprintf(line, "Process Table:");
@@ -176,37 +178,11 @@ void printProcessTable()
 /** Increments the simulated clock of the system **/
 void incrementClock()
 {
-    int nanos = osclock.nanoseconds;
-    nanos += nanoIncrement;
-    osclock.seconds = osclock.seconds + (nanos / NANOS_IN_SECOND);
-    osclock.nanoseconds = nanos % NANOS_IN_SECOND;
-    char* message = "Execution time has expired";
+    int nanos = properties->osClock.nanoseconds;
+    nanos += NANO_INCREMENT;
+    properties->osClock.seconds = properties->osClock.seconds + (nanos / NANOS_IN_SECOND);
+    properties->osClock.nanoseconds = nanos % NANOS_IN_SECOND;
 
-
-    //notify child processes
-    notifyChildren();
-    //Max run time reached. application must terminate
-    if(osclock.seconds >= MAX_RUN_TIME)
-    {
-
-        logToFile(message);
-        printf(message);
-        termFlag();
-
-
-    }
-
-    //print process table and increment time for next printing
-    if(osclock.nanoseconds >= nextPrint.nanoseconds && osclock.seconds >= nextPrint.seconds)
-    {
-        printProcessTable();
-        nextPrint.nanoseconds += NANOS_HALF_SECOND;
-        if(nextPrint.nanoseconds == NANOS_IN_SECOND)
-        {
-            nextPrint.seconds++;
-            nextPrint.nanoseconds = 0;
-        }
-    }
 }
 
 /** Adds a process record to the process table
@@ -216,38 +192,11 @@ int addProcess(pid_t childPid)
 {
     struct process newProc;
     int i, result = 0;
-    char seconds[3];
-    char nanos[10];
-    struct sysclock runningTime;
-    struct clockmsg mqMsg;
 
-    sprintf(seconds, "%i",rand() % timelimit);
-
-    if(atoi(seconds) == timelimit)
-    {
-        nanos[0] = '0';
-    }
-    else
-    {
-        sprintf(nanos, "%i",(rand() % (NANOS_IN_SECOND / nanoIncrement)) * nanoIncrement);
-    }
-
-
-
-    runningTime.nanoseconds = atoi(nanos);
-    runningTime.seconds = atoi(seconds);
-
-    newProc.mqId = msgget(childPid, 0666 | IPC_CREAT);
     newProc.occupied = 1;
     newProc.pid = childPid;
-    newProc.startNano = osclock.nanoseconds;
-    newProc.startSeconds = osclock.seconds;
-    mqMsg = buildClockMessage(runningTime);
-
-    //send running time and current system time
-    msgsnd(newProc.mqId, &mqMsg, sizeof(mqMsg), 0);
-    mqMsg = buildClockMessage(osclock);
-    msgsnd(newProc.mqId, &mqMsg, sizeof(mqMsg), 0);
+    newProc.startNano = properties->osClock.nanoseconds;
+    newProc.startSeconds = properties->osClock.seconds;
 
     for(i = 0; i < procTableSize; i++)
     {
@@ -255,6 +204,7 @@ int addProcess(pid_t childPid)
         {
             processTable[i] = newProc;
             result = 1;
+            incrementClock();
             break;
         }
     }
@@ -303,6 +253,30 @@ void cleanup()
 
 }
 
+/**
+ * Manage the scheduling of processes
+ */
+void scheduleProcesses()
+{
+    struct queue_entry* item;
+    struct clockmsg msg;
+    struct sysclock time_allotment;
+
+    time_allotment.seconds = 0;
+    time_allotment.nanoseconds = NANO_INCREMENT;
+    //process ready queue
+    while(readyQueue.tqh_first != NULL)
+    {
+        item = readyQueue.tqh_first;
+        msg = buildClockMessage(time_allotment, item->processId);
+        msgsnd(sendMQId, &msg, sizeof(msg), 0);
+        TAILQ_REMOVE(&readyQueue, readyQueue.tqh_first, entries);
+        incrementClock();
+    }
+
+    //move blocked processes to ready queue
+}
+
 /** Loops until a child process is terminated.
  * Increments OS clock
  * @return -1 for error
@@ -332,7 +306,7 @@ bool spawnChildren()
     time_t now;
     time(&now);
 
-    if(now - t <= 3 || totalWorkers < 100)
+    if(now - t < 3 || totalWorkers < 100)
     {
         result = true;
     }
@@ -348,6 +322,7 @@ void executeWorkers()
 {
 
     pid_t childPid; // process ID of a child executable
+    int currentWorkers, spawnChance = 0;
 
 
     while(spawnChildren())
@@ -360,10 +335,11 @@ void executeWorkers()
         }
         else
         {
-            //TODO: -> Make random decision to spawn new worker
-            bool spawnChild = true;
+            //chance to spawn child process
+            spawnChance =  rand() % 100;
 
-            if(spawnChild)
+            //check for max running processes
+            if(spawnChance > 44 &&  currentWorkers < MAX_CONCURRENT_WORKERS)
             {
                 //fork new process
                 childPid = fork();
@@ -381,7 +357,8 @@ void executeWorkers()
                 }
                 else //parent. add child to ready queue. increment clock
                 {
-                    //check for max running processes
+                    addProcess(childPid);
+
                     //update ready queue. increment clock
 
                     //increment time for creating process
@@ -410,6 +387,10 @@ void init()
 
     //init randomgen
     srand((unsigned) time(&t));
+
+    //init queue structures
+    TAILQ_INIT(&readyQueue);
+    TAILQ_INIT(&blockedQueue);
 
     //init log file
     logfp = fopen(logFile, "w+");

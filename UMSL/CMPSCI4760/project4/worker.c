@@ -1,8 +1,9 @@
 
 #include <stdio.h>
+#include <stdbool.h>
 #include <sys/ipc.h>
 #include <sys/msg.h>
-#include<string.h>
+#include <string.h>
 #include "osclock.h"
 
 time_t t;
@@ -74,9 +75,11 @@ struct sysclock clockMsgToSysClock(struct clockmsg msg)
 struct clockmsg SysClockToclockmsg(struct sysclock clock)
 {
     struct clockmsg result;
-    char* messageText;
-    sprintf(messageText, "%i,%i", clock.seconds, clock.nanoseconds);
-    result.msgType = 1;
+    int i = 0;
+    char messageText[15];
+    sprintf(messageText, "%i", clock.nanoseconds);
+    result.msgType = pid;
+    //TODO:-> loop to convert int to char*
     result.message = messageText;
     return result;
 }
@@ -118,7 +121,7 @@ int doTerminate(struct sysclock runTime)
     if(randVal >= 0 && randVal < 30)//0 - 29, end program
     {
         //change runtime value, send negative
-        randVal == 0? randVal = 1 : false;
+        randVal == 0? randVal = 1 :false;
         runTime.nanoseconds = (runTime.nanoseconds / randVal);
 
         doWork(runTime);
@@ -205,7 +208,7 @@ int main(int argc, char* argv[])
     if(setup())
     {
         struct clockmsg msg;
-        struct clockmsg workTime;
+        struct sysclock workTime;
 
         printWorkerInfo(pid, ppid, processEndTime.seconds, processEndTime.nanoseconds);
         printf("--Just Starting\n");
