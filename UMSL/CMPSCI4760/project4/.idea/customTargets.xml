@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CLionExternalBuildManager">
+    <target id="ef3dfb72-7b46-44d8-ac19-371f65c79f5f" name="UMSL_CS" defaultType="MAKE">
+      <configuration id="092d3d7a-fe48-4908-89bb-5a7498b31eba" name="UMSL_CS" toolchainName="UMSL CS" />
+    </target>
+  </component>
+</project>

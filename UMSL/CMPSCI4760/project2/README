@@ -1,0 +1,31 @@
+Walter Holley III
+Spring 2023
+CMPSCI 4760 - Operating Systems
+
+PROJECT 2: Parent/Child Process Management in C with simulated Operating System clock
+A parent command line application(oss) takes in parameters that are used to facilitate a series
+of child processes(worker) through their execution.
+
+Installation
+run 'make' command
+
+Invocation
+oss [-n <num> -s <num> -t <num>]
+For additional information on application use, use the help(oss -h) command
+
+EXAMPLE OUTPUT
+command: oss -n 3 -s 0 -t 2 (executes three worker processes, all simultaneously, each process will run for a maximum of 2 seconds)
+The oss application will create child processes that executes the following command: ./worker <seconds> <nanoseconds>
+Every half-second, a process table will display with current process information.  The worker processes will also display
+status information every second, until they reach their termination time, or are terminated early by the oss process.
+Output similar to what's below will occur:
+WORKER PID:27223 PPID:27222 SysClockS: 0 SysClockNano: 535000 TermTimeS: 0 TermTimeNano: 1070000
+--Just Starting
+WORKER PID:27223 PPID:27222 SysClockS: 0 SysClockNano: 1070000 TermTimeS: 0 TermTimeNano: 1070000
+--Terminating
+OSS PID: 27305 SysClockS: 0 SysclockNano: 500000000
+Process Table:
+Entry     Occupied  PID       StartS    StartN
+0         1         27315     0         263008000
+1         0         0         0         0
+2         0         0         0         0
