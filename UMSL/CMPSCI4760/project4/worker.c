@@ -4,6 +4,7 @@
 #include <sys/ipc.h>
 #include <sys/msg.h>
 #include <string.h>
+#include <time.h>
 #include "osclock.h"
 
 time_t t;
@@ -43,7 +44,12 @@ void doWork(struct sysclock workTime)
         {
             if(stopTime.seconds >= parentProperties->osClock.seconds)
             {
+                printf("PID: %i Work completed\n", pid);
                 break;
+            }
+            else
+            {
+                printf("PID: %i Working. S: %i N: %i\n", pid, parentProperties->osClock.seconds, parentProperties->osClock.nanoseconds);
             }
         }
     }
@@ -75,12 +81,15 @@ struct sysclock clockMsgToSysClock(struct clockmsg msg)
 struct clockmsg SysClockToclockmsg(struct sysclock clock)
 {
     struct clockmsg result;
-    int i = 0;
-    char messageText[15];
+    int i;
+    char* messageText;
     sprintf(messageText, "%i", clock.nanoseconds);
     result.msgType = pid;
-    //TODO:-> loop to convert int to char*
-    result.message = messageText;
+
+    for(i = 0; i < 14 && i < strlen(messageText); i++)
+    {
+        result.message[i] = messageText[i];
+    }
     return result;
 }
 
@@ -120,22 +129,25 @@ int doTerminate(struct sysclock runTime)
 
     if(randVal >= 0 && randVal < 30)//0 - 29, end program
     {
+        printf("Worker %i: Ending Program\n", pid);
         //change runtime value, send negative
         randVal == 0? randVal = 1 :false;
         runTime.nanoseconds = (runTime.nanoseconds / randVal);
 
-        doWork(runTime);
+        //doWork(runTime);
         runTime.nanoseconds = runTime.nanoseconds * -1;
         result = 1;
     }
     else if(randVal >= 30 && randVal <= 69) //30 - 69, continue running
     {
         //'work' until time elapses, then continue
+        printf("Worker %i: Continuing Program\n", pid);
         doWork(runTime);
     }
     else //70 - 99,  I/O blocked
     {
         //change runtime value
+        printf("Worker %i: IO Blocked\n", pid);
         runTime.nanoseconds = (runTime.nanoseconds / randVal);
         doWork(runTime);
     }
@@ -147,17 +159,14 @@ int doTerminate(struct sysclock runTime)
     }
 
     //send resulting runtime to reply queue
-    runTime.seconds = pid;
     message = SysClockToclockmsg(runTime);
-    msgsnd(replyMQId, &message, sizeof(message), 0);
+    msgsnd(replyMQId, &message, sizeof(struct clockmsg), 0);
     return result;
 }
 
 int setup()
 {
     int result = 0;
-    struct sysclock runTime;
-    struct clockmsg msg;
 
     pid = getpid();
     ppid = getppid();
@@ -166,7 +175,7 @@ int setup()
     srand((unsigned) time(&t));
 
     //get shared resources(osclock, reply queue ID, listener queue ID)
-    ossMemId = shmget(SMEM_KEY, sizeof(struct ossProperties), 0644 | IPC_CREAT);
+    ossMemId = shmget(IPC_PRIVATE, sizeof(struct ossProperties), 0644 | IPC_CREAT);
 
     if(ossMemId == -1)
     {
@@ -174,26 +183,18 @@ int setup()
     }
     else
     {
-        parentProperties = shmat(ossMemId, NULL, 0);
+        parentProperties = (struct ossProperties*)shmat(ossMemId, NULL, 0);
 
-        if(parentProperties == (void *) -1)
+        if(parentProperties == NULL)
         {
             perror("Worker could not attach to shared memory");
         }
         else
         {
-            //get MQs
+            //TODO: Investigate null queue values
+            listenerMQId = msgget(parentProperties->listenerQueue, 0644 | IPC_CREAT);
             replyMQId = msgget(parentProperties->replyQueue, 0666 | IPC_CREAT);
-            listenerMQId = msgget(parentProperties->listenerQueue, 0666 | IPC_CREAT);
-
-            if(replyMQId == -1 || listenerMQId == -1)
-            {
-                perror("Worker could not access message queues");
-            }
-            else
-            {
-                result = 1;
-            }
+            result = 1;
 
         }
     }
@@ -209,15 +210,15 @@ int main(int argc, char* argv[])
     {
         struct clockmsg msg;
         struct sysclock workTime;
-
-        printWorkerInfo(pid, ppid, processEndTime.seconds, processEndTime.nanoseconds);
+        printWorkerInfo();
         printf("--Just Starting\n");
 
         //listen for message from parent
         do
         {
-
+            printf("Listener MQ id: &i\n", listenerMQId);
             msgrcv(listenerMQId, &msg, sizeof(msg), pid, 0);
+            printf("Worker: %i message received\n", pid);
             workTime = clockMsgToSysClock(msg);
 
         }while(!doTerminate(workTime));

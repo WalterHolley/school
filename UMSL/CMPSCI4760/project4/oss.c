@@ -39,8 +39,8 @@ TAILQ_HEAD(blockedhead, queue_entry) blockedQueue;
 
 //globals
 time_t t;
-int totalWorkers = 0;
-int ossMemId, replyMQId, sendMQId;
+int totalWorkers, currentWorkers = 0;
+int ossMemId, listenerMQId, sendMQId;
 const int MAX_RUN_TIME = 60;
 
 const int NANO_INCREMENT = 10000;
@@ -126,18 +126,20 @@ struct clockmsg buildClockMessage(struct sysclock clock, int childPid)
 void logToFile(char* entry)
 {
     int len = strlen(entry);
+    char* logitem;
+    strcpy(logitem, entry);
     if(len >= 2)
     {
         if(entry[len - 2] != "\\" || entry[len - 1] != "n")
         {
-            strcat(entry, "\n");
+            strcat(logitem, "\n");
         }
-        fprintf(logfp, entry);
+        fprintf(logfp, logitem);
     }
     else if(len > 0)
     {
-        strcat(entry, "\n");
-        fprintf(logfp, entry);
+        strcat(logitem, "\n");
+        fprintf(logfp, logitem);
     }
 
 
@@ -191,6 +193,7 @@ void incrementClock()
 int addProcess(pid_t childPid)
 {
     struct process newProc;
+    struct queue_entry *procEntry;
     int i, result = 0;
 
     newProc.occupied = 1;
@@ -203,10 +206,14 @@ int addProcess(pid_t childPid)
         if(!processTable[i].occupied)
         {
             processTable[i] = newProc;
+            procEntry = malloc(sizeof(struct queue_entry));
+            procEntry->processId = childPid;
             result = 1;
+            TAILQ_INSERT_TAIL(&readyQueue, procEntry, entries);
             incrementClock();
             break;
         }
+        incrementClock();
     }
     return result;
 }
@@ -232,12 +239,33 @@ int removeProcess(pid_t processId)
     return result;
 }
 
+
+/** Loops until a child process is terminated.
+ * Increments OS clock
+ * @return -1 for error
+ * process Id of child on success
+ */
+int waitForTerm(int childPid)
+{
+    int result = 0;
+    int pidStatus;
+    do
+    {
+        result = waitpid(childPid, &pidStatus, WNOHANG);
+        incrementClock();
+    }while(result != childPid);
+    printf("%i process ended\n", childPid);
+    currentWorkers--;
+    return result;
+}
+
 /**
  * Cleanup of the processes and resources
  * used by this application
  */
 void cleanup()
 {
+    //terminate remaining children
     printf("Terminating process\n");
     int i;
 
@@ -251,7 +279,68 @@ void cleanup()
 
     fclose(logfp);
 
+    //close Message queues
+    msgctl(listenerMQId, IPC_RMID, NULL);
+    msgctl(sendMQId, IPC_RMID, NULL);
+    //clear shared memory
+    shmctl(ossMemId, IPC_RMID, NULL);
+
+    //clear process queues
+    while(readyQueue.tqh_first != NULL)
+    {
+        TAILQ_REMOVE(&readyQueue, readyQueue.tqh_first, entries);
+    }
+
+    while(blockedQueue.tqh_first != NULL)
+    {
+        TAILQ_REMOVE(&blockedQueue, blockedQueue.tqh_first, entries);
+    }
+
 }
+
+/**
+ * Gets the replies back for each existing process.
+ */
+void handleReplies()
+{
+    int i;
+    int replies = currentWorkers;
+    struct clockmsg msg;
+    struct queue_entry* newEntry;
+    for(i = 0; i < replies; i++)
+    {
+       if(msgrcv(listenerMQId, (void *)&msg, sizeof(struct clockmsg), 0, 0) != -1)
+       {
+           int timeSpent = atoi(msg.message);
+           if(timeSpent < NANO_INCREMENT && timeSpent > 0)  //process blocked.  add to blocked queue
+           {
+               newEntry = malloc(sizeof(struct queue_entry));
+               newEntry->processId = msg.msgType;
+               TAILQ_INSERT_TAIL(&readyQueue, newEntry, entries);
+           }
+           else if(timeSpent < 0) // process completed. terminate
+           {
+               waitForTerm(msg.msgType);
+               removeProcess(msg.msgType);
+           }
+           else //full time used. add to ready queue
+           {
+               newEntry = malloc(sizeof(struct queue_entry));
+               newEntry->processId = msg.msgType;
+               TAILQ_INSERT_TAIL(&readyQueue, newEntry, entries);
+           }
+       }
+       else
+       {
+           perror("There was a problem retrieving messages from processes");
+           cleanup();
+           exit(-1);
+       }
+
+       incrementClock();
+    }
+}
+
 
 /**
  * Manage the scheduling of processes
@@ -269,30 +358,14 @@ void scheduleProcesses()
     {
         item = readyQueue.tqh_first;
         msg = buildClockMessage(time_allotment, item->processId);
+        printf("sending to processId %d with msgType %d\n", item->processId, msg.msgType);
         msgsnd(sendMQId, &msg, sizeof(msg), 0);
         TAILQ_REMOVE(&readyQueue, readyQueue.tqh_first, entries);
         incrementClock();
     }
-
+    incrementClock();
     //move blocked processes to ready queue
-}
 
-/** Loops until a child process is terminated.
- * Increments OS clock
- * @return -1 for error
- * process Id of child on success
- */
-int waitForTerm()
-{
-    int result = 0;
-    int pidStatus;
-    do
-    {
-        result = waitpid(-1, &pidStatus, WNOHANG);
-        incrementClock();
-    }while(result == 0);
-
-    return result;
 }
 
 /**
@@ -322,14 +395,18 @@ void executeWorkers()
 {
 
     pid_t childPid; // process ID of a child executable
-    int currentWorkers, spawnChance = 0;
+    int spawnChance = 0;
+    char* logValue;
+    bool makeChild = true;
 
-
-    while(spawnChildren())
+    //while(spawnChildren())
+    while(makeChild)
     {
+        makeChild = false;
+        printf("Making Child\n");
         if(TERM_FLAG)
         {
-            //kill child processes
+            //kill child processes and clear resources
             cleanup();
             break;
         }
@@ -339,7 +416,7 @@ void executeWorkers()
             spawnChance =  rand() % 100;
 
             //check for max running processes
-            if(spawnChance > 44 &&  currentWorkers < MAX_CONCURRENT_WORKERS)
+            if(spawnChance >= 0 &&  currentWorkers < MAX_CONCURRENT_WORKERS)
             {
                 //fork new process
                 childPid = fork();
@@ -355,33 +432,56 @@ void executeWorkers()
                     char* args[] = {"./worker", NULL};
                     execvp(args[0], args);
                 }
-                else //parent. add child to ready queue. increment clock
+                else //parent. add child to ready queue.
                 {
+                    printf("Child PID %i created. SysSeconds: %i SysNanos: %i\n", childPid, properties->osClock.seconds, properties->osClock.nanoseconds);
                     addProcess(childPid);
+                    currentWorkers++;
 
-                    //update ready queue. increment clock
-
-                    //increment time for creating process
+                    //TODO: increment time for creating process
                 }
 
             }
 
         }
 
-        //manage ready queue. incrememt clock
-
-        //manage blocked queue. incrememt clock
-
-        //check for expired spawn time
+        //perform scheduling tasks
+        scheduleProcesses();
+        incrementClock();
+        //handle replies from the child processes
+        handleReplies();
 
     }
+    //spawning children done.  manage scheduling until end of all programs
 
-    //manage ready and blocked queues until end of execution time
+    do
+    {
+        if(!TERM_FLAG)
+        {
+            scheduleProcesses();
+            incrementClock();
+            handleReplies();
+            incrementClock();
+        }
+        else
+        {
+            cleanup();
+            exit(-1);
+        }
+
+    }while(currentWorkers > 0);
 
 }
 
 void init()
 {
+    int listenerMQKey = ftok("oss.c", 1);
+    int replyMQKey = ftok("oss.c", 3);
+    int sharedMemKey = ftok("oss.c", 5);
+
+    //init log file
+    logfp = fopen(logFile, "w+");
+
     //register signal interrupt
     signal(SIGINT, termFlag);
 
@@ -392,24 +492,32 @@ void init()
     TAILQ_INIT(&readyQueue);
     TAILQ_INIT(&blockedQueue);
 
-    //init log file
-    logfp = fopen(logFile, "w+");
+    //init MQs
+    listenerMQId = msgget(listenerMQKey, 0666 | IPC_CREAT);
+    sendMQId = msgget(replyMQKey, 0644 | IPC_CREAT);
+    if(listenerMQId == -1 || sendMQId == -1)
+    {
+        perror("There was a problem setting up message queues");
+        cleanup();
+        exit(-1);
+    }
+
+
 
     //init 'OS' clock and shared resources
-    ossMemId = shmget(SMEM_KEY, sizeof(struct ossProperties), 0666|IPC_CREAT);
-    properties = (struct ossProperties*)shmat(ossMemId, (void*)0, 0);
-    properties->osClock.seconds = 0;
-    properties->osClock.nanoseconds = 0;
-    properties->listenerQueue = ftok("oss.c", 1);
-    properties->replyQueue = ftok("oss.c", 3);
+    ossMemId = shmget(IPC_PRIVATE, sizeof(struct ossProperties), 0777|IPC_CREAT);
+    properties = (struct ossProperties*)shmat(ossMemId, NULL, 0);
+    properties->seconds = 0;
+    properties->nanoSeconds = 0;
+    properties->listenerQueue = sendMQId;
+    properties->replyQueue = listenerMQId;
 
-    //init MQs
-    replyMQId = msgget(properties->listenerQueue, 0666 | IPC_CREAT);
-    sendMQId = msgget(properties->replyQueue, 0666 | IPC_CREAT);
 
     //init processTable clock
     nextPrint.nanoseconds = NANOS_HALF_SECOND;
     nextPrint.seconds = 0;
+
+    printf("OSS Initialized\n");
 
 }
 
@@ -418,7 +526,7 @@ int main(int argCount, char *argv[])
     if(handleParams(argCount, argv) != -1)
     {
         init();
-
+        printf("OSS Listener: %i Sender: %i\n", listenerMQId, sendMQId);
         //spin up workers
         executeWorkers();
 

@@ -18,7 +18,8 @@ struct clockmsg {
 };
 
 struct ossProperties {
-    struct sysclock osClock;
+    int seconds;
+    int nanoSeconds;
     int replyQueue;
     int listenerQueue;
 };

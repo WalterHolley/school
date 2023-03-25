@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/action_popular"
+        android:icon="@drawable/baseline_local_movies_24"
+        android:title="@string/menu_movies" />
+    <item
+        android:id="@+id/action_people"
+        android:icon="@drawable/baseline_people_24"
+        android:title="@string/menu_people" />
+    <item
+        android:id="@+id/action_upcoming"
+        android:icon="@drawable/baseline_fast_forward_24"
+        android:title="@string/menu_future_releases" />
+</menu>
