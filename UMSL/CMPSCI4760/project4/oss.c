@@ -14,6 +14,7 @@
 #include <sys/shm.h>
 #include <signal.h>
 #include <time.h>
+#include <errno.h>
 #include "osclock.h"
 
 
@@ -40,12 +41,12 @@ TAILQ_HEAD(blockedhead, queue_entry) blockedQueue;
 //globals
 time_t t;
 int totalWorkers, currentWorkers = 0;
-int ossMemId, listenerMQId, sendMQId;
+int listenerMQId, sendMQId;
 const int MAX_RUN_TIME = 60;
 
 const int NANO_INCREMENT = 10000;
 int TERM_FLAG = 0;
-struct ossProperties* properties;
+struct sysclock* osclock;
 struct sysclock nextPrint;
 struct process processTable[18];
 size_t procTableSize = sizeof(processTable) / sizeof(struct process);
@@ -154,7 +155,7 @@ void printProcessTable()
         int i;
         char line[100];
         //print OSS message
-        sprintf(line, "OSS PID: %d SysClockS: %d SysclockNano: %d", getpid(), properties->osClock.seconds, properties->osClock.nanoseconds);
+        sprintf(line, "OSS PID: %d SysClockS: %d SysclockNano: %d", getpid(), osclock->seconds, osclock->nanoseconds);
         logToFile(line);
         printf(line);
         sprintf(line, "Process Table:");
@@ -180,10 +181,10 @@ void printProcessTable()
 /** Increments the simulated clock of the system **/
 void incrementClock()
 {
-    int nanos = properties->osClock.nanoseconds;
+    int nanos = osclock->nanoseconds;
     nanos += NANO_INCREMENT;
-    properties->osClock.seconds = properties->osClock.seconds + (nanos / NANOS_IN_SECOND);
-    properties->osClock.nanoseconds = nanos % NANOS_IN_SECOND;
+    osclock->seconds = osclock->seconds + (nanos / NANOS_IN_SECOND);
+    osclock->nanoseconds = nanos % NANOS_IN_SECOND;
 
 }
 
@@ -198,8 +199,8 @@ int addProcess(pid_t childPid)
 
     newProc.occupied = 1;
     newProc.pid = childPid;
-    newProc.startNano = properties->osClock.nanoseconds;
-    newProc.startSeconds = properties->osClock.seconds;
+    newProc.startNano = osclock->nanoseconds;
+    newProc.startSeconds = osclock->seconds;
 
     for(i = 0; i < procTableSize; i++)
     {
@@ -283,7 +284,7 @@ void cleanup()
     msgctl(listenerMQId, IPC_RMID, NULL);
     msgctl(sendMQId, IPC_RMID, NULL);
     //clear shared memory
-    shmctl(ossMemId, IPC_RMID, NULL);
+    //shmctl(ossMemId, IPC_RMID, NULL);
 
     //clear process queues
     while(readyQueue.tqh_first != NULL)
@@ -303,14 +304,15 @@ void cleanup()
  */
 void handleReplies()
 {
-    int i;
+    int i = 0;
     int replies = currentWorkers;
     struct clockmsg msg;
     struct queue_entry* newEntry;
-    for(i = 0; i < replies; i++)
+    while(i < replies)
     {
-       if(msgrcv(listenerMQId, (void *)&msg, sizeof(struct clockmsg), 0, 0) != -1)
+       if(msgrcv(listenerMQId, (void *)&msg, sizeof(struct clockmsg), 0, IPC_NOWAIT) != -1)
        {
+
            int timeSpent = atoi(msg.message);
            if(timeSpent < NANO_INCREMENT && timeSpent > 0)  //process blocked.  add to blocked queue
            {
@@ -329,6 +331,12 @@ void handleReplies()
                newEntry->processId = msg.msgType;
                TAILQ_INSERT_TAIL(&readyQueue, newEntry, entries);
            }
+           i++;
+
+       }
+       else if(errno == ENOMSG)
+       {
+           incrementClock();
        }
        else
        {
@@ -434,7 +442,8 @@ void executeWorkers()
                 }
                 else //parent. add child to ready queue.
                 {
-                    printf("Child PID %i created. SysSeconds: %i SysNanos: %i\n", childPid, properties->osClock.seconds, properties->osClock.nanoseconds);
+                    incrementClock();
+                    printf("Child PID %i created. SysSeconds: %i SysNanos: %i\n", childPid, osclock->seconds, osclock->nanoseconds);
                     addProcess(childPid);
                     currentWorkers++;
 
@@ -477,7 +486,14 @@ void init()
 {
     int listenerMQKey = ftok("oss.c", 1);
     int replyMQKey = ftok("oss.c", 3);
-    int sharedMemKey = ftok("oss.c", 5);
+    key_t sharedMemKey = ftok("oss.c", 5);
+    int ossMemId;
+
+    //init 'OS' clock and shared resources
+    ossMemId = shmget(sharedMemKey, sizeof(struct sysclock), 0644|IPC_CREAT);
+    osclock = (struct sysclock*) shmat(ossMemId, (void*)0, 0);
+    osclock->seconds = 0;
+    osclock->nanoseconds = 0;
 
     //init log file
     logfp = fopen(logFile, "w+");
@@ -494,7 +510,7 @@ void init()
 
     //init MQs
     listenerMQId = msgget(listenerMQKey, 0666 | IPC_CREAT);
-    sendMQId = msgget(replyMQKey, 0644 | IPC_CREAT);
+    sendMQId = msgget(replyMQKey, 0666 | IPC_CREAT);
     if(listenerMQId == -1 || sendMQId == -1)
     {
         perror("There was a problem setting up message queues");
@@ -504,13 +520,7 @@ void init()
 
 
 
-    //init 'OS' clock and shared resources
-    ossMemId = shmget(IPC_PRIVATE, sizeof(struct ossProperties), 0777|IPC_CREAT);
-    properties = (struct ossProperties*)shmat(ossMemId, NULL, 0);
-    properties->seconds = 0;
-    properties->nanoSeconds = 0;
-    properties->listenerQueue = sendMQId;
-    properties->replyQueue = listenerMQId;
+
 
 
     //init processTable clock

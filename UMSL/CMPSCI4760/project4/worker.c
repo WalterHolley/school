@@ -4,6 +4,7 @@
 #include <sys/ipc.h>
 #include <sys/msg.h>
 #include <string.h>
+#include <sys/shm.h>
 #include <time.h>
 #include "osclock.h"
 
@@ -14,13 +15,15 @@ int listenerMQId, replyMQId, ossMemId;
 int seconds;
 int nanoseconds;
 
+
+struct sysclock* osClock;
 struct sysclock processStartTime;
 struct sysclock processEndTime;
-struct ossProperties* parentProperties;
+
 
 void printWorkerInfo()
 {
-    printf("WORKER PID:%i PPID:%i SysClockS: %i SysClockNano: %i \n", pid, ppid, parentProperties->osClock.seconds, parentProperties->osClock.nanoseconds);
+    printf("WORKER PID:%d PPID:%d SysClockS: %d SysClockNano: %d \n", pid, ppid, osClock->seconds, osClock->nanoseconds);
 }
 
 /**
@@ -29,8 +32,8 @@ void printWorkerInfo()
 void doWork(struct sysclock workTime)
 {
     struct sysclock stopTime;
-    stopTime.seconds = parentProperties->osClock.seconds;
-    stopTime.nanoseconds = parentProperties->osClock.nanoseconds + workTime.nanoseconds;
+    stopTime.seconds = osClock->seconds;
+    stopTime.nanoseconds = osClock->nanoseconds + workTime.nanoseconds;
 
     if(stopTime.nanoseconds > NANOS_IN_SECOND)
     {
@@ -38,18 +41,18 @@ void doWork(struct sysclock workTime)
         stopTime.nanoseconds = NANOS_IN_SECOND % stopTime.nanoseconds;
     }
 
-    while(parentProperties->osClock.seconds <= stopTime.seconds)
+    while(osClock->seconds <= stopTime.seconds)
     {
-        if(stopTime.nanoseconds <= parentProperties->osClock.nanoseconds)
+        if(stopTime.nanoseconds <= osClock->nanoseconds)
         {
-            if(stopTime.seconds >= parentProperties->osClock.seconds)
+            if(stopTime.seconds >= osClock->seconds)
             {
                 printf("PID: %i Work completed\n", pid);
                 break;
             }
             else
             {
-                printf("PID: %i Working. S: %i N: %i\n", pid, parentProperties->osClock.seconds, parentProperties->osClock.nanoseconds);
+                printf("PID: %i Working. S: %i N: %i\n", pid, osClock->seconds, osClock->nanoseconds);
             }
         }
     }
@@ -167,6 +170,9 @@ int doTerminate(struct sysclock runTime)
 int setup()
 {
     int result = 0;
+    int replyMQKey = ftok("oss.c", 1);
+    int listenerMQKey = ftok("oss.c", 3);
+    key_t sharedMemKey = ftok("oss.c", 5);
 
     pid = getpid();
     ppid = getppid();
@@ -175,7 +181,9 @@ int setup()
     srand((unsigned) time(&t));
 
     //get shared resources(osclock, reply queue ID, listener queue ID)
-    ossMemId = shmget(IPC_PRIVATE, sizeof(struct ossProperties), 0644 | IPC_CREAT);
+    ossMemId = shmget(sharedMemKey, sizeof(struct sysclock), 0644|IPC_CREAT);
+    osClock = (struct sysclock*) shmat(ossMemId, (void *)0, 0);
+
 
     if(ossMemId == -1)
     {
@@ -183,17 +191,21 @@ int setup()
     }
     else
     {
-        parentProperties = (struct ossProperties*)shmat(ossMemId, NULL, 0);
 
-        if(parentProperties == NULL)
+
+        if((struct sysclock*)osClock == NULL)
         {
             perror("Worker could not attach to shared memory");
         }
         else
         {
-            //TODO: Investigate null queue values
-            listenerMQId = msgget(parentProperties->listenerQueue, 0644 | IPC_CREAT);
-            replyMQId = msgget(parentProperties->replyQueue, 0666 | IPC_CREAT);
+            listenerMQId = msgget(listenerMQKey, 0666 | IPC_CREAT);
+            replyMQId = msgget(replyMQKey, 0666 | IPC_CREAT);
+
+            if(listenerMQId < 1 || replyMQId < 1)
+            {
+                perror("Worker could not retrieve MQs");
+            }
             result = 1;
 
         }
@@ -216,15 +228,16 @@ int main(int argc, char* argv[])
         //listen for message from parent
         do
         {
-            printf("Listener MQ id: &i\n", listenerMQId);
-            msgrcv(listenerMQId, &msg, sizeof(msg), pid, 0);
+
+            msgrcv(listenerMQId, &msg, sizeof(struct clockmsg), pid, 0);
             printf("Worker: %i message received\n", pid);
             workTime = clockMsgToSysClock(msg);
+            printf("Work time: S:%d Nano:%d\n", workTime.seconds, workTime.nanoseconds);
 
         }while(!doTerminate(workTime));
 
         //disconnect from shared resources
-        shmdt(parentProperties);
+        shmdt(osClock);
 
     }
     else
