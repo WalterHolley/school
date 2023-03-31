@@ -150,6 +150,7 @@ int doTerminate(struct sysclock runTime)
         //'work' until time elapses, then continue
         printf("Worker %i: Continuing Program\n", pid);
         doWork(runTime);
+        result = 0;
     }
     else //70 - 99,  I/O blocked
     {
@@ -157,6 +158,7 @@ int doTerminate(struct sysclock runTime)
         printf("Worker %i: IO Blocked\n", pid);
         runTime.nanoseconds = (runTime.nanoseconds / randVal);
         doWork(runTime);
+        result = 0;
     }
 
     if(result == 1)
