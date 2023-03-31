@@ -43,17 +43,19 @@ void doWork(struct sysclock workTime)
 
     while(osClock->seconds <= stopTime.seconds)
     {
+
         if(stopTime.nanoseconds <= osClock->nanoseconds)
         {
-            if(stopTime.seconds >= osClock->seconds)
+            if(osClock->seconds >= stopTime.seconds)
             {
                 printf("PID: %i Work completed\n", pid);
                 break;
             }
-            else
-            {
-                printf("PID: %i Working. S: %i N: %i\n", pid, osClock->seconds, osClock->nanoseconds);
-            }
+
+        }
+        else
+        {
+            printf("PID: %i Working. S: %i N: %i\n", pid, osClock->seconds, osClock->nanoseconds);
         }
     }
 }
@@ -66,11 +68,9 @@ void doWork(struct sysclock workTime)
 struct sysclock clockMsgToSysClock(struct clockmsg msg)
 {
     struct sysclock result;
-    char* token = strtok(msg.message, ",");
 
-    result.seconds = atoi(token);
-    token = strtok(NULL,",");
-    result.nanoseconds = atoi(token);
+    result.seconds = 0;
+    result.nanoseconds = atoi(msg.message);
 
     return result;
 }
@@ -84,12 +84,16 @@ struct sysclock clockMsgToSysClock(struct clockmsg msg)
 struct clockmsg SysClockToclockmsg(struct sysclock clock)
 {
     struct clockmsg result;
-    int i;
-    char* messageText;
-    sprintf(messageText, "%i", clock.nanoseconds);
+    int i, size;
+
+    char messageText[15];
+    sprintf(messageText, "%d", clock.nanoseconds);
+    printf("Return Message: %s\n", messageText);
+    size = strlen(messageText);
+    printf("string size: %d\n", size);
     result.msgType = pid;
 
-    for(i = 0; i < 14 && i < strlen(messageText); i++)
+    for(i = 0; i < 14 && i < size; i++)
     {
         result.message[i] = messageText[i];
     }
@@ -137,7 +141,7 @@ int doTerminate(struct sysclock runTime)
         randVal == 0? randVal = 1 :false;
         runTime.nanoseconds = (runTime.nanoseconds / randVal);
 
-        //doWork(runTime);
+        doWork(runTime);
         runTime.nanoseconds = runTime.nanoseconds * -1;
         result = 1;
     }
@@ -155,7 +159,7 @@ int doTerminate(struct sysclock runTime)
         doWork(runTime);
     }
 
-    if(result)
+    if(result == 1)
     {
         printWorkerInfo();
         printf("--Terminating\n");
@@ -164,6 +168,7 @@ int doTerminate(struct sysclock runTime)
     //send resulting runtime to reply queue
     message = SysClockToclockmsg(runTime);
     msgsnd(replyMQId, &message, sizeof(struct clockmsg), 0);
+    printf("Message sent\n");
     return result;
 }
 
@@ -228,14 +233,23 @@ int main(int argc, char* argv[])
         //listen for message from parent
         do
         {
+            printf("Worker: %i (R)entering work loop\n", pid);
+            if(msgrcv(listenerMQId, &msg, sizeof(struct clockmsg), pid, 0) != -1)
+            {
+                printf("Worker: %i message received\n", pid);
+                workTime = clockMsgToSysClock(msg);
+                printf("Work time: S:%d Nano:%d\n", workTime.seconds, workTime.nanoseconds);
+            }
+            else
+            {
+                printWorkerInfo();
+                perror("Worker had a problem receiving a message");
+                break;
+            }
 
-            msgrcv(listenerMQId, &msg, sizeof(struct clockmsg), pid, 0);
-            printf("Worker: %i message received\n", pid);
-            workTime = clockMsgToSysClock(msg);
-            printf("Work time: S:%d Nano:%d\n", workTime.seconds, workTime.nanoseconds);
 
-        }while(!doTerminate(workTime));
-
+        }while(doTerminate(workTime) == 0);
+        printf("Worker: %i out of work loop\n", pid);
         //disconnect from shared resources
         shmdt(osClock);
 

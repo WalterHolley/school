@@ -35,13 +35,14 @@ struct queue_entry {
     TAILQ_ENTRY(queue_entry) entries;
 };
 
+//ready and blocked queues
 TAILQ_HEAD(readyhead, queue_entry) readyQueue;
 TAILQ_HEAD(blockedhead, queue_entry) blockedQueue;
 
 //globals
 time_t t;
 int totalWorkers, currentWorkers = 0;
-int listenerMQId, sendMQId;
+int listenerMQId, sendMQId, ossMemId;
 const int MAX_RUN_TIME = 60;
 
 const int NANO_INCREMENT = 10000;
@@ -211,6 +212,7 @@ int addProcess(pid_t childPid)
             procEntry->processId = childPid;
             result = 1;
             TAILQ_INSERT_TAIL(&readyQueue, procEntry, entries);
+            currentWorkers++;
             incrementClock();
             break;
         }
@@ -232,6 +234,7 @@ int removeProcess(pid_t processId)
             processTable[i].startSeconds = 0;
             processTable[i].startNano = 0;
             processTable[i].pid = 0;
+            currentWorkers--;
             result = 1;
             break;
         }
@@ -284,7 +287,7 @@ void cleanup()
     msgctl(listenerMQId, IPC_RMID, NULL);
     msgctl(sendMQId, IPC_RMID, NULL);
     //clear shared memory
-    //shmctl(ossMemId, IPC_RMID, NULL);
+    shmctl(ossMemId, IPC_RMID, NULL);
 
     //clear process queues
     while(readyQueue.tqh_first != NULL)
@@ -332,6 +335,7 @@ void handleReplies()
                TAILQ_INSERT_TAIL(&readyQueue, newEntry, entries);
            }
            i++;
+           incrementClock();
 
        }
        else if(errno == ENOMSG)
@@ -345,7 +349,7 @@ void handleReplies()
            exit(-1);
        }
 
-       incrementClock();
+
     }
 }
 
@@ -445,9 +449,7 @@ void executeWorkers()
                     incrementClock();
                     printf("Child PID %i created. SysSeconds: %i SysNanos: %i\n", childPid, osclock->seconds, osclock->nanoseconds);
                     addProcess(childPid);
-                    currentWorkers++;
-
-                    //TODO: increment time for creating process
+                    incrementClock();
                 }
 
             }
@@ -487,7 +489,6 @@ void init()
     int listenerMQKey = ftok("oss.c", 1);
     int replyMQKey = ftok("oss.c", 3);
     key_t sharedMemKey = ftok("oss.c", 5);
-    int ossMemId;
 
     //init 'OS' clock and shared resources
     ossMemId = shmget(sharedMemKey, sizeof(struct sysclock), 0644|IPC_CREAT);
@@ -540,8 +541,8 @@ int main(int argCount, char *argv[])
         //spin up workers
         executeWorkers();
 
-        //end logging
-        fclose(logfp);
+        //cleanup program resources
+        cleanup();
     }
     return 0;
 }
