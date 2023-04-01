@@ -1,5 +1,6 @@
 #define MAX_CONCURRENT_WORKERS 18
 #define MAX_SPAWN_TIME 3
+#define SPAWN_THRESHOLD 40
 
 #include <stdio.h>
 #include <stdbool.h>
@@ -41,7 +42,8 @@ TAILQ_HEAD(blockedhead, queue_entry) blockedQueue;
 
 //globals
 time_t t;
-int totalWorkers, currentWorkers = 0;
+int totalWorkers = 0;
+int currentWorkers = 0;
 int listenerMQId, sendMQId, ossMemId;
 const int MAX_RUN_TIME = 60;
 
@@ -305,10 +307,9 @@ void cleanup()
 /**
  * Gets the replies back for each existing process.
  */
-void handleReplies()
+void handleReplies(int replies)
 {
     int i = 0;
-    int replies = currentWorkers;
     struct clockmsg msg;
     struct queue_entry* newEntry;
     while(i < replies)
@@ -321,7 +322,7 @@ void handleReplies()
            {
                newEntry = malloc(sizeof(struct queue_entry));
                newEntry->processId = msg.msgType;
-               TAILQ_INSERT_TAIL(&readyQueue, newEntry, entries);
+               TAILQ_INSERT_TAIL(&blockedQueue, newEntry, entries);
            }
            else if(timeSpent < 0) // process completed. terminate
            {
@@ -356,12 +357,15 @@ void handleReplies()
 
 /**
  * Manage the scheduling of processes
+ * @returns number of items scheduled
  */
-void scheduleProcesses()
+int scheduleProcesses()
 {
     struct queue_entry* item;
+    struct queue_entry* blockedItem;
     struct clockmsg msg;
     struct sysclock time_allotment;
+    int scheduled = 0;
 
     time_allotment.seconds = 0;
     time_allotment.nanoseconds = NANO_INCREMENT;
@@ -373,11 +377,23 @@ void scheduleProcesses()
         printf("sending to processId %d with msgType %d\n", item->processId, msg.msgType);
         msgsnd(sendMQId, &msg, sizeof(msg), 0);
         TAILQ_REMOVE(&readyQueue, readyQueue.tqh_first, entries);
+        scheduled++;
+        incrementClock();
+    }
+
+
+    //move blocked processes to ready queue
+    while(blockedQueue.tqh_first != NULL)
+    {
+        blockedItem = blockedQueue.tqh_first;
+        item = malloc(sizeof(struct queue_entry));
+        item->processId = blockedItem->processId;
+        TAILQ_INSERT_TAIL(&readyQueue, item, entries);
+        TAILQ_REMOVE(&blockedQueue, blockedQueue.tqh_first, entries);
         incrementClock();
     }
     incrementClock();
-    //move blocked processes to ready queue
-
+    return scheduled;
 }
 
 /**
@@ -408,14 +424,11 @@ void executeWorkers()
 
     pid_t childPid; // process ID of a child executable
     int spawnChance = 0;
+    int workersWaiting = 0; //workers requested for creation, but 'system' running at capacity
     char* logValue;
-    bool makeChild = true;
 
-    //while(spawnChildren())
-    while(makeChild)
+    while(spawnChildren())
     {
-        makeChild = false;
-        printf("Making Child\n");
         if(TERM_FLAG)
         {
             //kill child processes and clear resources
@@ -428,15 +441,15 @@ void executeWorkers()
             spawnChance =  rand() % 100;
 
             //check for max running processes
-            if(spawnChance >= 0 &&  currentWorkers < MAX_CONCURRENT_WORKERS)
+            if((spawnChance >= SPAWN_THRESHOLD) && (currentWorkers < MAX_CONCURRENT_WORKERS))
             {
                 //fork new process
                 childPid = fork();
                 if (childPid == -1) // error
                 {
                     logToFile("An error occurred during fork");
-                    perror("An error occurred during fork");
                     cleanup();
+                    perror("An error occurred during fork");
                     exit(1);
                 }
                 else if (childPid == 0) //this is the child node.  run program
@@ -446,21 +459,26 @@ void executeWorkers()
                 }
                 else //parent. add child to ready queue.
                 {
+                    totalWorkers++;
                     incrementClock();
-                    printf("Child PID %i created. SysSeconds: %i SysNanos: %i\n", childPid, osclock->seconds, osclock->nanoseconds);
                     addProcess(childPid);
                     incrementClock();
                 }
 
             }
+            else if(spawnChance >= SPAWN_THRESHOLD && currentWorkers == MAX_CONCURRENT_WORKERS) //spawn worker later
+            {
+                workersWaiting++;
+                printf("Workers waiting: %i\n", workersWaiting);
+            }
 
         }
 
         //perform scheduling tasks
-        scheduleProcesses();
+        int scheduled = scheduleProcesses();
         incrementClock();
         //handle replies from the child processes
-        handleReplies();
+        handleReplies(scheduled);
 
     }
     //spawning children done.  manage scheduling until end of all programs
@@ -469,9 +487,9 @@ void executeWorkers()
     {
         if(!TERM_FLAG)
         {
-            scheduleProcesses();
+            int scheduled = scheduleProcesses();
             incrementClock();
-            handleReplies();
+            handleReplies(scheduled);
             incrementClock();
         }
         else
