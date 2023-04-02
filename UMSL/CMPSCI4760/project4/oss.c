@@ -138,22 +138,15 @@ struct clockmsg buildClockMessage(struct sysclock clock, int childPid)
     return message;
 }
 
-void logToFile(char* entry)
+void logToFile(char entry[100])
 {
     int len = strlen(entry);
-    char* logitem;
-    strcpy(logitem, entry);
-    if(len >= 2)
+    char logitem[110] = "OSS:";
+
+    if(len > 0)
     {
-        if(entry[len - 2] != "\\" || entry[len - 1] != "n")
-        {
-            strcat(logitem, "\n");
-        }
-        fprintf(logfp, logitem);
-    }
-    else if(len > 0)
-    {
-        strcat(logitem, "\n");
+        strcat(logitem, entry);
+        //strcat(logitem, "\n");
         fprintf(logfp, logitem);
     }
 
@@ -277,6 +270,7 @@ void addChildToScheduler()
     int seconds = (rand() % (2 - 0 + 1));
     int nanos = (rand() % (NANO_INCREMENT - 0 + 1));
     item = malloc(sizeof (struct squeue_entry));
+    char logEntry[100];
 
     //if schedQueue isn't NULL, use tail entry to calculate start time
     if(schedQueue.tqh_first != NULL)
@@ -300,7 +294,8 @@ void addChildToScheduler()
 
     TAILQ_INSERT_TAIL(&schedQueue, item, entries);
     scheduledWorkers++;
-    printf("OSS: Process scheduled for S:%d N:%d\n", seconds, nanos);
+    sprintf(logEntry, "New Process scheduled for S:%d N:%d\n", seconds, nanos);
+    logToFile(logEntry);
 
 }
 
