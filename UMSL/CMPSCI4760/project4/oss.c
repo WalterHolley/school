@@ -1,6 +1,7 @@
 #define MAX_CONCURRENT_WORKERS 18
+#define MAX_TOTAL_WORKERS 100
 #define MAX_SPAWN_TIME 3
-#define SPAWN_THRESHOLD 40
+#define SPAWN_THRESHOLD 20
 
 #include <stdio.h>
 #include <stdbool.h>
@@ -36,14 +37,24 @@ struct queue_entry {
     TAILQ_ENTRY(queue_entry) entries;
 };
 
+//element for scheduling queue
+struct squeue_entry {
+    struct sysclock timeBuffer;
+    TAILQ_ENTRY(squeue_entry) entries;
+};
+
 //ready and blocked queues
 TAILQ_HEAD(readyhead, queue_entry) readyQueue;
 TAILQ_HEAD(blockedhead, queue_entry) blockedQueue;
+
+//scheduling queue
+TAILQ_HEAD(schedulehead, squeue_entry) schedQueue;
 
 //globals
 time_t t;
 int totalWorkers = 0;
 int currentWorkers = 0;
+int scheduledWorkers = 0;
 int listenerMQId, sendMQId, ossMemId;
 const int MAX_RUN_TIME = 60;
 
@@ -213,14 +224,84 @@ int addProcess(pid_t childPid)
             procEntry = malloc(sizeof(struct queue_entry));
             procEntry->processId = childPid;
             result = 1;
-            TAILQ_INSERT_TAIL(&readyQueue, procEntry, entries);
-            currentWorkers++;
             incrementClock();
             break;
         }
         incrementClock();
     }
     return result;
+}
+
+/**
+ * Forks and creates a child process
+ * @return PID of child process
+ */
+int createChild()
+{
+    pid_t childPid; // process ID of a child executable
+    struct queue_entry* item;
+
+    childPid = fork();
+    if (childPid == -1) // error
+    {
+        logToFile("An error occurred during fork");
+        cleanup();
+        perror("An error occurred during fork");
+        exit(1);
+    }
+    else if (childPid == 0) //this is the child node.  run program
+    {
+        char* args[] = {"./worker", NULL};
+        execvp(args[0], args);
+    }
+    else //parent. add child to ready queue.
+    {
+        currentWorkers++;
+        item = malloc(sizeof(struct queue_entry));
+        item->processId = childPid;
+        TAILQ_INSERT_TAIL(&readyQueue, item, entries);
+        incrementClock();
+        incrementClock();
+    }
+
+    return childPid;
+}
+
+/**
+ * schedules an execution time
+ * for a child process
+ */
+void addChildToScheduler()
+{
+    struct squeue_entry* item;
+    int seconds = (rand() % (2 - 0 + 1));
+    int nanos = (rand() % (NANO_INCREMENT - 0 + 1));
+    item = malloc(sizeof (struct squeue_entry));
+
+    //if schedQueue isn't NULL, use tail entry to calculate start time
+    if(schedQueue.tqh_first != NULL)
+    {
+        struct squeue_entry* lastItem;
+        lastItem = TAILQ_LAST(&schedQueue, schedulehead);
+        nanos += lastItem->timeBuffer.nanoseconds;
+        seconds += lastItem->timeBuffer.seconds;
+    }
+    else // use os clock
+    {
+        nanos += osclock->nanoseconds;
+        seconds += osclock->seconds;
+    }
+
+    nanos = nanos % NANO_INCREMENT;
+    seconds += (nanos / NANOS_IN_SECOND);
+
+    item->timeBuffer.nanoseconds = nanos;
+    item->timeBuffer.seconds = seconds;
+
+    TAILQ_INSERT_TAIL(&schedQueue, item, entries);
+    scheduledWorkers++;
+    printf("OSS: Process scheduled for S:%d N:%d\n", seconds, nanos);
+
 }
 
 /** Removes the given pid from the process table**/
@@ -236,7 +317,6 @@ int removeProcess(pid_t processId)
             processTable[i].startSeconds = 0;
             processTable[i].startNano = 0;
             processTable[i].pid = 0;
-            currentWorkers--;
             result = 1;
             break;
         }
@@ -302,6 +382,11 @@ void cleanup()
         TAILQ_REMOVE(&blockedQueue, blockedQueue.tqh_first, entries);
     }
 
+    while(schedQueue.tqh_first != NULL)
+    {
+        TAILQ_REMOVE(&schedQueue, schedQueue.tqh_first, entries);
+    }
+
 }
 
 /**
@@ -359,16 +444,47 @@ void handleReplies(int replies)
  * Manage the scheduling of processes
  * @returns number of items scheduled
  */
-int scheduleProcesses()
+int dispatchProcesses()
 {
     struct queue_entry* item;
     struct queue_entry* blockedItem;
+    struct squeue_entry* scheduleItem;
     struct clockmsg msg;
     struct sysclock time_allotment;
-    int scheduled = 0;
+    int childPid;
+    int dispatched = 0;
 
     time_allotment.seconds = 0;
     time_allotment.nanoseconds = NANO_INCREMENT;
+
+    //check schedule queue for waiting processes
+    while(schedQueue.tqh_first != NULL)
+    {
+        scheduleItem = schedQueue.tqh_first;
+        if(osclock->seconds == scheduleItem->timeBuffer.seconds)
+        {
+            if((osclock->nanoseconds >= scheduleItem->timeBuffer.nanoseconds) && currentWorkers < MAX_CONCURRENT_WORKERS)
+            {
+                //launch process
+                childPid = createChild();
+                addProcess(childPid);
+                TAILQ_REMOVE(&schedQueue, schedQueue.tqh_first, entries);
+                scheduledWorkers--;
+                continue;
+            }
+        }
+        else if((osclock->seconds > scheduleItem->timeBuffer.seconds) && currentWorkers < MAX_CONCURRENT_WORKERS)
+        {
+            //launch process
+            childPid = createChild();
+            addProcess(childPid);
+            TAILQ_REMOVE(&schedQueue, schedQueue.tqh_first, entries);
+            scheduledWorkers--;
+            continue;
+        }
+        break;
+    }
+
     //process ready queue
     while(readyQueue.tqh_first != NULL)
     {
@@ -377,7 +493,7 @@ int scheduleProcesses()
         printf("sending to processId %d with msgType %d\n", item->processId, msg.msgType);
         msgsnd(sendMQId, &msg, sizeof(msg), 0);
         TAILQ_REMOVE(&readyQueue, readyQueue.tqh_first, entries);
-        scheduled++;
+        dispatched++;
         incrementClock();
     }
 
@@ -393,7 +509,7 @@ int scheduleProcesses()
         incrementClock();
     }
     incrementClock();
-    return scheduled;
+    return dispatched;
 }
 
 /**
@@ -401,13 +517,13 @@ int scheduleProcesses()
  * @return true if child processes can be spawned.
  * otherwise false
  */
-bool spawnChildren()
+bool canSpawnChildren()
 {
     bool result = false;
     time_t now;
     time(&now);
 
-    if(now - t < 3 || totalWorkers < 100)
+    if(now - t < 3 && totalWorkers <= MAX_TOTAL_WORKERS)
     {
         result = true;
     }
@@ -421,13 +537,11 @@ bool spawnChildren()
  */
 void executeWorkers()
 {
-
-    pid_t childPid; // process ID of a child executable
     int spawnChance = 0;
     int workersWaiting = 0; //workers requested for creation, but 'system' running at capacity
     char* logValue;
 
-    while(spawnChildren())
+    while(canSpawnChildren())
     {
         if(TERM_FLAG)
         {
@@ -437,48 +551,26 @@ void executeWorkers()
         }
         else
         {
+
+
             //chance to spawn child process
             spawnChance =  rand() % 100;
 
             //check for max running processes
-            if((spawnChance >= SPAWN_THRESHOLD) && (currentWorkers < MAX_CONCURRENT_WORKERS))
+            if((spawnChance >= SPAWN_THRESHOLD) && (totalWorkers < MAX_TOTAL_WORKERS))
             {
-                //fork new process
-                childPid = fork();
-                if (childPid == -1) // error
-                {
-                    logToFile("An error occurred during fork");
-                    cleanup();
-                    perror("An error occurred during fork");
-                    exit(1);
-                }
-                else if (childPid == 0) //this is the child node.  run program
-                {
-                    char* args[] = {"./worker", NULL};
-                    execvp(args[0], args);
-                }
-                else //parent. add child to ready queue.
-                {
-                    totalWorkers++;
-                    incrementClock();
-                    addProcess(childPid);
-                    incrementClock();
-                }
-
-            }
-            else if(spawnChance >= SPAWN_THRESHOLD && currentWorkers == MAX_CONCURRENT_WORKERS) //spawn worker later
-            {
-                workersWaiting++;
-                printf("Workers waiting: %i\n", workersWaiting);
+                //schedule child creation
+                addChildToScheduler();
+                totalWorkers++;
             }
 
         }
 
-        //perform scheduling tasks
-        int scheduled = scheduleProcesses();
+        //perform dispatch tasks
+        int dispatched = dispatchProcesses();
         incrementClock();
         //handle replies from the child processes
-        handleReplies(scheduled);
+        handleReplies(dispatched);
 
     }
     //spawning children done.  manage scheduling until end of all programs
@@ -487,9 +579,9 @@ void executeWorkers()
     {
         if(!TERM_FLAG)
         {
-            int scheduled = scheduleProcesses();
+            int dispatched = dispatchProcesses();
             incrementClock();
-            handleReplies(scheduled);
+            handleReplies(dispatched);
             incrementClock();
         }
         else
@@ -498,7 +590,7 @@ void executeWorkers()
             exit(-1);
         }
 
-    }while(currentWorkers > 0);
+    }while((currentWorkers > 0) || (scheduledWorkers > 0));
 
 }
 
@@ -514,18 +606,19 @@ void init()
     osclock->seconds = 0;
     osclock->nanoseconds = 0;
 
+    //init randomgen
+    srand((unsigned) time(&t));
+
     //init log file
     logfp = fopen(logFile, "w+");
 
     //register signal interrupt
     signal(SIGINT, termFlag);
 
-    //init randomgen
-    srand((unsigned) time(&t));
-
     //init queue structures
     TAILQ_INIT(&readyQueue);
     TAILQ_INIT(&blockedQueue);
+    TAILQ_INIT(&schedQueue);
 
     //init MQs
     listenerMQId = msgget(listenerMQKey, 0666 | IPC_CREAT);
@@ -538,13 +631,12 @@ void init()
     }
 
 
-
-
-
-
     //init processTable clock
     nextPrint.nanoseconds = NANOS_HALF_SECOND;
     nextPrint.seconds = 0;
+
+    //capture start time
+    time(&t);
 
     printf("OSS Initialized\n");
 

@@ -129,9 +129,6 @@ int doTerminate(struct sysclock runTime)
     int result, randVal, newTime = 0;
     struct clockmsg message;
 
-    //init randomgen
-    srand((unsigned) time(&t));
-
     //generate random 0 - 99(inclusive)
     randVal = rand() % 100;
 
@@ -181,6 +178,8 @@ int setup()
     pid = getpid();
     ppid = getppid();
 
+    //init randomgen
+    srand((unsigned) time(&t));
 
     //get shared resources(osclock, reply queue ID, listener queue ID)
     ossMemId = shmget(sharedMemKey, sizeof(struct sysclock), 0644|IPC_CREAT);
