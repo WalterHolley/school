@@ -67,6 +67,50 @@ size_t procTableSize = sizeof(processTable) / sizeof(struct process);
 char* logFile = "oss.log";
 FILE *logfp;
 
+/**
+ * Cleanup of the processes and resources
+ * used by this application
+ */
+        void cleanupResources()
+{
+    //terminate remaining children
+    printf("Terminating process\n");
+    int i;
+
+    for(i = 0; i < procTableSize; i++)
+    {
+        if(processTable[i].occupied)
+        {
+            kill(processTable[i].pid, SIGTERM);
+        }
+    }
+
+    fclose(logfp);
+
+    //close Message queues
+    msgctl(listenerMQId, IPC_RMID, NULL);
+    msgctl(sendMQId, IPC_RMID, NULL);
+    //clear shared memory
+    shmctl(ossMemId, IPC_RMID, NULL);
+
+    //clear process queues
+    while(readyQueue.tqh_first != NULL)
+    {
+        TAILQ_REMOVE(&readyQueue, readyQueue.tqh_first, entries);
+    }
+
+    while(blockedQueue.tqh_first != NULL)
+    {
+        TAILQ_REMOVE(&blockedQueue, blockedQueue.tqh_first, entries);
+    }
+
+    while(schedQueue.tqh_first != NULL)
+    {
+        TAILQ_REMOVE(&schedQueue, schedQueue.tqh_first, entries);
+    }
+
+}
+
 void termFlag()
 {
     TERM_FLAG = 1;
@@ -138,15 +182,15 @@ struct clockmsg buildClockMessage(struct sysclock clock, int childPid)
     return message;
 }
 
-void logToFile(char entry[100])
+void logToFile(char entry[200])
 {
     int len = strlen(entry);
-    char logitem[110] = "OSS:";
+    char logitem[210] = "OSS:";
 
     if(len > 0)
     {
         strcat(logitem, entry);
-        //strcat(logitem, "\n");
+        strcat(logitem, "\n");
         fprintf(logfp, logitem);
     }
 
@@ -238,7 +282,7 @@ int createChild()
     if (childPid == -1) // error
     {
         logToFile("An error occurred during fork");
-        cleanup();
+        cleanupResources();
         perror("An error occurred during fork");
         exit(1);
     }
@@ -270,7 +314,7 @@ void addChildToScheduler()
     int seconds = (rand() % (2 - 0 + 1));
     int nanos = (rand() % (NANO_INCREMENT - 0 + 1));
     item = malloc(sizeof (struct squeue_entry));
-    char logEntry[100];
+    char logEntry[200];
 
     //if schedQueue isn't NULL, use tail entry to calculate start time
     if(schedQueue.tqh_first != NULL)
@@ -294,7 +338,7 @@ void addChildToScheduler()
 
     TAILQ_INSERT_TAIL(&schedQueue, item, entries);
     scheduledWorkers++;
-    sprintf(logEntry, "New Process scheduled for S:%d N:%d\n", seconds, nanos);
+    sprintf(logEntry, "New Process scheduled for S:%d N:%d", seconds, nanos);
     logToFile(logEntry);
 
 }
@@ -335,53 +379,8 @@ int waitForTerm(int childPid)
         result = waitpid(childPid, &pidStatus, WNOHANG);
         incrementClock();
     }while(result != childPid);
-    printf("%i process ended\n", childPid);
     currentWorkers--;
     return result;
-}
-
-/**
- * Cleanup of the processes and resources
- * used by this application
- */
-void cleanup()
-{
-    //terminate remaining children
-    printf("Terminating process\n");
-    int i;
-
-    for(i = 0; i < procTableSize; i++)
-    {
-        if(processTable[i].occupied)
-        {
-            kill(processTable[i].pid, SIGTERM);
-        }
-    }
-
-    fclose(logfp);
-
-    //close Message queues
-    msgctl(listenerMQId, IPC_RMID, NULL);
-    msgctl(sendMQId, IPC_RMID, NULL);
-    //clear shared memory
-    shmctl(ossMemId, IPC_RMID, NULL);
-
-    //clear process queues
-    while(readyQueue.tqh_first != NULL)
-    {
-        TAILQ_REMOVE(&readyQueue, readyQueue.tqh_first, entries);
-    }
-
-    while(blockedQueue.tqh_first != NULL)
-    {
-        TAILQ_REMOVE(&blockedQueue, blockedQueue.tqh_first, entries);
-    }
-
-    while(schedQueue.tqh_first != NULL)
-    {
-        TAILQ_REMOVE(&schedQueue, schedQueue.tqh_first, entries);
-    }
-
 }
 
 /**
@@ -392,28 +391,36 @@ void handleReplies(int replies)
     int i = 0;
     struct clockmsg msg;
     struct queue_entry* newEntry;
+    char logEntry[200];
     while(i < replies)
     {
        if(msgrcv(listenerMQId, (void *)&msg, sizeof(struct clockmsg), 0, IPC_NOWAIT) != -1)
        {
-
+           sprintf(logEntry, "Received message from PID %d at %d:%d", msg.msgType, osclock->seconds, osclock->nanoseconds);
+           logToFile(logEntry);
            int timeSpent = atoi(msg.message);
            if(timeSpent < NANO_INCREMENT && timeSpent > 0)  //process blocked.  add to blocked queue
            {
                newEntry = malloc(sizeof(struct queue_entry));
                newEntry->processId = msg.msgType;
                TAILQ_INSERT_TAIL(&blockedQueue, newEntry, entries);
+               sprintf(logEntry, "PID %d waiting for I/O. Moved to blocked queue", msg.msgType, osclock->seconds, osclock->nanoseconds);
+               logToFile(logEntry);
            }
            else if(timeSpent < 0) // process completed. terminate
            {
                waitForTerm(msg.msgType);
                removeProcess(msg.msgType);
+               sprintf(logEntry, "PID %d has terminated", msg.msgType);
+               logToFile(logEntry);
            }
            else //full time used. add to ready queue
            {
                newEntry = malloc(sizeof(struct queue_entry));
                newEntry->processId = msg.msgType;
                TAILQ_INSERT_TAIL(&readyQueue, newEntry, entries);
+               sprintf(logEntry, "PID %d request more time.  Moved to ready queue", msg.msgType);
+               logToFile(logEntry);
            }
            i++;
            incrementClock();
@@ -426,7 +433,7 @@ void handleReplies(int replies)
        else
        {
            perror("There was a problem retrieving messages from processes");
-           cleanup();
+           cleanupResources();
            exit(-1);
        }
 
@@ -448,6 +455,7 @@ int dispatchProcesses()
     struct sysclock time_allotment;
     int childPid;
     int dispatched = 0;
+    char logEntry[200];
 
     time_allotment.seconds = 0;
     time_allotment.nanoseconds = NANO_INCREMENT;
@@ -463,6 +471,9 @@ int dispatchProcesses()
                 //launch process
                 childPid = createChild();
                 addProcess(childPid);
+                sprintf(logEntry, "PID %d scheduled for %d:%d launched at %d:%d", childPid,
+                        scheduleItem->timeBuffer.seconds, scheduleItem->timeBuffer.nanoseconds, osclock->seconds, osclock->nanoseconds);
+                logToFile(logEntry);
                 TAILQ_REMOVE(&schedQueue, schedQueue.tqh_first, entries);
                 scheduledWorkers--;
                 continue;
@@ -473,6 +484,9 @@ int dispatchProcesses()
             //launch process
             childPid = createChild();
             addProcess(childPid);
+            sprintf(logEntry, "PID %d scheduled for %d:%d launched at %d:%d", childPid,
+                    scheduleItem->timeBuffer.seconds, scheduleItem->timeBuffer.nanoseconds, osclock->seconds, osclock->nanoseconds);
+            logToFile(logEntry);
             TAILQ_REMOVE(&schedQueue, schedQueue.tqh_first, entries);
             scheduledWorkers--;
             continue;
@@ -485,8 +499,9 @@ int dispatchProcesses()
     {
         item = readyQueue.tqh_first;
         msg = buildClockMessage(time_allotment, item->processId);
-        printf("sending to processId %d with msgType %d\n", item->processId, msg.msgType);
         msgsnd(sendMQId, &msg, sizeof(msg), 0);
+        sprintf(logEntry,"sending to processId %d with time allotment 0:%s", item->processId, msg.message);
+        logToFile(logEntry);
         TAILQ_REMOVE(&readyQueue, readyQueue.tqh_first, entries);
         dispatched++;
         incrementClock();
@@ -501,6 +516,8 @@ int dispatchProcesses()
         item->processId = blockedItem->processId;
         TAILQ_INSERT_TAIL(&readyQueue, item, entries);
         TAILQ_REMOVE(&blockedQueue, blockedQueue.tqh_first, entries);
+        sprintf(logEntry, "PID %d moved from blocked queue to ready queue", item->processId);
+        logToFile(logEntry);
         incrementClock();
     }
     incrementClock();
@@ -533,22 +550,19 @@ bool canSpawnChildren()
 void executeWorkers()
 {
     int spawnChance = 0;
-    int workersWaiting = 0; //workers requested for creation, but 'system' running at capacity
-    char* logValue;
 
     while(canSpawnChildren())
     {
         if(TERM_FLAG)
         {
             //kill child processes and clear resources
-            cleanup();
+            cleanupResources();
             break;
         }
         else
         {
-
-
             //chance to spawn child process
+            srand(time(0));
             spawnChance =  rand() % 100;
 
             //check for max running processes
@@ -558,7 +572,6 @@ void executeWorkers()
                 addChildToScheduler();
                 totalWorkers++;
             }
-
         }
 
         //perform dispatch tasks
@@ -581,7 +594,7 @@ void executeWorkers()
         }
         else
         {
-            cleanup();
+            cleanupResources();
             exit(-1);
         }
 
@@ -589,11 +602,15 @@ void executeWorkers()
 
 }
 
+/**
+ * Initializes resources needed for the application
+ */
 void init()
 {
     int listenerMQKey = ftok("oss.c", 1);
     int replyMQKey = ftok("oss.c", 3);
     key_t sharedMemKey = ftok("oss.c", 5);
+    char logEntry[100];
 
     //init 'OS' clock and shared resources
     ossMemId = shmget(sharedMemKey, sizeof(struct sysclock), 0644|IPC_CREAT);
@@ -602,7 +619,7 @@ void init()
     osclock->nanoseconds = 0;
 
     //init randomgen
-    srand((unsigned) time(&t));
+    srand((unsigned) time(NULL));
 
     //init log file
     logfp = fopen(logFile, "w+");
@@ -621,7 +638,7 @@ void init()
     if(listenerMQId == -1 || sendMQId == -1)
     {
         perror("There was a problem setting up message queues");
-        cleanup();
+        cleanupResources();
         exit(-1);
     }
 
@@ -633,21 +650,24 @@ void init()
     //capture start time
     time(&t);
 
-    printf("OSS Initialized\n");
-
 }
 
+/**MAIN ENTRY POINT**/
 int main(int argCount, char *argv[])
 {
     if(handleParams(argCount, argv) != -1)
     {
+        char logentry[200];
+        sprintf(logentry, "Initialized");
+        logToFile(logentry);
         init();
-        printf("OSS Listener: %i Sender: %i\n", listenerMQId, sendMQId);
         //spin up workers
         executeWorkers();
 
         //cleanup program resources
-        cleanup();
+        sprintf(logentry, "End of Execution");
+        logToFile(logentry);
+        cleanupResources();
     }
     return 0;
 }

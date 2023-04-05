@@ -179,7 +179,7 @@ int setup()
     ppid = getppid();
 
     //init randomgen
-    srand((unsigned) time(&t));
+    srand((unsigned) pid);
 
     //get shared resources(osclock, reply queue ID, listener queue ID)
     ossMemId = shmget(sharedMemKey, sizeof(struct sysclock), 0644|IPC_CREAT);

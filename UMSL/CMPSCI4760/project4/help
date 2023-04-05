@@ -1,25 +1,16 @@
 NAME
     oss - Operating System Simulator: a unix/linux application used for simulating simple OS behavior.
 SYNOPSIS
-    oss [-nst] [-n <num> -s <num> -t <num> -f<logfile>]
+    oss [-f] [-f<logfile>]
 DESCRIPTION
-    Executes a series of child processes for up to 60 simulated seconds.  OS clock is simulated by the
-    parent process, and observed by the child processes via message queue.
+    Simulates a process scheduler by generating up to 100 child processes, and handling the states they report back to OSS.
+    OSS logs its actions in a file
 
     Options:
-        -n  required: the number of child worker processes to be created by oss.  Range from 0 - 18(inclusive).
-            0 = no workers will be started.
-        -s  required: the max number of child worker processes to be executed concurrently. 0 = system maximum(18).
-        -t  required: the maximum number of seconds each child worker process will run before terminating. Minimum value of
-            1 second is allowed.  Runtime is randomly determined between zero(exclusive) and the provided value(inclusive).
         -f  optional: write the parent(oss) process output to a log file.  if no value is provided, the default log will be
             oss.log, and will be stored in the root of the oss execution directory.  Default and given log names will be
             cleared on each execution.
 
 EXAMPLES
-    oss -n 3 -s 0 -t 2  => 3 workers will be executed, all workers will be executed concurrently, each worker
-                           can potentially exist for a max of 2 seconds before terminating. oss output will go to
-                           oss.log
-    oss -n 4 -s 2 -t 4 -f logproc.log  => 4 workers will be executed, up to two workers will be executed
-                            concurrently, each worker can potentially exist for a max of 4 seconds before
-                            terminating.  oss output will write to logproc.log
+    oss                 => A random number of process spawns will be scheduled. OSS will output its events to the oss.log file.
+    oss -f logproc.log  => A random number of process spawns will be scheduled. OSS will output its events to the logproc.log file.
