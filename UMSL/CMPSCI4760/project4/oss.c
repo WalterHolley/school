@@ -658,9 +658,9 @@ int main(int argCount, char *argv[])
     if(handleParams(argCount, argv) != -1)
     {
         char logentry[200];
+        init();
         sprintf(logentry, "Initialized");
         logToFile(logentry);
-        init();
         //spin up workers
         executeWorkers();
 
