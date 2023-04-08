@@ -3,8 +3,10 @@ package com.umsl.wdhq58.prj2
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.widget.Toast
+import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.umsl.wdhq58.prj2.utility.adapter.MovieAdapter
 import com.umsl.wdhq58.prj2.utility.api.ServiceBuilder
 import com.umsl.wdhq58.prj2.utility.api.TMDBService
@@ -18,24 +20,32 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        val movieView = findViewById<RecyclerView>(R.id.rvMovies)
+        val popularMovieFragment = PopularMovieFragment()
+        val upcomingMovieFragment = UpcomingMovieFragment()
+        val popularPeopleFragment = PopularPeopleFragment()
+        val bottomNavView = findViewById<BottomNavigationView>(R.id.bottomNavigationView)
 
-        val service = ServiceBuilder.buildService(TMDBService::class.java)
-        val serviceCall = service.getPopularMovies(getString(R.string.api_key))
+        setFragment(popularMovieFragment)
 
-        //retrofit style service call with callback functions for successful response and failure
-        serviceCall.enqueue(object: Callback<PopularMovies>{
-            override fun onResponse(call: Call<PopularMovies>, response: Response<PopularMovies>){
-                movieView.apply {
-                    setHasFixedSize(true)
-                    layoutManager = LinearLayoutManager(this@MainActivity)
-                    adapter = MovieAdapter(response.body()!!.results)
-                }
+        //setup bottom navigation bar
+        bottomNavView.setOnNavigationItemSelectedListener {
+            when(it.itemId){
+                R.id.action_popular->setFragment(popularMovieFragment)
+                R.id.action_upcoming->setFragment(upcomingMovieFragment)
+                //R.id.action_people->setFragment(popularPeopleFragment)
             }
+            true
+        }
 
-            override fun onFailure(call: Call<PopularMovies>, t: Throwable) {
-                Toast.makeText(this@MainActivity, "${t.message}", Toast.LENGTH_SHORT).show()
-            }
-        })
     }
+
+    /**
+     * sets a fragment to the framelayout in the main activity
+     */
+    private fun setFragment(fragment: Fragment) =
+        supportFragmentManager.beginTransaction().apply {
+            replace(R.id.flFragmentView, fragment)
+            commit()
+        }
+
 }
