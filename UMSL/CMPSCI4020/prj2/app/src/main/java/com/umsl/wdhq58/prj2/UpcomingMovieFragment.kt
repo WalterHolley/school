@@ -60,7 +60,7 @@ class UpcomingMovieFragment : Fragment() {
                    movieView.apply {
                        setHasFixedSize(true)
                        layoutManager = LinearLayoutManager(this@UpcomingMovieFragment.context)
-                       adapter = MovieAdapter(response.body()!!.result)
+                       adapter = MovieAdapter(response.body()!!.results)
                    }
                }
 

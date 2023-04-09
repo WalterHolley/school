@@ -32,7 +32,7 @@ class MainActivity : AppCompatActivity() {
             when(it.itemId){
                 R.id.action_popular->setFragment(popularMovieFragment)
                 R.id.action_upcoming->setFragment(upcomingMovieFragment)
-                //R.id.action_people->setFragment(popularPeopleFragment)
+                R.id.action_people->setFragment(popularPeopleFragment)
             }
             true
         }

@@ -5,6 +5,18 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import com.umsl.wdhq58.prj2.utility.adapter.MovieAdapter
+import com.umsl.wdhq58.prj2.utility.adapter.PeopleAdapter
+import com.umsl.wdhq58.prj2.utility.api.ServiceBuilder
+import com.umsl.wdhq58.prj2.utility.api.TMDBService
+import com.umsl.wdhq58.prj2.utility.api.data.PopularMovies
+import com.umsl.wdhq58.prj2.utility.api.data.PopularPersons
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 
 // TODO: Rename parameter arguments, choose names that match
 // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
@@ -31,6 +43,32 @@ class PopularPeopleFragment : Fragment() {
     ): View? {
         // Inflate the layout for this fragment
         return inflater.inflate(R.layout.fragment_popular_people, container, false)
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+
+        val service = ServiceBuilder.buildService(TMDBService::class.java)
+        val serviceCall = service.getPopularPeople(getString(R.string.api_key))
+        val movieView = view.findViewById<RecyclerView>(R.id.rvPeople)
+
+        //retrofit style service call with callback functions for successful response and failure
+        serviceCall.enqueue(object: Callback<PopularPersons> {
+            override fun onResponse(call: Call<PopularPersons>, response: Response<PopularPersons>){
+                if(response.isSuccessful){
+                    movieView.apply {
+                        setHasFixedSize(true)
+                        layoutManager = LinearLayoutManager(view.context)
+                        adapter = PeopleAdapter(response.body()!!.results)
+                    }
+                }
+            }
+
+            override fun onFailure(call: Call<PopularPersons>, t: Throwable) {
+                Toast.makeText(this@PopularPeopleFragment.activity, "${t.message}", Toast.LENGTH_SHORT).show()
+            }
+
+        })
     }
 
     companion object {
