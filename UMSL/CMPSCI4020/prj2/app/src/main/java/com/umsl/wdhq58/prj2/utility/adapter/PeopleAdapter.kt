@@ -6,6 +6,7 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.Glide
 import com.umsl.wdhq58.prj2.R
 import com.umsl.wdhq58.prj2.utility.api.data.PopularPerson
 
@@ -28,13 +29,15 @@ class PeopleAdapter(val persons: List<PopularPerson>) : RecyclerView.Adapter<Peo
 class PeopleViewHolder(itemView: View): RecyclerView.ViewHolder(itemView){
     private val photo: ImageView = itemView.findViewById(R.id.ivProfilePhoto)
     private val profileName: TextView = itemView.findViewById(R.id.tvName)
-    private val datOfBirth: TextView = itemView.findViewById(R.id.tvBirthday)
+    private val position: TextView = itemView.findViewById(R.id.tvPosition)
     private val rating: TextView = itemView.findViewById(R.id.tvPersonPopularity)
 
     fun bind(person: PopularPerson){
+        val imageUrl = "https://image.tmdb.org/t/p/w500" + person.profile_path
         profileName.text = person.name
-        datOfBirth.text = person.birthday
+        position.text = person.known_for_department
         rating.text = person.popularity.toString()
+        Glide.with(itemView.context).load(imageUrl).into(photo)
     }
 
 }

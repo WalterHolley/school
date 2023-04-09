@@ -33,7 +33,7 @@
                 android:textSize="15sp" />
 
             <TextView
-                android:id="@+id/tvBirthday"
+                android:id="@+id/tvPosition"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_below="@+id/tvName"
@@ -41,13 +41,14 @@
                 android:layout_marginTop="5dp"
                 android:layout_marginEnd="5dp"
                 android:layout_marginBottom="5dp"
-                android:text="@string/date_of_birth" />
+                android:text="@string/date_of_birth"
+                android:textSize="15sp"/>
 
             <TextView
                 android:id="@+id/tvPersonPopularity"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_below="@+id/tvBirthday"
+                android:layout_below="@+id/tvPosition"
                 android:layout_marginStart="5dp"
                 android:layout_marginTop="5dp"
                 android:layout_marginEnd="5dp"

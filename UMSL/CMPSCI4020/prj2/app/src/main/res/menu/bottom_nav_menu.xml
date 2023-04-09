@@ -9,8 +9,5 @@
         android:id="@+id/action_people"
         android:icon="@drawable/baseline_people_24"
         android:title="@string/menu_people" />
-    <item
-        android:id="@+id/action_upcoming"
-        android:icon="@drawable/baseline_fast_forward_24"
-        android:title="@string/menu_future_releases" />
+
 </menu>

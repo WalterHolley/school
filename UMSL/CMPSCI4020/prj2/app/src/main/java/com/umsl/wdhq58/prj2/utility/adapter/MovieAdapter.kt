@@ -8,6 +8,8 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.umsl.wdhq58.prj2.R
 import com.umsl.wdhq58.prj2.utility.api.data.PopularMovie
+import com.bumptech.glide.Glide
+
 
 class MovieAdapter(val movies: List<PopularMovie>) : RecyclerView.Adapter<MovieViewHolder>() {
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MovieViewHolder {
@@ -32,8 +34,11 @@ class MovieViewHolder(itemView: View): RecyclerView.ViewHolder(itemView){
     private val rating: TextView = itemView.findViewById(R.id.tvMovieRating)
 
     fun bind(movie: PopularMovie){
+        val imgUrl = "https://image.tmdb.org/t/p/w500" + movie.poster_path
         title.text = movie.title
         overview.text = movie.overview;
         rating.text = movie.vote_average.toString()
+        Glide.with(itemView.context).load(imgUrl).into(photo)
+
     }
 }
