@@ -1,0 +1,22 @@
+Walter Holley III
+Spring 2023
+CMPSCI 4760 - Operating Systems
+
+Github: https://github.com/WalterHolley/school/tree/master/UMSL/CMPSCI4760/project5
+
+PROJECT 5: OS Resource Management Simulator written in C.
+A simulated Operating System clock will be managed by a parent process(oss).
+At random intervals, oss will start a worker processes, and communicate back
+and forth with these processes through a pair of message queues.
+
+Installation
+run 'make' command
+
+Invocation
+oss [-f <logfile>]
+For additional information on application use, use the help(oss -h) command
+
+EXAMPLE OUTPUT
+command: oss -f ossproc.log (executes three worker processes, all simultaneously, each process will run for a maximum of 2 seconds, and the oss parent output
+will be written to the ossproc.log file)
+
