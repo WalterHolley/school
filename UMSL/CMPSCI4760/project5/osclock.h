@@ -17,12 +17,6 @@ struct clockmsg {
     char message[15];
 };
 
-struct ossProperties {
-    int seconds;
-    int nanoSeconds;
-    int replyQueue;
-    int listenerQueue;
-};
 
 const int NANOS_IN_SECOND = 1000000000;
 const int NANOS_HALF_SECOND = 500000000;

@@ -1,5 +1,5 @@
 #define MAX_CONCURRENT_WORKERS 18
-#define MAX_TOTAL_WORKERS 100
+#define MAX_TOTAL_WORKERS 40
 #define MAX_SPAWN_TIME 3
 #define SPAWN_THRESHOLD 20
 
@@ -17,17 +17,7 @@
 #include <signal.h>
 #include <time.h>
 #include <errno.h>
-#include "osclock.h"
-
-
-//process structure
-struct process {
-    int occupied;   //indicates if record space is occupied
-    pid_t pid;
-    int startSeconds;
-    int startNano;
-    int mqId;
-};
+#include "resource.h"
 
 
 
@@ -51,7 +41,7 @@ TAILQ_HEAD(blockedhead, queue_entry) blockedQueue;
 TAILQ_HEAD(schedulehead, squeue_entry) schedQueue;
 
 //globals
-time_t t;
+time_t startTime;
 int totalWorkers = 0;
 int currentWorkers = 0;
 int scheduledWorkers = 0;
@@ -61,8 +51,8 @@ const int MAX_RUN_TIME = 60;
 const int NANO_INCREMENT = 10000;
 int TERM_FLAG = 0;
 struct sysclock* osclock;
-struct sysclock nextPrint;
-struct process processTable[18];
+struct resource availableResources;
+struct resource allocationTable[18];
 size_t procTableSize = sizeof(processTable) / sizeof(struct process);
 char* logFile = "oss.log";
 FILE *logfp;
@@ -71,7 +61,7 @@ FILE *logfp;
  * Cleanup of the processes and resources
  * used by this application
  */
-        void cleanupResources()
+void cleanupResources()
 {
     //terminate remaining children
     printf("Terminating process\n");
@@ -152,6 +142,7 @@ int handleParams(int argCount, char *argString[])
             case ':':
                 printf("%c missing option value\n", optopt);
                 break;
+            case 'v': //TODO: Implement verbose logging flag
             case '?':
             default:
                 printf("Unknown option: %c\n", optopt);
@@ -169,17 +160,6 @@ int handleParams(int argCount, char *argString[])
     }
 
     return result;
-}
-
-/** Creates clockmsg object from a sysclock object**/
-struct clockmsg buildClockMessage(struct sysclock clock, int childPid)
-{
-    struct clockmsg message;
-    message.msgType = childPid;
-    sprintf(message.message, "%d", clock.nanoseconds);
-
-
-    return message;
 }
 
 void logToFile(char entry[200])
@@ -248,24 +228,6 @@ int addProcess(pid_t childPid)
     struct queue_entry *procEntry;
     int i, result = 0;
 
-    newProc.occupied = 1;
-    newProc.pid = childPid;
-    newProc.startNano = osclock->nanoseconds;
-    newProc.startSeconds = osclock->seconds;
-
-    for(i = 0; i < procTableSize; i++)
-    {
-        if(!processTable[i].occupied)
-        {
-            processTable[i] = newProc;
-            procEntry = malloc(sizeof(struct queue_entry));
-            procEntry->processId = childPid;
-            result = 1;
-            incrementClock();
-            break;
-        }
-        incrementClock();
-    }
     return result;
 }
 
@@ -276,7 +238,6 @@ int addProcess(pid_t childPid)
 int createChild()
 {
     pid_t childPid; // process ID of a child executable
-    struct queue_entry* item;
 
     childPid = fork();
     if (childPid == -1) // error
@@ -294,9 +255,7 @@ int createChild()
     else //parent. add child to ready queue.
     {
         currentWorkers++;
-        item = malloc(sizeof(struct queue_entry));
-        item->processId = childPid;
-        TAILQ_INSERT_TAIL(&readyQueue, item, entries);
+        totalWorkers++;
         incrementClock();
         incrementClock();
     }
@@ -304,65 +263,7 @@ int createChild()
     return childPid;
 }
 
-/**
- * schedules an execution time
- * for a child process
- */
-void addChildToScheduler()
-{
-    struct squeue_entry* item;
-    int seconds = (rand() % (2 - 0 + 1));
-    int nanos = (rand() % (NANO_INCREMENT - 0 + 1));
-    item = malloc(sizeof (struct squeue_entry));
-    char logEntry[200];
 
-    //if schedQueue isn't NULL, use tail entry to calculate start time
-    if(schedQueue.tqh_first != NULL)
-    {
-        struct squeue_entry* lastItem;
-        lastItem = TAILQ_LAST(&schedQueue, schedulehead);
-        nanos += lastItem->timeBuffer.nanoseconds;
-        seconds += lastItem->timeBuffer.seconds;
-    }
-    else // use os clock
-    {
-        nanos += osclock->nanoseconds;
-        seconds += osclock->seconds;
-    }
-
-    nanos = nanos % NANO_INCREMENT;
-    seconds += (nanos / NANOS_IN_SECOND);
-
-    item->timeBuffer.nanoseconds = nanos;
-    item->timeBuffer.seconds = seconds;
-
-    TAILQ_INSERT_TAIL(&schedQueue, item, entries);
-    scheduledWorkers++;
-    sprintf(logEntry, "New Process scheduled for S:%d N:%d", seconds, nanos);
-    logToFile(logEntry);
-
-}
-
-/** Removes the given pid from the process table**/
-int removeProcess(pid_t processId)
-{
-    int i, result = 0;
-
-    for(i = 0; i < procTableSize; i++)
-    {
-        if(processTable[i].pid == processId)
-        {
-            processTable[i].occupied = 0;
-            processTable[i].startSeconds = 0;
-            processTable[i].startNano = 0;
-            processTable[i].pid = 0;
-            result = 1;
-            break;
-        }
-    }
-
-    return result;
-}
 
 
 /** Loops until a child process is terminated.
@@ -384,145 +285,66 @@ int waitForTerm(int childPid)
 }
 
 /**
- * Gets the replies back for each existing process.
+ * Update the resource allocation table
+ * @param pid
+ * @param resId
+ * @param allocation
  */
-void handleReplies(int replies)
+void updateResourceAllocation(int pid, int resId, int allocation)
 {
-    int i = 0;
-    struct clockmsg msg;
-    struct queue_entry* newEntry;
-    char logEntry[200];
-    while(i < replies)
+    int i;
+
+    for(i = 0; i < len(allocationTable); i++)
     {
-       if(msgrcv(listenerMQId, (void *)&msg, sizeof(struct clockmsg), 0, IPC_NOWAIT) != -1)
-       {
-           sprintf(logEntry, "Received message from PID %d at %d:%d", msg.msgType, osclock->seconds, osclock->nanoseconds);
-           logToFile(logEntry);
-           int timeSpent = atoi(msg.message);
-           if(timeSpent < NANO_INCREMENT && timeSpent > 0)  //process blocked.  add to blocked queue
-           {
-               newEntry = malloc(sizeof(struct queue_entry));
-               newEntry->processId = msg.msgType;
-               TAILQ_INSERT_TAIL(&blockedQueue, newEntry, entries);
-               sprintf(logEntry, "PID %d waiting for I/O. Moved to blocked queue", msg.msgType, osclock->seconds, osclock->nanoseconds);
-               logToFile(logEntry);
-           }
-           else if(timeSpent < 0) // process completed. terminate
-           {
-               waitForTerm(msg.msgType);
-               removeProcess(msg.msgType);
-               sprintf(logEntry, "PID %d has terminated", msg.msgType);
-               logToFile(logEntry);
-           }
-           else //full time used. add to ready queue
-           {
-               newEntry = malloc(sizeof(struct queue_entry));
-               newEntry->processId = msg.msgType;
-               TAILQ_INSERT_TAIL(&readyQueue, newEntry, entries);
-               sprintf(logEntry, "PID %d request more time.  Moved to ready queue", msg.msgType);
-               logToFile(logEntry);
-           }
-           i++;
-           incrementClock();
-
-       }
-       else if(errno == ENOMSG)
-       {
-           incrementClock();
-       }
-       else
-       {
-           perror("There was a problem retrieving messages from processes");
-           cleanupResources();
-           exit(-1);
-       }
-
-
-    }
-}
-
-
-/**
- * Manage the scheduling of processes
- * @returns number of items scheduled
- */
-int dispatchProcesses()
-{
-    struct queue_entry* item;
-    struct queue_entry* blockedItem;
-    struct squeue_entry* scheduleItem;
-    struct clockmsg msg;
-    struct sysclock time_allotment;
-    int childPid;
-    int dispatched = 0;
-    char logEntry[200];
-
-    time_allotment.seconds = 0;
-    time_allotment.nanoseconds = NANO_INCREMENT;
-
-    //check schedule queue for waiting processes
-    while(schedQueue.tqh_first != NULL)
-    {
-        scheduleItem = schedQueue.tqh_first;
-        if(osclock->seconds == scheduleItem->timeBuffer.seconds)
+        if(allocationTable[i] != pid)
         {
-            if((osclock->nanoseconds >= scheduleItem->timeBuffer.nanoseconds) && currentWorkers < MAX_CONCURRENT_WORKERS)
-            {
-                //launch process
-                childPid = createChild();
-                addProcess(childPid);
-                sprintf(logEntry, "PID %d scheduled for %d:%d launched at %d:%d", childPid,
-                        scheduleItem->timeBuffer.seconds, scheduleItem->timeBuffer.nanoseconds, osclock->seconds, osclock->nanoseconds);
-                logToFile(logEntry);
-                TAILQ_REMOVE(&schedQueue, schedQueue.tqh_first, entries);
-                scheduledWorkers--;
-                continue;
-            }
-        }
-        else if((osclock->seconds > scheduleItem->timeBuffer.seconds) && currentWorkers < MAX_CONCURRENT_WORKERS)
-        {
-            //launch process
-            childPid = createChild();
-            addProcess(childPid);
-            sprintf(logEntry, "PID %d scheduled for %d:%d launched at %d:%d", childPid,
-                    scheduleItem->timeBuffer.seconds, scheduleItem->timeBuffer.nanoseconds, osclock->seconds, osclock->nanoseconds);
-            logToFile(logEntry);
-            TAILQ_REMOVE(&schedQueue, schedQueue.tqh_first, entries);
-            scheduledWorkers--;
             continue;
         }
-        break;
+        else
+        {
+            allocationTable[i].res[resId - 1] += allocation;
+            availableResources.res[resId - 1] -= allocation;
+            break;
+        }
     }
 
-    //process ready queue
-    while(readyQueue.tqh_first != NULL)
-    {
-        item = readyQueue.tqh_first;
-        msg = buildClockMessage(time_allotment, item->processId);
-        msgsnd(sendMQId, &msg, sizeof(msg), 0);
-        sprintf(logEntry,"sending to processId %d with time allotment 0:%s", item->processId, msg.message);
-        logToFile(logEntry);
-        TAILQ_REMOVE(&readyQueue, readyQueue.tqh_first, entries);
-        dispatched++;
-        incrementClock();
-    }
-
-
-    //move blocked processes to ready queue
-    while(blockedQueue.tqh_first != NULL)
-    {
-        blockedItem = blockedQueue.tqh_first;
-        item = malloc(sizeof(struct queue_entry));
-        item->processId = blockedItem->processId;
-        TAILQ_INSERT_TAIL(&readyQueue, item, entries);
-        TAILQ_REMOVE(&blockedQueue, blockedQueue.tqh_first, entries);
-        sprintf(logEntry, "PID %d moved from blocked queue to ready queue", item->processId);
-        logToFile(logEntry);
-        incrementClock();
-    }
-    incrementClock();
-    return dispatched;
 }
+
+/**
+ * Claim a resource for use
+ * @param resId
+ * @param pid
+ * @return
+ */
+bool claimResource(int resId, int pid)
+{
+    bool result = false;
+    if(availableResources.res[resId - 1] == 0)
+    {
+        //log resource not available
+    }
+    else
+    {
+
+        updateResourceAllocation(pid, resId, 1);
+        result = true;
+    }
+
+    return result;
+}
+
+/**
+ * Release a resource from a process
+ * @param resId
+ * @param pid
+ */
+void releaseResource(int resId, int pid)
+{
+    updateResourceAllocation(pid, resId, -1);
+}
+
+
+
 
 /**
  * Determines if child processes can be spawned
@@ -535,12 +357,44 @@ bool canSpawnChildren()
     time_t now;
     time(&now);
 
-    if(now - t < 3 && totalWorkers <= MAX_TOTAL_WORKERS)
+    if(now - startTime < 5 && totalWorkers <= MAX_TOTAL_WORKERS)
     {
         result = true;
     }
 
     return  result;
+}
+
+/**
+ * Creates a resource message for
+ * MQ transport
+ * @param pid
+ * @param resId
+ * @param allocation
+ * @return
+ */
+struct resourcemsg makeResourceMessage(int pid, int resId, int allocation)
+{
+    struct resourcemsg msg;
+    msg.msgType = pid;
+    char msgText[15];
+
+    sprintf(msgText, "%d:%d", resId, allocation);
+    msg.message = msgText;
+
+    return msg;
+}
+
+int[2] getResourceMsg(struct resourcemsg childMsg)
+{
+    int result[2];
+
+    char* token = strtok(childMsg.message, ":");
+    result[0] = atoi(token);
+    token = strtok(NULL, ":");
+    result[1] = atoi(token);
+
+    return result;
 }
 
 /**
@@ -550,56 +404,72 @@ bool canSpawnChildren()
 void executeWorkers()
 {
     int spawnChance = 0;
+    bool running = true;
+    struct resourcemsg msg;
+    struct resourcemsg replyMsg;
+    int messageVal[2];
 
-    while(canSpawnChildren())
+    while(running)
     {
-        if(TERM_FLAG)
+        if(msgrcv(listenerMQId, (void *)&msg, sizeof(struct resourcemsg), 0, IPC_NOWAIT) != -1)
         {
-            //kill child processes and clear resources
-            cleanupResources();
-            break;
+            messageVal = getResourceMsg(msg);
+            if(messageVal[0] == -1) // end process
+            {
+                waitForTerm(msg.msgType);
+            }
+            else if(messageVal[1] > 0) //claim resource
+            {
+                replyMsg.msgType = msg.msgType;
+                if(!claimResource(messageVal[0], msg.msgType)) // reject claim
+                {
+                    sprintf(replyMsg.message, "%d:%d", messageVal[0], -1);
+                }
+                else // approve claim
+                {
+                    replyMsg.message = msg.message;
+                }
+                msgsnd(replyMQId, &replyMsg, sizeof(struct resourcemsg), 0);
+            }
+            else //release resource
+            {
+                releaseResource(messageVal[0], msg.msgType);
+                msgsnd(replyMQId, &msg, sizeof(struct resourcemsg), 0);
+            }
+
+        }
+        else if(errno == ENOMSG)
+        {
+            //log no messages
         }
         else
         {
-            //chance to spawn child process
-            srand(time(0));
+            perror("There was a problem retrieving messages from processes");
+            cleanupResources();
+            exit(-1);
+        }
+
+        if(canSpawnChildren())  //chance to spawn child process
+        {
+
             spawnChance =  rand() % 100;
 
             //check for max running processes
             if((spawnChance >= SPAWN_THRESHOLD) && (totalWorkers < MAX_TOTAL_WORKERS))
             {
-                //schedule child creation
-                addChildToScheduler();
-                totalWorkers++;
+                //child creation
+                createChild();
             }
         }
 
-        //perform dispatch tasks
-        int dispatched = dispatchProcesses();
+        //manage active processes
         incrementClock();
-        //handle replies from the child processes
-        handleReplies(dispatched);
+        if(currentWorkers == 0)
+        {
+            running = false;
+        }
 
     }
-    //spawning children done.  manage scheduling until end of all programs
-
-    do
-    {
-        if(!TERM_FLAG)
-        {
-            int dispatched = dispatchProcesses();
-            incrementClock();
-            handleReplies(dispatched);
-            incrementClock();
-        }
-        else
-        {
-            cleanupResources();
-            exit(-1);
-        }
-
-    }while((currentWorkers > 0) || (scheduledWorkers > 0));
-
 }
 
 /**
@@ -619,7 +489,7 @@ void init()
     osclock->nanoseconds = 0;
 
     //init randomgen
-    srand((unsigned) time(NULL));
+    srand((unsigned) getpid());
 
     //init log file
     logfp = fopen(logFile, "w+");
@@ -627,10 +497,6 @@ void init()
     //register signal interrupt
     signal(SIGINT, termFlag);
 
-    //init queue structures
-    TAILQ_INIT(&readyQueue);
-    TAILQ_INIT(&blockedQueue);
-    TAILQ_INIT(&schedQueue);
 
     //init MQs
     listenerMQId = msgget(listenerMQKey, 0666 | IPC_CREAT);
@@ -642,13 +508,15 @@ void init()
         exit(-1);
     }
 
+    //init available resource
+    availableResources.pid = getpid();
+    for(int i = 0; i < 10; i ++)
+    {
+        availableResources.res[i] = MAX_RES_COUNT;
+    }
 
-    //init processTable clock
-    nextPrint.nanoseconds = NANOS_HALF_SECOND;
-    nextPrint.seconds = 0;
-
-    //capture start time
-    time(&t);
+    //get start time
+    time(&startTime);
 
 }
 

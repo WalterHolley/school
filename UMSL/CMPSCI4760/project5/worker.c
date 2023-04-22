@@ -8,17 +8,20 @@
 #include <time.h>
 #include "osclock.h"
 
+#define ACTION_BOUND 50
+
 time_t t;
 int pid;
 int ppid;
 int listenerMQId, replyMQId, ossMemId;
 int seconds;
 int nanoseconds;
-
+const int MAX_WAIT_NANOS = 250000000;
+bool terminate = false;
+struct sysclock startTime;
+struct sysclock nextCancelCheck;
 
 struct sysclock* osClock;
-struct sysclock processStartTime;
-struct sysclock processEndTime;
 
 void cleanup()
 {
@@ -26,85 +29,17 @@ void cleanup()
     shmdt(osClock);
 }
 
-void printWorkerInfo()
-{
-    printf("WORKER PID:%d PPID:%d SysClockS: %d SysClockNano: %d \n", pid, ppid, osClock->seconds, osClock->nanoseconds);
-}
-
 /**
- * Simulates work for the given length of time
- */
-void doWork(struct sysclock workTime)
-{
-    struct sysclock stopTime;
-    stopTime.seconds = osClock->seconds;
-    stopTime.nanoseconds = osClock->nanoseconds + workTime.nanoseconds;
-
-    if(stopTime.nanoseconds > NANOS_IN_SECOND)
-    {
-        stopTime.seconds = stopTime.seconds + 1;
-        stopTime.nanoseconds = NANOS_IN_SECOND % stopTime.nanoseconds;
-    }
-
-    while(osClock->seconds <= stopTime.seconds)
-    {
-
-        if(stopTime.nanoseconds <= osClock->nanoseconds)
-        {
-            if(osClock->seconds >= stopTime.seconds)
-            {
-                printf("PID: %i Work completed\n", pid);
-                break;
-            }
-
-        }
-    }
-}
-
-/**
- * Converts a clock message value into a sysclock object
- * @param msg
+ * Determine how much time
+ * has elapsed against the parent
+ * process clock since the process started
  * @return
  */
-struct sysclock clockMsgToSysClock(struct clockmsg msg)
+struct sysclock elapsedTime()
 {
     struct sysclock result;
-
-    result.seconds = 0;
-    result.nanoseconds = atoi(msg.message);
-
-    return result;
-}
-
-/**
- * Convert system clock to
- * clock message for MQ
- * @param clock
- * @return clockmsg structure
- */
-struct clockmsg SysClockToclockmsg(struct sysclock clock)
-{
-    struct clockmsg result;
-    int i, size;
-
-    char messageText[15];
-    sprintf(messageText, "%d", clock.nanoseconds);
-    size = strlen(messageText);
-    result.msgType = pid;
-
-    for(i = 0; i < 14 && i < size; i++)
-    {
-        result.message[i] = messageText[i];
-    }
-    return result;
-}
-
-//Determines how much time has elapsed
-struct sysclock elapsedTime(struct sysclock startTime, struct sysclock endTime)
-{
-    struct sysclock result;
-    int endNanos = endTime.nanoseconds;
-    int endSeconds = endTime.seconds;
+    int endNanos = osClock->nanoseconds;
+    int endSeconds = osClock->seconds;
     int deltaNanos = endNanos - startTime.nanoseconds;
     int deltaSeconds = endSeconds - startTime.seconds;
 
@@ -121,51 +56,83 @@ struct sysclock elapsedTime(struct sysclock startTime, struct sysclock endTime)
 }
 
 /**
- * Determines if the time criteria has been met, and
- * indicates if the process can be terminated
+ * Gets random number.  Returns
+ * true if number below or at action bound
+ * @return
  */
-int doTerminate(struct sysclock runTime)
+bool randRoll()
 {
-    int result, randVal, newTime = 0;
-    struct clockmsg message;
+    bool result = false;
 
-    //generate random 0 - 99(inclusive)
-    randVal = rand() % 100;
-
-
-    if(randVal >= 0 && randVal < 30)//0 - 29, end program
+    if(rand() <= ACTION_BOUND)
     {
-        //change runtime value, send negative
-        randVal == 0? randVal = 1 :false;
-        runTime.nanoseconds = (runTime.nanoseconds / randVal);
-
-        doWork(runTime);
-        runTime.nanoseconds = runTime.nanoseconds * -1;
-        printf("Worker %i: Ending Program\n", pid);
-        result = 1;
+        result = true;
     }
-    else if(randVal >= 30 && randVal <= 69) //30 - 69, continue running
-    {
-        //'work' until time elapses, then continue
-        doWork(runTime);
-        printf("Worker %i: Continuing Program\n", pid);
-        result = 0;
-    }
-    else //70 - 99,  I/O blocked
-    {
-        //change runtime value
-        runTime.nanoseconds = (runTime.nanoseconds / randVal);
-        doWork(runTime);
-        printf("Worker %i: IO Blocked\n", pid);
-        result = 0;
-    }
-
-    //send resulting runtime to reply queue
-    message = SysClockToclockmsg(runTime);
-    msgsnd(replyMQId, &message, sizeof(struct clockmsg), 0);
-    printf("Worker %i: Message sent\n", pid);
 
     return result;
+}
+
+void printWorkerInfo()
+{
+    printf("User PID:%d PPID:%d SysClockS: %d SysClockNano: %d \n", pid, ppid, osClock->seconds, osClock->nanoseconds);
+}
+
+
+void updateTerminationFlag()
+{
+    if(randRoll())
+    {
+        terminate = true;
+    }
+    else //update next termination check
+    {
+        nextCancelCheck.seconds = osClock->seconds;
+        nextCancelCheck.nanoseconds = osClock->nanoseconds;
+        int nanos = (rand() % (MAX_WAIT_NANOS - 0 + 1));
+        nextCancelCheck.nanoseconds += nanos;
+
+        if(nextCancelCheck.nanoseconds > NANOS_IN_SECOND)
+        {
+            nextCancelCheck.seconds += 1;
+            nextCancelCheck.nanoseconds = nextCancelCheck.nanoseconds - NANOS_IN_SECOND;
+        }
+    }
+}
+
+/**
+ * Updates the termination flag after meeting certain criteria
+ */
+void checkForTermination()
+{
+    if(elapsedTime().seconds > 0)
+    {
+        if(osClock->seconds > nextCancelCheck.seconds)
+        {
+            updateTerminationFlag()
+        }
+        else if(osClock->seconds == nextCancelCheck.seconds && osClock->nanoseconds >= nextCancelCheck.nanoseconds)
+        {
+            updateTerminationFlag();
+        }
+    }
+}
+
+/**
+ * Manage process resources
+ */
+void manageResources()
+{
+    if(randRoll())
+    {
+        if(randRoll())
+        {
+            //claim resource
+        }
+        else
+        {
+            //release resource
+        }
+    }
 }
 
 int setup()
@@ -218,25 +185,32 @@ int setup()
     return result;
 }
 
+/**
+ * Orchestrates the operations of the child process
+ */
+void doSomething()
+{
+    manageResources();
+    checkForTermination();
+}
+
 int main(int argc, char* argv[])
 {
 
 
     if(setup())
     {
-        struct clockmsg msg;
-        struct sysclock workTime;
         printWorkerInfo();
         printf("--Just Starting\n");
 
-        //listen for message from parent
         do
         {
+            doSomething();
+            /*
             printf("Worker: %i (R)entering work loop\n", pid);
             if(msgrcv(listenerMQId, &msg, sizeof(struct clockmsg), pid, 0) != -1)
             {
                 printf("Worker: %i message received\n", pid);
-                workTime = clockMsgToSysClock(msg);
             }
             else
             {
@@ -245,9 +219,10 @@ int main(int argc, char* argv[])
                 perror("Worker had a problem receiving a message");
                 break;
             }
+             */
 
 
-        }while(doTerminate(workTime) == 0);
+        }while(!terminate);
         cleanup();
         printWorkerInfo();
         printf("--Terminating\n");
