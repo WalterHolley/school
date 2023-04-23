@@ -6,9 +6,9 @@
 #include <string.h>
 #include <sys/shm.h>
 #include <time.h>
-#include "osclock.h"
+#include "resource.h"
 
-#define ACTION_BOUND 50
+#define ACTION_BOUND 25
 
 time_t t;
 int pid;
@@ -22,6 +22,7 @@ struct sysclock startTime;
 struct sysclock nextCancelCheck;
 
 struct sysclock* osClock;
+struct resource processResources;
 
 void cleanup()
 {
@@ -63,8 +64,9 @@ struct sysclock elapsedTime()
 bool randRoll()
 {
     bool result = false;
+    int randVal = rand() % 100;
 
-    if(rand() <= ACTION_BOUND)
+    if(randVal <= ACTION_BOUND)
     {
         result = true;
     }
@@ -77,6 +79,20 @@ void printWorkerInfo()
     printf("User PID:%d PPID:%d SysClockS: %d SysClockNano: %d \n", pid, ppid, osClock->seconds, osClock->nanoseconds);
 }
 
+/**
+ * Contrsucts a resource message
+ * @param resId
+ * @param allocation
+ * @return
+ */
+struct resourcemsg getResourceMsg(int resId, int allocation)
+{
+    struct resourcemsg msg;
+    msg.msgType = pid;
+    sprintf(msg.message, "%d:%d", resId, allocation);
+
+    return msg;
+}
 
 void updateTerminationFlag()
 {
@@ -108,13 +124,97 @@ void checkForTermination()
     {
         if(osClock->seconds > nextCancelCheck.seconds)
         {
-            updateTerminationFlag()
+            updateTerminationFlag();
         }
         else if(osClock->seconds == nextCancelCheck.seconds && osClock->nanoseconds >= nextCancelCheck.nanoseconds)
         {
             updateTerminationFlag();
         }
     }
+}
+
+int * parseResourceMsg(struct resourcemsg msg)
+{
+    static int result[2];
+
+    char* token = strtok(msg.message, ":");
+    result[0] = atoi(token);
+    token = strtok(NULL, ":");
+    result[1] = atoi(token);
+
+    return result;
+}
+
+
+void handleReply()
+{
+    struct resourcemsg msg;
+    int * incomingMsg;
+    int resId, allocation = 0;
+    if(msgrcv(listenerMQId, (void *)&msg, sizeof(struct resourcemsg), pid, 0) != -1)
+    {
+        printf("Worker: %i message received\n", pid);
+        incomingMsg = parseResourceMsg(msg);
+        resId = *(incomingMsg);
+        allocation = *(incomingMsg + 1);
+
+        if(resId == -1) //request denied
+        {
+
+        }
+        else //update allocation
+        {
+            processResources.res[resId] += allocation;
+        }
+
+    }
+    else
+    {
+        printWorkerInfo();
+        cleanup();
+        perror("Worker had a problem receiving a message");
+    }
+
+}
+
+/**
+ * Requests a resource operation from OSS
+ */
+void processResource(bool claim)
+{
+    int res = (rand() % (9 + 1));
+    struct resourcemsg msg;
+
+    if(claim)
+    {
+        if(processResources.res[res] == MAX_RES_COUNT) //max claimed. try release
+        {
+            processResource(false);
+        }
+        else //request resource
+        {
+            msg = getResourceMsg(res, 1);
+            printf("user_proc %d: requesting resource\n", pid);
+            msgsnd(replyMQId, &msg, sizeof(struct resourcemsg), 0);
+            handleReply();
+        }
+    }
+    else
+    {
+        if(processResources.res[res] == 0) //nothing to release. try claim
+        {
+            processResource(true);
+        }
+        else //release resource
+        {
+            printf("user_proc %d: releasing resource\n", pid);
+            msg = getResourceMsg(res, -1);
+            msgsnd(replyMQId, &msg, sizeof(struct resourcemsg), 0);
+            handleReply();
+        }
+    }
+
+
 }
 
 /**
@@ -126,11 +226,12 @@ void manageResources()
     {
         if(randRoll())
         {
-            //claim resource
+            processResource(true);
         }
         else
         {
             //release resource
+            processResource(false);
         }
     }
 }
@@ -159,8 +260,6 @@ int setup()
     }
     else
     {
-
-
         if((struct sysclock*)osClock == NULL)
         {
             cleanup();
@@ -196,7 +295,7 @@ void doSomething()
 
 int main(int argc, char* argv[])
 {
-
+    struct resourcemsg msg;
 
     if(setup())
     {
@@ -206,23 +305,12 @@ int main(int argc, char* argv[])
         do
         {
             doSomething();
-            /*
-            printf("Worker: %i (R)entering work loop\n", pid);
-            if(msgrcv(listenerMQId, &msg, sizeof(struct clockmsg), pid, 0) != -1)
-            {
-                printf("Worker: %i message received\n", pid);
-            }
-            else
-            {
-                printWorkerInfo();
-                cleanup();
-                perror("Worker had a problem receiving a message");
-                break;
-            }
-             */
-
 
         }while(!terminate);
+        //communicate termination
+        msg = getResourceMsg(-1, -1);
+        msgsnd(replyMQId, &msg, sizeof(struct resourcemsg), 0);
+
         cleanup();
         printWorkerInfo();
         printf("--Terminating\n");

@@ -21,41 +21,28 @@
 
 
 
-//element for process queues
-struct queue_entry {
-    int processId;
-    TAILQ_ENTRY(queue_entry) entries;
-};
-
-//element for scheduling queue
-struct squeue_entry {
-    struct sysclock timeBuffer;
-    TAILQ_ENTRY(squeue_entry) entries;
-};
-
-//ready and blocked queues
-TAILQ_HEAD(readyhead, queue_entry) readyQueue;
-TAILQ_HEAD(blockedhead, queue_entry) blockedQueue;
-
-//scheduling queue
-TAILQ_HEAD(schedulehead, squeue_entry) schedQueue;
-
 //globals
 time_t startTime;
 int totalWorkers = 0;
 int currentWorkers = 0;
-int scheduledWorkers = 0;
+int pendingWorkers = 0;
 int listenerMQId, sendMQId, ossMemId;
 const int MAX_RUN_TIME = 60;
 
-const int NANO_INCREMENT = 10000;
+const int NANO_INCREMENT = 100000;
 int TERM_FLAG = 0;
+int linesRemaining = 100000; //total number of lines that can be written to the log
 struct sysclock* osclock;
 struct resource availableResources;
 struct resource allocationTable[18];
-size_t procTableSize = sizeof(processTable) / sizeof(struct process);
+struct resource requestTable[18];
+int allocationTableSize = sizeof(allocationTable) / sizeof(allocationTable[0]);
 char* logFile = "oss.log";
 FILE *logfp;
+bool verbose = false;
+
+
+
 
 /**
  * Cleanup of the processes and resources
@@ -67,11 +54,11 @@ void cleanupResources()
     printf("Terminating process\n");
     int i;
 
-    for(i = 0; i < procTableSize; i++)
+    for(i = 0; i < allocationTableSize; i++)
     {
-        if(processTable[i].occupied)
+        if(allocationTable[i].pid > 0)
         {
-            kill(processTable[i].pid, SIGTERM);
+            kill(allocationTable[i].pid, SIGTERM);
         }
     }
 
@@ -82,23 +69,6 @@ void cleanupResources()
     msgctl(sendMQId, IPC_RMID, NULL);
     //clear shared memory
     shmctl(ossMemId, IPC_RMID, NULL);
-
-    //clear process queues
-    while(readyQueue.tqh_first != NULL)
-    {
-        TAILQ_REMOVE(&readyQueue, readyQueue.tqh_first, entries);
-    }
-
-    while(blockedQueue.tqh_first != NULL)
-    {
-        TAILQ_REMOVE(&blockedQueue, blockedQueue.tqh_first, entries);
-    }
-
-    while(schedQueue.tqh_first != NULL)
-    {
-        TAILQ_REMOVE(&schedQueue, schedQueue.tqh_first, entries);
-    }
-
 }
 
 void termFlag()
@@ -128,7 +98,7 @@ int handleParams(int argCount, char *argString[])
 {
     int result = 0;
     int options;
-    while((options = getopt(argCount, argString, ":hf:")) != -1)
+    while((options = getopt(argCount, argString, ":hvf:")) != -1)
     {
         switch(options)
         {
@@ -142,7 +112,10 @@ int handleParams(int argCount, char *argString[])
             case ':':
                 printf("%c missing option value\n", optopt);
                 break;
-            case 'v': //TODO: Implement verbose logging flag
+            case 'v':
+                printf("Verbose logging enabled\n");
+                verbose = true;
+                break;
             case '?':
             default:
                 printf("Unknown option: %c\n", optopt);
@@ -165,46 +138,57 @@ int handleParams(int argCount, char *argString[])
 void logToFile(char entry[200])
 {
     int len = strlen(entry);
-    char logitem[210] = "OSS:";
+    char logItem[210] = "OSS:";
 
     if(len > 0)
     {
-        strcat(logitem, entry);
-        strcat(logitem, "\n");
-        fprintf(logfp, logitem);
+        if(linesRemaining > 0)
+        {
+            strcat(logItem, entry);
+            strcat(logItem, "\n");
+            fprintf(logfp, logItem);
+            linesRemaining--;
+        }
+
     }
 
 
 }
 
 /**
+ * writes content to console and logfile
+ * @param entry
+ */
+void writeToConsole(char entry[200])
+{
+    printf("%s\n", entry);
+    logToFile(entry);
+}
+
+/**
  * Prints the process table to
  * the console
  */
-void printProcessTable()
+void printAllocationTable()
 {
-        int i;
-        char line[100];
-        //print OSS message
-        sprintf(line, "OSS PID: %d SysClockS: %d SysclockNano: %d", getpid(), osclock->seconds, osclock->nanoseconds);
-        logToFile(line);
-        printf(line);
-        sprintf(line, "Process Table:");
-        logToFile(line);
-        printf(line);
+    int i;
+    char line[100];
+    //print header
+    sprintf(line, "PID\tRO  R1  R2  R3  R4  R5  R6  R7  R8  R9");
+    logToFile(line);
+    printf(line);
 
-        //print header
-        sprintf(line,"%-10s%-10s%-10s%-10s%s", "Entry", "Occupied", "PID", "StartS", "StartN");
+    //print rows
+    for(i = 0; i < allocationTableSize; i++)
+    {
+        sprintf(line, "%-10i%-4i%-4i%-4i%-4i%-4i%-4i%-4i%-4i%-4i%i", allocationTable[i].pid,
+                allocationTable[i].res[0], allocationTable[i].res[1], allocationTable[i].res[2],
+                allocationTable[i].res[3], allocationTable[i].res[4], allocationTable[i].res[5],
+                allocationTable[i].res[6], allocationTable[i].res[7], allocationTable[i].res[8],
+                allocationTable[i].res[9]);
         logToFile(line);
         printf(line);
-
-        //print rows
-        for(i = 0; i < procTableSize; i++)
-        {
-            sprintf(line, "%-10i%-10i%-10i%-10i%i", i, processTable[i].occupied, processTable[i].pid, processTable[i].startSeconds, processTable[i].startNano);
-            logToFile(line);
-            printf(line);
-        }
+    }
 
 }
 
@@ -224,9 +208,30 @@ void incrementClock()
  * **/
 int addProcess(pid_t childPid)
 {
-    struct process newProc;
-    struct queue_entry *procEntry;
+    struct resource user_proc_res;
+    user_proc_res.pid = childPid;
     int i, result = 0;
+
+    //init resource values
+    for(i = 0; i < 10; i++)
+    {
+        user_proc_res.res[i] = 0;
+    }
+
+    //add to table
+    for(i = 0; i < allocationTableSize; i++)
+    {
+        if(allocationTable[i].pid != 0)
+        {
+            continue;
+        }
+        else
+        {
+            allocationTable[i] = user_proc_res;
+            result = 1;
+            break;
+        }
+    }
 
     return result;
 }
@@ -249,13 +254,14 @@ int createChild()
     }
     else if (childPid == 0) //this is the child node.  run program
     {
-        char* args[] = {"./worker", NULL};
+        char* args[] = {"./user_proc", NULL};
         execvp(args[0], args);
     }
-    else //parent. add child to ready queue.
+    else //parent. add child to allocation table
     {
         currentWorkers++;
         totalWorkers++;
+        addProcess(childPid);
         incrementClock();
         incrementClock();
     }
@@ -266,23 +272,7 @@ int createChild()
 
 
 
-/** Loops until a child process is terminated.
- * Increments OS clock
- * @return -1 for error
- * process Id of child on success
- */
-int waitForTerm(int childPid)
-{
-    int result = 0;
-    int pidStatus;
-    do
-    {
-        result = waitpid(childPid, &pidStatus, WNOHANG);
-        incrementClock();
-    }while(result != childPid);
-    currentWorkers--;
-    return result;
-}
+
 
 /**
  * Update the resource allocation table
@@ -294,20 +284,96 @@ void updateResourceAllocation(int pid, int resId, int allocation)
 {
     int i;
 
-    for(i = 0; i < len(allocationTable); i++)
+    for(i = 0; i < allocationTableSize; i++)
     {
-        if(allocationTable[i] != pid)
+        if(allocationTable[i].pid != pid)
         {
             continue;
         }
         else
         {
-            allocationTable[i].res[resId - 1] += allocation;
-            availableResources.res[resId - 1] -= allocation;
+            allocationTable[i].res[resId] += allocation;
+            availableResources.res[resId] -= allocation;
             break;
         }
     }
 
+}
+
+/**
+ * Release a resource from a process
+ * @param resId
+ * @param pid
+ * @param allocation the positive number of resources to release
+ */
+void releaseResource(int resId, int pid, int allocation)
+{
+    char logEntry[200];
+    sprintf(logEntry, "PID %d has released %d unit(s) of R%d", pid, allocation, resId);
+    writeToConsole(logEntry);
+    updateResourceAllocation(pid, resId, allocation * -1);
+}
+
+/**
+ * Removes a process from the allocation table,
+ * and releases all its resources
+ * @param childPid
+ * @return
+ */
+int removeProcess(pid_t childPid)
+{
+    int i,j,result = 0;
+    char logEntry[200];
+
+    for(i = 0; i < allocationTableSize; i++)
+    {
+        if(allocationTable[i].pid != childPid)
+        {
+            continue;
+        }
+        else
+        {
+            //release all resources
+            for(j = 0; j < 10; j++)
+            {
+                if(allocationTable[i].res[j] <= 0)
+                {
+                    continue;
+                }
+                else
+                {
+                    releaseResource(j, childPid, allocationTable[i].res[j]);
+                }
+            }
+
+            //mark for re-use in allocation table
+            allocationTable[i].pid = -1;
+        }
+    }
+
+    return result;
+}
+
+/** Loops until a child process is terminated.
+ * Increments OS clock
+ * @return -1 for error
+ * process Id of child on success
+ */
+int waitForTerm(int childPid)
+{
+    int result = 0;
+    char logEntry[200];
+    int pidStatus;
+    do
+    {
+        result = waitpid(childPid, &pidStatus, WNOHANG);
+        incrementClock();
+    }while(result != childPid);
+    removeProcess(childPid);
+    currentWorkers--;
+    sprintf(logEntry, "PID %d has terminated at S:%d N:%d", childPid, osclock->seconds, osclock->nanoseconds);
+    writeToConsole(logEntry);
+    return result;
 }
 
 /**
@@ -332,19 +398,6 @@ bool claimResource(int resId, int pid)
 
     return result;
 }
-
-/**
- * Release a resource from a process
- * @param resId
- * @param pid
- */
-void releaseResource(int resId, int pid)
-{
-    updateResourceAllocation(pid, resId, -1);
-}
-
-
-
 
 /**
  * Determines if child processes can be spawned
@@ -377,17 +430,15 @@ struct resourcemsg makeResourceMessage(int pid, int resId, int allocation)
 {
     struct resourcemsg msg;
     msg.msgType = pid;
-    char msgText[15];
 
-    sprintf(msgText, "%d:%d", resId, allocation);
-    msg.message = msgText;
+    sprintf(msg.message, "%d:%d", resId, allocation);
 
     return msg;
 }
 
-int[2] getResourceMsg(struct resourcemsg childMsg)
+int * getResourceMsg(struct resourcemsg childMsg)
 {
-    int result[2];
+    static int result[2];
 
     char* token = strtok(childMsg.message, ":");
     result[0] = atoi(token);
@@ -398,76 +449,135 @@ int[2] getResourceMsg(struct resourcemsg childMsg)
 }
 
 /**
+ * Handle the creation of child processes
+ */
+void manageProcesses()
+{
+    int spawnChance;
+    if(canSpawnChildren())  //chance to spawn child process
+    {
+
+        spawnChance =  rand() % 100;
+
+        //check for max running processes
+        if(currentWorkers >= MAX_CONCURRENT_WORKERS)
+        {
+            pendingWorkers++;
+        }
+        else if((spawnChance >= SPAWN_THRESHOLD) && (totalWorkers < MAX_TOTAL_WORKERS))
+        {
+            //child creation
+            createChild();
+        }
+    }
+    else if(pendingWorkers > 0 && currentWorkers < MAX_CONCURRENT_WORKERS) //manage pending workers
+    {
+        createChild();
+        pendingWorkers--;
+    }
+}
+
+/**
+ * listens for incoming messages
+ */
+bool listenForMessages()
+{
+    struct resourcemsg msg;
+    struct resourcemsg replyMsg;
+    int resId, allocation = 0;
+    int * messageVal;
+    bool running = true;
+    char logEntry[200];
+
+    incrementClock();
+    if(msgrcv(listenerMQId, (void *)&msg, sizeof(struct resourcemsg), 0, IPC_NOWAIT) != -1)
+    {
+        messageVal = getResourceMsg(msg);
+        resId = *(messageVal + 0);
+        allocation = *(messageVal + 1);
+
+        if(resId == -1) // end process
+        {
+            waitForTerm(msg.msgType);
+        }
+        else if(allocation > 0) //claim resource
+        {
+            if(verbose)
+            {
+                sprintf(logEntry, "PID %d is requesting %d unit(s) of R%d at S:%d N:%d", msg.msgType, allocation, resId, osclock->seconds,
+                        osclock->nanoseconds);
+                writeToConsole(logEntry);
+            }
+            replyMsg.msgType = msg.msgType;
+            if(!claimResource(messageVal[0], msg.msgType)) // reject claim
+            {
+                sprintf(replyMsg.message, "%d:%d", messageVal[0], -1);
+                if(verbose)
+                {
+                    sprintf(logEntry, "PID %d request for %d unit(s) of R%d was rejected", msg.msgType, allocation, resId);
+                    writeToConsole(logEntry);
+                }
+
+            }
+            else // approve claim
+            {
+                strcpy(replyMsg.message, msg.message);
+                if(verbose)
+                {
+                    sprintf(logEntry, "PID %d request for R%d was accepted", msg.msgType, resId);
+                    writeToConsole(logEntry);
+                }
+
+            }
+            msgsnd(sendMQId, &replyMsg, sizeof(struct resourcemsg), 0);
+        }
+        else //release resource
+        {
+            releaseResource(resId, msg.msgType, allocation * -1);
+            msgsnd(sendMQId, &msg, sizeof(struct resourcemsg), 0);
+        }
+    }
+    else if(errno == ENOMSG)
+    {
+        incrementClock();
+    }
+    else
+    {
+        perror("There was a problem retrieving messages from processes");
+        cleanupResources();
+        exit(-1);
+    }
+
+    //manage active processes
+    incrementClock();
+    if(!canSpawnChildren() && currentWorkers == 0)
+    {
+        running = false;
+    }
+
+    return running;
+}
+
+/**
  * executes the worker process using the
  * parameters supplied by the user
  */
 void executeWorkers()
 {
-    int spawnChance = 0;
     bool running = true;
-    struct resourcemsg msg;
-    struct resourcemsg replyMsg;
-    int messageVal[2];
-
     while(running)
     {
-        if(msgrcv(listenerMQId, (void *)&msg, sizeof(struct resourcemsg), 0, IPC_NOWAIT) != -1)
+        if(TERM_FLAG)
         {
-            messageVal = getResourceMsg(msg);
-            if(messageVal[0] == -1) // end process
-            {
-                waitForTerm(msg.msgType);
-            }
-            else if(messageVal[1] > 0) //claim resource
-            {
-                replyMsg.msgType = msg.msgType;
-                if(!claimResource(messageVal[0], msg.msgType)) // reject claim
-                {
-                    sprintf(replyMsg.message, "%d:%d", messageVal[0], -1);
-                }
-                else // approve claim
-                {
-                    replyMsg.message = msg.message;
-                }
-                msgsnd(replyMQId, &replyMsg, sizeof(struct resourcemsg), 0);
-            }
-            else //release resource
-            {
-                releaseResource(messageVal[0], msg.msgType);
-                msgsnd(replyMQId, &msg, sizeof(struct resourcemsg), 0);
-            }
-
-        }
-        else if(errno == ENOMSG)
-        {
-            //log no messages
+            cleanupResources();
+            break;
         }
         else
         {
-            perror("There was a problem retrieving messages from processes");
-            cleanupResources();
-            exit(-1);
+            manageProcesses();
+            running = listenForMessages();
         }
 
-        if(canSpawnChildren())  //chance to spawn child process
-        {
-
-            spawnChance =  rand() % 100;
-
-            //check for max running processes
-            if((spawnChance >= SPAWN_THRESHOLD) && (totalWorkers < MAX_TOTAL_WORKERS))
-            {
-                //child creation
-                createChild();
-            }
-        }
-
-        //manage active processes
-        incrementClock();
-        if(currentWorkers == 0)
-        {
-            running = false;
-        }
 
     }
 }
@@ -481,6 +591,7 @@ void init()
     int replyMQKey = ftok("oss.c", 3);
     key_t sharedMemKey = ftok("oss.c", 5);
     char logEntry[100];
+    int i;
 
     //init 'OS' clock and shared resources
     ossMemId = shmget(sharedMemKey, sizeof(struct sysclock), 0644|IPC_CREAT);
@@ -510,7 +621,7 @@ void init()
 
     //init available resource
     availableResources.pid = getpid();
-    for(int i = 0; i < 10; i ++)
+    for(i = 0; i < 10; i ++)
     {
         availableResources.res[i] = MAX_RES_COUNT;
     }
