@@ -16,7 +16,7 @@ Installation
 run 'make' command
 
 Invocation
-oss [-f <logfile>]
+oss [-f <logfile> -v]
 For additional information on application use, use the help(oss -h) command
 
 EXAMPLE OUTPUT
