@@ -37,9 +37,11 @@ struct resource availableResources;
 struct resource allocationTable[18];
 struct resource requestTable[18];
 int allocationTableSize = sizeof(allocationTable) / sizeof(allocationTable[0]);
+int requestTableSize = sizeof (requestTable) / sizeof (requestTable[0]);
 char* logFile = "oss.log";
 FILE *logfp;
 bool verbose = false;
+
 
 
 
@@ -209,25 +211,32 @@ void incrementClock()
 int addProcess(pid_t childPid)
 {
     struct resource user_proc_res;
-    user_proc_res.pid = childPid;
+    struct resource proc_request;
     int i, result = 0;
+
+    user_proc_res.pid = childPid;
+    proc_request.pid = childPid;
+
 
     //init resource values
     for(i = 0; i < 10; i++)
     {
         user_proc_res.res[i] = 0;
+        user_proc_res.priority = 1;
+        proc_request.res[i] = 0;
     }
 
     //add to table
     for(i = 0; i < allocationTableSize; i++)
     {
-        if(allocationTable[i].pid != 0)
+        if(allocationTable[i].pid > 0)
         {
             continue;
         }
         else
         {
             allocationTable[i] = user_proc_res;
+            requestTable[i] = proc_request;
             result = 1;
             break;
         }
@@ -294,6 +303,11 @@ void updateResourceAllocation(int pid, int resId, int allocation)
         {
             allocationTable[i].res[resId] += allocation;
             availableResources.res[resId] -= allocation;
+
+            if(allocation > 0) //consume resources. reduce priority
+            {
+                allocationTable[i].priority++;
+            }
             break;
         }
     }
@@ -306,12 +320,31 @@ void updateResourceAllocation(int pid, int resId, int allocation)
  * @param pid
  * @param allocation the positive number of resources to release
  */
-void releaseResource(int resId, int pid, int allocation)
+void releaseResource(int resId, int pid, int allocation, bool procTerminated)
 {
     char logEntry[200];
-    sprintf(logEntry, "PID %d has released %d unit(s) of R%d", pid, allocation, resId);
-    writeToConsole(logEntry);
-    updateResourceAllocation(pid, resId, allocation * -1);
+    struct  resourcemsg msg;
+
+    if(allocation > 0)
+    {
+        allocation = allocation * -1;
+    }
+
+    msg.msgType = pid;
+    sprintf(msg.message, "%d:%d", resId, allocation);
+
+    updateResourceAllocation(pid, resId, allocation);
+    if(!procTerminated)
+    {
+        msgsnd(sendMQId, &msg, sizeof(struct resourcemsg), 0);
+    }
+
+
+    if(verbose)
+    {
+        sprintf(logEntry, "PID %d has released %d unit(s) of R%d", pid, allocation * -1, resId);
+        writeToConsole(logEntry);
+    }
 }
 
 /**
@@ -342,11 +375,11 @@ int removeProcess(pid_t childPid)
                 }
                 else
                 {
-                    releaseResource(j, childPid, allocationTable[i].res[j]);
+                    releaseResource(j, childPid, allocationTable[i].res[j], true);
                 }
             }
 
-            //mark for re-use in allocation table
+            //mark for re-use in allocation and request table
             allocationTable[i].pid = -1;
         }
     }
@@ -382,21 +415,163 @@ int waitForTerm(int childPid)
  * @param pid
  * @return
  */
-bool claimResource(int resId, int pid)
+bool claimResource(int resId, int pid, int allocation)
 {
     bool result = false;
-    if(availableResources.res[resId - 1] == 0)
+    struct resourcemsg replyMsg;
+    char logEntry[200];
+
+    if(availableResources.res[resId] == 0)
     {
         //log resource not available
+        if(verbose)
+        {
+            sprintf(logEntry, "PID %d request for %d unit(s) of R%d was rejected", pid, allocation, resId);
+            writeToConsole(logEntry);
+        }
     }
-    else
+    else //allocate and send resource
     {
 
-        updateResourceAllocation(pid, resId, 1);
+        updateResourceAllocation(pid, resId, allocation);
+        replyMsg.msgType = pid;
+        sprintf(replyMsg.message, "%d:%d", resId, allocation);
+        msgsnd(sendMQId, &replyMsg, sizeof(struct resourcemsg), 0);
+        if(verbose)
+        {
+            sprintf(logEntry, "PID %d request for %d unit(s) of R%d was accepted", pid, allocation, resId);
+            writeToConsole(logEntry);
+        }
+
+
         result = true;
     }
 
     return result;
+}
+
+/**
+ * Gets the priority of the process
+ * @param pid
+ * @return
+ */
+int getProcessPriority(int pid)
+{
+    int i, priority = 0;
+
+    for(i = 0; i < allocationTableSize; i++)
+    {
+        if(allocationTable[i].pid != pid)
+        {
+            continue;
+        }
+        else
+        {
+            priority = allocationTable[i].priority;
+            break;
+        }
+    }
+
+    return priority;
+}
+
+bool isDeadlock()
+{
+    bool isDeadlocked = false;
+    char logEntry[200];
+
+    int i, j;
+
+    for(i = 0; i < requestTableSize; i++)
+    {
+        if(requestTable[i].pid <= 0) //skip where needed
+        {
+            continue;
+        }
+        else
+        {
+            for(j = 0; j < 10; j++)
+            {
+
+                if(requestTable[i].res[j] > 0) //parse request
+                {
+                    //deadlock detected
+                    if(!claimResource(j, requestTable[i].pid, requestTable[i].res[j]))
+                    {
+                        isDeadlocked = true;
+                        sprintf(logEntry, "Deadlock detected in PID %d", requestTable[i].pid);
+                        writeToConsole(logEntry);
+                    }
+                    else // request is compete.  invalidate table entry
+                    {
+                        requestTable[i].pid = -1;
+                        requestTable[i].res[j] = 0;
+                        requestTable[i].priority = 0;
+                    }
+                }
+            }
+        }
+
+
+    }
+
+    return isDeadlocked;
+}
+
+/**
+ * Terminates lowest priority process
+ * and retries pending resource requests
+ */
+void clearDeadlock()
+{
+     int i, j;
+     char logEntry[200];
+     int childPid = 0;
+     int lowestPriority = 0;
+     for(i = 0; i < requestTableSize; i++)
+     {
+         if(requestTable[i].pid <= 0)
+         {
+             continue;
+         }
+         else
+         {
+             //track lowest priority process
+             requestTable[i].priority = getProcessPriority(requestTable[i].pid);
+             if(requestTable[i].priority > lowestPriority)
+             {
+                 childPid = requestTable[i].pid;
+                 lowestPriority = requestTable[i].priority;
+                 j = i;
+             }
+             incrementClock();
+         }
+     }
+
+     //terminate process
+     if(childPid > 0)
+     {
+         kill(requestTable[j].pid, SIGTERM);
+         sprintf(logEntry, "Deadlock Detection has marked PID %d for termination", requestTable[j].pid, osclock->seconds, osclock->nanoseconds);
+         writeToConsole(logEntry);
+         waitForTerm(requestTable[j].pid);
+
+
+         //cleanup request entry
+         requestTable[j].pid = -1;
+         requestTable[j].priority = 0;
+         for(i = 0; i < 10; i++)
+         {
+             requestTable[j].res[i] = 0;
+         }
+     }
+
+
+     //check for deadlock
+     if(isDeadlock())
+     {
+         clearDeadlock();
+     }
 }
 
 /**
@@ -460,14 +635,21 @@ void manageProcesses()
         spawnChance =  rand() % 100;
 
         //check for max running processes
-        if(currentWorkers >= MAX_CONCURRENT_WORKERS)
+        if(spawnChance >= SPAWN_THRESHOLD)
         {
-            pendingWorkers++;
-        }
-        else if((spawnChance >= SPAWN_THRESHOLD) && (totalWorkers < MAX_TOTAL_WORKERS))
-        {
-            //child creation
-            createChild();
+            if(totalWorkers < MAX_TOTAL_WORKERS)
+            {
+                if(currentWorkers >= MAX_CONCURRENT_WORKERS) //create child later
+                {
+                    pendingWorkers++;
+                    totalWorkers++;
+                }
+                else
+                {
+                    //child creation
+                    createChild();
+                }
+            }
         }
     }
     else if(pendingWorkers > 0 && currentWorkers < MAX_CONCURRENT_WORKERS) //manage pending workers
@@ -480,82 +662,68 @@ void manageProcesses()
 /**
  * listens for incoming messages
  */
-bool listenForMessages()
+void listenForMessages()
 {
     struct resourcemsg msg;
     struct resourcemsg replyMsg;
     int resId, allocation = 0;
     int * messageVal;
-    bool running = true;
+    int maxCheck = currentWorkers;
+    int i = 0;
     char logEntry[200];
-
+    
     incrementClock();
-    if(msgrcv(listenerMQId, (void *)&msg, sizeof(struct resourcemsg), 0, IPC_NOWAIT) != -1)
+    do
     {
-        messageVal = getResourceMsg(msg);
-        resId = *(messageVal + 0);
-        allocation = *(messageVal + 1);
+        if(msgrcv(listenerMQId, (void *)&msg, sizeof(struct resourcemsg), 0, IPC_NOWAIT) != -1)
+        {
+            messageVal = getResourceMsg(msg);
+            resId = *(messageVal + 0);
+            allocation = *(messageVal + 1);
 
-        if(resId == -1) // end process
-        {
-            waitForTerm(msg.msgType);
-        }
-        else if(allocation > 0) //claim resource
-        {
-            if(verbose)
+            if(resId == -1) // end process
             {
-                sprintf(logEntry, "PID %d is requesting %d unit(s) of R%d at S:%d N:%d", msg.msgType, allocation, resId, osclock->seconds,
-                        osclock->nanoseconds);
-                writeToConsole(logEntry);
+                waitForTerm(msg.msgType);
             }
-            replyMsg.msgType = msg.msgType;
-            if(!claimResource(messageVal[0], msg.msgType)) // reject claim
+            else if(allocation > 0) //add to request table
             {
-                sprintf(replyMsg.message, "%d:%d", messageVal[0], -1);
                 if(verbose)
                 {
-                    sprintf(logEntry, "PID %d request for %d unit(s) of R%d was rejected", msg.msgType, allocation, resId);
+                    sprintf(logEntry, "PID %d is requesting %d unit(s) of R%d at S:%d N:%d", msg.msgType, allocation, resId, osclock->seconds,
+                            osclock->nanoseconds);
                     writeToConsole(logEntry);
                 }
+                requestTable[i].pid = msg.msgType;
+                requestTable[i].res[resId] = allocation;
 
             }
-            else // approve claim
+            else //release resource
             {
-                strcpy(replyMsg.message, msg.message);
-                if(verbose)
-                {
-                    sprintf(logEntry, "PID %d request for R%d was accepted", msg.msgType, resId);
-                    writeToConsole(logEntry);
-                }
-
+                releaseResource(resId, msg.msgType, allocation, false);
             }
-            msgsnd(sendMQId, &replyMsg, sizeof(struct resourcemsg), 0);
+
         }
-        else //release resource
+        else if(errno == ENOMSG)
         {
-            releaseResource(resId, msg.msgType, allocation * -1);
-            msgsnd(sendMQId, &msg, sizeof(struct resourcemsg), 0);
+            incrementClock();
         }
+        else
+        {
+            perror("There was a problem retrieving messages from processes");
+            cleanupResources();
+            exit(-1);
+        }
+        i++;
     }
-    else if(errno == ENOMSG)
+    while(i < maxCheck);
+
+    //check for deadlock
+    if(isDeadlock())
     {
-        incrementClock();
-    }
-    else
-    {
-        perror("There was a problem retrieving messages from processes");
-        cleanupResources();
-        exit(-1);
+        clearDeadlock();
     }
 
-    //manage active processes
     incrementClock();
-    if(!canSpawnChildren() && currentWorkers == 0)
-    {
-        running = false;
-    }
-
-    return running;
 }
 
 /**
@@ -575,9 +743,13 @@ void executeWorkers()
         else
         {
             manageProcesses();
-            running = listenForMessages();
+            listenForMessages();
         }
 
+        if(currentWorkers <= 0 && !canSpawnChildren())
+        {
+            running = false;
+        }
 
     }
 }

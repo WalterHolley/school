@@ -9,6 +9,7 @@
 #include "osclock.h"
 struct resource{
     int pid;
+    int priority;
     int res[10];
 
 };
