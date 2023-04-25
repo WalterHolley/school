@@ -7,7 +7,10 @@ Github: https://github.com/WalterHolley/school/tree/master/UMSL/CMPSCI4760/proje
 PROJECT 5: OS Resource Management Simulator written in C.
 A simulated Operating System clock will be managed by a parent process(oss).
 At random intervals, oss will start a worker processes, and communicate back
-and forth with these processes through a pair of message queues.
+and forth with these processes through a pair of message queues.  The worker processes
+will make requests for resource from oss.  Depending on the availability of resources, oss
+will grant the request, or detect a deadlock if the system has none of the requested resource available.
+oss will then decide to terminate a process based on its priority level if it's using the requested resource.
 
 Installation
 run 'make' command
