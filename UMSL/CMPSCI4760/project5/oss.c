@@ -665,13 +665,12 @@ void manageProcesses()
 void listenForMessages()
 {
     struct resourcemsg msg;
-    struct resourcemsg replyMsg;
     int resId, allocation = 0;
     int * messageVal;
     int maxCheck = currentWorkers;
     int i = 0;
     char logEntry[200];
-    
+
     incrementClock();
     do
     {
