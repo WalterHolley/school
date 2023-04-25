@@ -26,6 +26,10 @@ time_t startTime;
 int totalWorkers = 0;
 int currentWorkers = 0;
 int pendingWorkers = 0;
+int deadlockTerminations = 0;
+int normalTerminations = 0;
+int deadlockChecks = 0;
+int requestsGranted = 0;
 int listenerMQId, sendMQId, ossMemId;
 const int MAX_RUN_TIME = 60;
 
@@ -176,21 +180,29 @@ void printAllocationTable()
     int i;
     char line[100];
     //print header
-    sprintf(line, "PID\tRO  R1  R2  R3  R4  R5  R6  R7  R8  R9");
-    logToFile(line);
-    printf(line);
-
-    //print rows
-    for(i = 0; i < allocationTableSize; i++)
+    sprintf(line, "%-10s%-4s%-4s%-4s%-4s%-4s%-4s%-4s%-4s%-4s%-4s","PID","RO","R1","R2","R3","R4","R5","R6","R7","R8","R9");
+    if(verbose)
     {
-        sprintf(line, "%-10i%-4i%-4i%-4i%-4i%-4i%-4i%-4i%-4i%-4i%i", allocationTable[i].pid,
-                allocationTable[i].res[0], allocationTable[i].res[1], allocationTable[i].res[2],
-                allocationTable[i].res[3], allocationTable[i].res[4], allocationTable[i].res[5],
-                allocationTable[i].res[6], allocationTable[i].res[7], allocationTable[i].res[8],
-                allocationTable[i].res[9]);
         logToFile(line);
-        printf(line);
+        printf("%s\n", line);
+
+        //print rows
+        for(i = 0; i < allocationTableSize; i++)
+        {
+            if(allocationTable[i].pid > 0)
+            {
+                sprintf(line, "%-10i%-4i%-4i%-4i%-4i%-4i%-4i%-4i%-4i%-4i%i", allocationTable[i].pid,
+                        allocationTable[i].res[0], allocationTable[i].res[1], allocationTable[i].res[2],
+                        allocationTable[i].res[3], allocationTable[i].res[4], allocationTable[i].res[5],
+                        allocationTable[i].res[6], allocationTable[i].res[7], allocationTable[i].res[8],
+                        allocationTable[i].res[9]);
+                logToFile(line);
+                printf("%s\n", line);
+            }
+
+        }
     }
+
 
 }
 
@@ -443,7 +455,11 @@ bool claimResource(int resId, int pid, int allocation)
             writeToConsole(logEntry);
         }
 
-
+        requestsGranted++;
+        if(requestsGranted % 20 == 0) //print allocation table
+        {
+            printAllocationTable();
+        }
         result = true;
     }
 
@@ -481,6 +497,7 @@ bool isDeadlock()
     char logEntry[200];
 
     int i, j;
+    deadlockChecks++;
 
     for(i = 0; i < requestTableSize; i++)
     {
@@ -555,7 +572,7 @@ void clearDeadlock()
          sprintf(logEntry, "Deadlock Detection has marked PID %d for termination", requestTable[j].pid, osclock->seconds, osclock->nanoseconds);
          writeToConsole(logEntry);
          waitForTerm(requestTable[j].pid);
-
+         deadlockTerminations++;
 
          //cleanup request entry
          requestTable[j].pid = -1;
@@ -683,6 +700,7 @@ void listenForMessages()
             if(resId == -1) // end process
             {
                 waitForTerm(msg.msgType);
+                normalTerminations++;
             }
             else if(allocation > 0) //add to request table
             {
