@@ -27,6 +27,7 @@ int totalWorkers = 0;
 int currentWorkers = 0;
 int pendingWorkers = 0;
 int deadlockTerminations = 0;
+int deadlocksDetected = 0;
 int normalTerminations = 0;
 int deadlockChecks = 0;
 int requestsGranted = 0;
@@ -57,7 +58,7 @@ bool verbose = false;
 void cleanupResources()
 {
     //terminate remaining children
-    printf("Terminating process\n");
+    printf("Terminating program\n");
     int i;
 
     for(i = 0; i < allocationTableSize; i++)
@@ -491,6 +492,38 @@ int getProcessPriority(int pid)
     return priority;
 }
 
+/**
+ * searches for processes using the given resource id
+ * and returns the process with the lowest priority
+ * @param id
+ * @return
+ */
+struct resource getLowestPriorityProcessByResId(int id)
+{
+    int i, priority = 0;
+    struct resource lowestResource;
+
+    for(i = 0; i < allocationTableSize; i++)
+    {
+        if(allocationTable[i].pid <= 0)
+        {
+            continue;
+        }
+        else if(allocationTable[i].res[id] <= 0)
+        {
+            continue;
+        }
+        else
+        {
+            if(allocationTable[i].priority >= priority)
+            {
+                lowestResource = allocationTable[i];
+            }
+        }
+    }
+    return lowestResource;
+}
+
 bool isDeadlock()
 {
     bool isDeadlocked = false;
@@ -516,8 +549,10 @@ bool isDeadlock()
                     if(!claimResource(j, requestTable[i].pid, requestTable[i].res[j]))
                     {
                         isDeadlocked = true;
-                        sprintf(logEntry, "Deadlock detected in PID %d", requestTable[i].pid);
+                        deadlocksDetected++;
+                        sprintf(logEntry, "Deadlock detected in PID %d for R%d", requestTable[i].pid, j);
                         writeToConsole(logEntry);
+
                     }
                     else // request is compete.  invalidate table entry
                     {
@@ -541,7 +576,7 @@ bool isDeadlock()
  */
 void clearDeadlock()
 {
-     int i, j;
+     int i, k, j;
      char logEntry[200];
      int childPid = 0;
      int lowestPriority = 0;
@@ -555,12 +590,28 @@ void clearDeadlock()
          {
              //track lowest priority process
              requestTable[i].priority = getProcessPriority(requestTable[i].pid);
-             if(requestTable[i].priority > lowestPriority)
+
+             //get conflicted resource
+             for(k = 0; k < 10; k++)
              {
-                 childPid = requestTable[i].pid;
-                 lowestPriority = requestTable[i].priority;
-                 j = i;
+                 if(requestTable[i].res[k] <= 0)
+                 {
+                     continue;
+                 }
+                 else
+                 {
+                     struct resource lowest = getLowestPriorityProcessByResId(k);
+                     if(lowest.priority >= requestTable[i].priority)
+                     {
+                         childPid = lowest.pid;
+                     }
+                     else
+                     {
+                         childPid = requestTable[i].pid;
+                     }
+                 }
              }
+
              incrementClock();
          }
      }
@@ -568,19 +619,32 @@ void clearDeadlock()
      //terminate process
      if(childPid > 0)
      {
-         kill(requestTable[j].pid, SIGTERM);
+         kill(childPid, SIGTERM);
          sprintf(logEntry, "Deadlock Detection has marked PID %d for termination", requestTable[j].pid, osclock->seconds, osclock->nanoseconds);
          writeToConsole(logEntry);
-         waitForTerm(requestTable[j].pid);
+         waitForTerm(childPid);
          deadlockTerminations++;
 
-         //cleanup request entry
-         requestTable[j].pid = -1;
-         requestTable[j].priority = 0;
-         for(i = 0; i < 10; i++)
+         //cleanup request entry if needed
+         for(i = 0; i < requestTableSize; i++)
          {
-             requestTable[j].res[i] = 0;
+             if(requestTable[i].pid != childPid)
+             {
+                 continue;
+             }
+             else
+             {
+                 requestTable[i].pid = -1;
+                 requestTable[i].priority = 0;
+                 for(j = 0; j < 10; j++)
+                 {
+                     requestTable[i].res[j] = 0;
+                 }
+                 break;
+             }
          }
+
+
      }
 
 
@@ -589,6 +653,7 @@ void clearDeadlock()
      {
          clearDeadlock();
      }
+
 }
 
 /**
@@ -739,7 +804,6 @@ void listenForMessages()
     {
         clearDeadlock();
     }
-
     incrementClock();
 }
 
@@ -820,6 +884,26 @@ void init()
 
 }
 
+void printFinalResults()
+{
+    float terminationPercentage = (float)deadlockTerminations / (float)deadlocksDetected;
+    char logEntry[200];
+
+    sprintf(logEntry, "Requests granted: %d", requestsGranted);
+    writeToConsole(logEntry);
+    sprintf(logEntry, "Deadlock checks run: %d", deadlockChecks);
+    writeToConsole(logEntry);
+    sprintf(logEntry, "Deadlocks detected: %d", deadlocksDetected);
+    writeToConsole(logEntry);
+    sprintf(logEntry, "Deadlock terminations: %d", deadlockTerminations);
+    writeToConsole(logEntry);
+    sprintf(logEntry, "Deadlock termination percentage %.2f%s", terminationPercentage * 100, "%");
+    writeToConsole(logEntry);
+    sprintf(logEntry, "Processes terminated normally: %d", normalTerminations);
+    writeToConsole(logEntry);
+
+}
+
 /**MAIN ENTRY POINT**/
 int main(int argCount, char *argv[])
 {
@@ -831,7 +915,7 @@ int main(int argCount, char *argv[])
         logToFile(logentry);
         //spin up workers
         executeWorkers();
-
+        printFinalResults();
         //cleanup program resources
         sprintf(logentry, "End of Execution");
         logToFile(logentry);
