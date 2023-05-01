@@ -13,4 +13,8 @@ object ServiceBuilder {
         .addConverterFactory(GsonConverterFactory.create())
         .client(client)
         .build()
+
+    fun<T> buildService(service: Class<T>): T{
+        return retroFit.create(service)
+    }
 }

@@ -14,11 +14,11 @@
 
     </FrameLayout>
 
-    <FrameLayout
+    <androidx.fragment.app.FragmentContainerView
         android:id="@+id/weatherFragment"
         android:layout_width="match_parent"
-        android:layout_height="300dp"
-        app:layout_constraintBottom_toBottomOf="parent">
+        android:layout_height="match_parent"
+        android:layout_marginTop="400dp"
+        app:layout_constraintBottom_toBottomOf="parent" />
 
-    </FrameLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

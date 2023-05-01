@@ -3,6 +3,7 @@ package com.umsl.wdhq58.weatherfinal
 import android.Manifest
 import android.content.pm.PackageManager
 import android.location.Location
+import android.location.LocationRequest
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.widget.FrameLayout
@@ -10,8 +11,13 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import com.google.android.gms.dynamic.SupportFragmentWrapper
+import com.google.android.gms.location.CurrentLocationRequest
 import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.Granularity
+import com.google.android.gms.location.LastLocationRequest
 import com.google.android.gms.location.LocationServices
+import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
@@ -22,7 +28,14 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 
     private lateinit var fusedLocationProviderClient: FusedLocationProviderClient
     private var latLongPos: Pair<Double, Double> = Pair(0.0,0.0)
-
+    private var locationRequest: CurrentLocationRequest = CurrentLocationRequest.Builder()
+        .setGranularity(Granularity.GRANULARITY_PERMISSION_LEVEL)
+        .setPriority(LocationRequest.QUALITY_HIGH_ACCURACY)
+        .setDurationMillis(5000)
+        .build()
+    private var lastLocation: LastLocationRequest = LastLocationRequest.Builder()
+        .setGranularity(Granularity.GRANULARITY_PERMISSION_LEVEL)
+        .build();
 
 
     //check permissions
@@ -32,6 +45,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         permissions -> when {
             permissions.getOrDefault(Manifest.permission.ACCESS_FINE_LOCATION, false) -> {
                 //access granted
+
             }
             permissions.getOrDefault(Manifest.permission.ACCESS_COARSE_LOCATION, false) -> {
                 //approximate access granted
@@ -60,11 +74,14 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
             ), ContextCompat.checkSelfPermission(this.applicationContext,
                 Manifest.permission.ACCESS_COARSE_LOCATION
             ) -> {
-                //perform action
-                fusedLocationProviderClient.getLastLocation()
+                //get position and create map fragment
+                fusedLocationProviderClient.getCurrentLocation(locationRequest, null)
                     .addOnSuccessListener { location : Location? ->
                         if (location != null) {
+
                             latLongPos = Pair(location.latitude, location.longitude)
+                            initMap()
+                            initWeather()
                         }
                     }
             }
@@ -76,6 +93,25 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
             }
         }
 
+
+    }
+
+    override fun onMapReady(map: GoogleMap) {
+        val location   = LatLng(latLongPos.first, latLongPos.second)
+        val camPosition = CameraUpdateFactory.newLatLng(location)
+        val camZoom = CameraUpdateFactory.zoomTo(15F)
+        map.moveCamera(camPosition)
+        map.animateCamera(camZoom)
+        map.addMarker(MarkerOptions()
+            .position(location)
+            .title("You Are Here"))
+
+
+
+
+    }
+
+    private fun initMap(){
         //map fragment
         val mapFragment = SupportMapFragment.newInstance()
 
@@ -87,10 +123,13 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         mapFragment.getMapAsync(this)
     }
 
-    override fun onMapReady(map: GoogleMap) {
-        map.addMarker(MarkerOptions()
-            .position(LatLng(latLongPos.first, latLongPos.second))
-            .title("You Are Here"))
+    private fun initWeather(){
+        val weatherFragment = weather.newInstance(latLongPos.first, latLongPos.second)
+
+        supportFragmentManager
+            .beginTransaction()
+            .add(R.id.weatherFragment, weatherFragment)
+            .commit()
     }
 
 }
