@@ -2,6 +2,7 @@ package com.umsl.wdhq58.weatherfinal
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.content.res.Configuration
 import android.location.Location
 import android.location.LocationRequest
 import androidx.appcompat.app.AppCompatActivity

@@ -1,0 +1,21 @@
+NAME
+    oss - Operating System Simulator: a unix/linux application used for simulating simple OS behavior.
+SYNOPSIS
+    oss [-fv] [-f<logfile> -v]
+DESCRIPTION
+    Simulates a process scheduler by generating up to 100 child processes, and handling the states they report back to OSS.
+    OSS logs its actions in a file
+
+    Options:
+        -f  optional: write the parent(oss) process output to a log file.  if no value is provided, the default log will be
+            oss.log, and will be stored in the root of the oss execution directory.  Default and given log names will be
+            cleared on each execution.
+        -v  optional: provides additional operation details to the console and output log.
+
+EXAMPLES
+ oss                    => Simulated resource management operations take place. OSS will output its events to the oss.log file.
+ oss -f logproc.log     => Simulated resource management operations take place. OSS will output its events to the logproc.log file.
+ oss -v                 => Simulated resource management operations take place. OSS will output additional event
+                           information to the oss.log file.
+ oss -f logproc.log -v  => Simulated resource management operations take place. OSS will output its event information
+                           to the logproc.log file.

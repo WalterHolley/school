@@ -14,15 +14,32 @@
         <TextView
             android:id="@+id/tvTemp"
             android:layout_width="match_parent"
-            android:layout_height="100dp"
-            android:text="TextView"
+            android:layout_height="80dp"
             android:textAlignment="center"
-            android:textSize="80dp" />
+            android:textColor="@color/white"
+            android:textSize="60sp" />
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:id="@+id/tvLocationName"
+            android:textAlignment="center"
+            android:textColor="@color/white"
+            android:textSize="20sp"/>
+        <TextView
+            android:id="@+id/tvDescription"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:textAlignment="center"
+            android:textColor="@color/white"
+            android:textSize="20sp"/>
 
         <TextView
             android:id="@+id/tvHiLow"
             android:layout_width="match_parent"
             android:layout_height="50dp"
+            android:textAlignment="center"
+            android:textColor="@color/white"
+            android:textSize="20sp"
             android:text="" />
     </LinearLayout>
 </FrameLayout>

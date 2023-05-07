@@ -76,10 +76,14 @@ class weather : Fragment() {
         //view objects
         val temp = view.findViewById<TextView>(R.id.tvTemp)
         val hilow = view.findViewById<TextView>(R.id.tvHiLow)
+        val location = view.findViewById<TextView>(R.id.tvLocationName)
+        val description = view.findViewById<TextView>(R.id.tvDescription)
 
         //update values
         temp.setText(temperatureText)
         hilow.setText(hiLowText)
+        location.setText(data.name)
+        description.setText((data.weather.get(0).description))
     }
 
     companion object {
