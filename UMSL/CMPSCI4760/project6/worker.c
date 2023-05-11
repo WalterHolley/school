@@ -8,7 +8,7 @@
 #include <time.h>
 #include "resource.h"
 
-#define ACTION_BOUND 25
+#define ACTION_BOUND 60
 
 time_t t;
 int pid;
@@ -16,44 +16,20 @@ int ppid;
 int listenerMQId, replyMQId, ossMemId;
 int seconds;
 int nanoseconds;
-const int MAX_WAIT_NANOS = 250000000;
+int memChecks, memcheckLimit;
 bool terminate = false;
-struct sysclock startTime;
-struct sysclock nextCancelCheck;
 
 struct sysclock* osClock;
-struct resource processResources;
+
+struct replyMsg{
+    int address;
+    char operation[5];
+};
 
 void cleanup()
 {
     //disconnect from shared resources
     shmdt(osClock);
-}
-
-/**
- * Determine how much time
- * has elapsed against the parent
- * process clock since the process started
- * @return
- */
-struct sysclock elapsedTime()
-{
-    struct sysclock result;
-    int endNanos = osClock->nanoseconds;
-    int endSeconds = osClock->seconds;
-    int deltaNanos = endNanos - startTime.nanoseconds;
-    int deltaSeconds = endSeconds - startTime.seconds;
-
-    if(deltaNanos < 0)
-    {
-        deltaSeconds = deltaSeconds - 1;
-        deltaNanos =  NANOS_IN_SECOND + deltaNanos;
-    }
-
-    result.nanoseconds = deltaNanos;
-    result.seconds = deltaSeconds;
-
-    return result;
 }
 
 /**
@@ -80,19 +56,30 @@ void printWorkerInfo()
 }
 
 /**
- * Contrsucts a resource message
+ * Contrsucts a memory request to send to OSS
  * @param resId
  * @param allocation
  * @return
  */
-struct resourcemsg getResourceMsg(int resId, int allocation)
+struct resourcemsg getResourceMsg(int address, int base, int offset, int operation)
 {
     struct resourcemsg msg;
     msg.msgType = pid;
-    sprintf(msg.message, "%d:%d", resId, allocation);
+    sprintf(msg.message, "%d:%d:%d:%d", operation, base, offset, address);
 
     return msg;
 }
+
+int randRange(int upper, int lower)
+{
+    int result = 0;
+
+    result = (rand() % (upper - lower + 1)) + lower;
+
+    return  result;
+}
+
+
 
 void updateTerminationFlag()
 {
@@ -102,16 +89,7 @@ void updateTerminationFlag()
     }
     else //update next termination check
     {
-        nextCancelCheck.seconds = osClock->seconds;
-        nextCancelCheck.nanoseconds = osClock->nanoseconds;
-        int nanos = (rand() % (MAX_WAIT_NANOS - 0 + 1));
-        nextCancelCheck.nanoseconds += nanos;
-
-        if(nextCancelCheck.nanoseconds > NANOS_IN_SECOND)
-        {
-            nextCancelCheck.seconds += 1;
-            nextCancelCheck.nanoseconds = nextCancelCheck.nanoseconds - NANOS_IN_SECOND;
-        }
+        memChecks = 0;
     }
 }
 
@@ -120,52 +98,38 @@ void updateTerminationFlag()
  */
 void checkForTermination()
 {
-    if(elapsedTime().seconds > 0)
+    if(memChecks >= memcheckLimit)
     {
-        if(osClock->seconds > nextCancelCheck.seconds)
-        {
-            updateTerminationFlag();
-        }
-        else if(osClock->seconds == nextCancelCheck.seconds && osClock->nanoseconds >= nextCancelCheck.nanoseconds)
-        {
-            updateTerminationFlag();
-        }
+        updateTerminationFlag();
     }
 }
 
-int * parseResourceMsg(struct resourcemsg msg)
+struct replyMsg parseResourceMsg(struct resourcemsg msg)
 {
-    static int result[2];
+   struct replyMsg result;
 
     char* token = strtok(msg.message, ":");
-    result[0] = atoi(token);
+    result.operation = token;
     token = strtok(NULL, ":");
-    result[1] = atoi(token);
+    result.address = atoi(token);
 
     return result;
 }
 
 
+/**
+ * Handles reply from Message Queue
+ */
 void handleReply()
 {
     struct resourcemsg msg;
-    int * incomingMsg;
-    int resId, allocation = 0;
+    struct replyMsg parsedMessage;
     if(msgrcv(listenerMQId, (void *)&msg, sizeof(struct resourcemsg), pid, 0) != -1)
     {
-        printf("Worker: %i message received\n", pid);
-        incomingMsg = parseResourceMsg(msg);
-        resId = *(incomingMsg);
-        allocation = *(incomingMsg + 1);
 
-        if(resId == -1) //request denied
-        {
-
-        }
-        else //update allocation
-        {
-            processResources.res[resId] += allocation;
-        }
+        parsedMessage = parseResourceMsg(msg);
+        printf("Worker %i: memory %s of address %i acknowledged\n", pid, parsedMessage.operation, parsedMessage.address);
+        memChecks++;
 
     }
     else
@@ -178,62 +142,33 @@ void handleReply()
 }
 
 /**
- * Requests a resource operation from OSS
- */
-void processResource(bool claim)
-{
-    int res = (rand() % (9 + 1));
-    struct resourcemsg msg;
-
-    if(claim)
-    {
-        if(processResources.res[res] == MAX_RES_COUNT) //max claimed. try release
-        {
-            processResource(false);
-        }
-        else //request resource
-        {
-            msg = getResourceMsg(res, 1);
-            printf("user_proc %d: requesting resource\n", pid);
-            msgsnd(replyMQId, &msg, sizeof(struct resourcemsg), 0);
-            handleReply();
-        }
-    }
-    else
-    {
-        if(processResources.res[res] == 0) //nothing to release. try claim
-        {
-            processResource(true);
-        }
-        else //release resource
-        {
-            printf("user_proc %d: releasing resource\n", pid);
-            msg = getResourceMsg(res, -1);
-            msgsnd(replyMQId, &msg, sizeof(struct resourcemsg), 0);
-            handleReply();
-        }
-    }
-
-
-}
-
-/**
- * Manage process resources
+ * Build memory request and send to OSS
  */
 void manageResources()
 {
-    if(randRoll())
-    {
-        if(randRoll())
-        {
-            processResource(true);
-        }
-        else
-        {
-            //release resource
-            processResource(false);
-        }
-    }
+    bool read = false;
+    int page, base, offset, address = 0;
+    struct resourcemsg memRequest;
+
+    //read or write operation
+    read = randRoll();
+    //page
+    page = randRange(31, 0);
+    //base
+    base = randRange(1023, 0);
+    //offset
+    offset = randRange(1023, 0);
+    //address
+    address = (page * base) + offset;
+
+    //build request
+    memRequest = getResourceMsg(address, base, offset, read);
+
+    //send request
+    msgsnd(replyMQId, &memRequest, sizeof(struct resourcemsg), 0);
+
+    //handle reply
+    handleReply();
 }
 
 int setup()
@@ -248,6 +183,9 @@ int setup()
 
     //init randomgen
     srand((unsigned) pid);
+
+    //init memory check limit
+    memcheckLimit = 1000 + randRange(100, -100);
 
     //get shared resources(osclock, reply queue ID, listener queue ID)
     ossMemId = shmget(sharedMemKey, sizeof(struct sysclock), 0644|IPC_CREAT);
@@ -272,7 +210,6 @@ int setup()
 
             if(listenerMQId < 1 || replyMQId < 1)
             {
-
                 cleanup();
                 perror("Worker could not retrieve MQs");
             }
@@ -287,7 +224,7 @@ int setup()
 /**
  * Orchestrates the operations of the child process
  */
-void doSomething()
+void performOperation()
 {
     manageResources();
     checkForTermination();
@@ -304,11 +241,12 @@ int main(int argc, char* argv[])
 
         do
         {
-            doSomething();
+            performOperation();
 
         }while(!terminate);
+
         //communicate termination
-        msg = getResourceMsg(-1, -1);
+        msg = getResourceMsg(-1, -1, -1, -1);
         msgsnd(replyMQId, &msg, sizeof(struct resourcemsg), 0);
 
         cleanup();

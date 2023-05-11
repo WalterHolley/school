@@ -6,37 +6,44 @@
 #define PROJECT5_RESOURCE_H
 #define MAX_RES_COUNT 20
 #define PROC_PAGE_TABLE_SIZE 32
+#define PAGE_OFFSET 1024
+#define FRAME_TABLE_SIZE 256
+
 
 #include "osclock.h"
 struct resource{
-    int pid;
-    int priority;
-    int res[10];
+    int operation;
+    int offset;
+    int base;
+    int address;
 
 };
 
 struct resourcemsg{
     long msgType;
-    char message[15];
+    char message[50];
 };
 
 struct frame{
     bool occupied;
     bool head;
-    unsigned int written : 1;
+    int pid;
     int id;
 
 };
 
+struct frameTable{
+    int headIndex;
+    struct frame frames[FRAME_TABLE_SIZE]
+};
+
 struct pageEntry {
-    int id;
-    char value;
+    int frames[PAGE_OFFSET];
 };
 
 struct proc_pages {
     int pid;
-    int id;
-    bool free;
+    int allocation;
     struct pageEntry pages[PROC_PAGE_TABLE_SIZE];
 
 };

@@ -3,7 +3,7 @@
 #define MAX_SPAWN_TIME 3
 #define SPAWN_THRESHOLD 20
 
-#define FRAME_TABLE_SIZE 256
+
 
 #include <stdio.h>
 #include <stdbool.h>
@@ -39,7 +39,9 @@ const int NANO_INCREMENT = 10000;
 int TERM_FLAG = 0;
 int linesRemaining = 100000; //total number of lines that can be written to the log
 struct sysclock* osclock;
-struct resource availableResources;
+
+struct frameTable frameList;
+struct proc_pages pageTable[MAX_CONCURRENT_WORKERS];
 
 
 //TODO: Define frame queue
@@ -218,33 +220,20 @@ void incrementClock()
  * **/
 int addProcess(pid_t childPid)
 {
-    struct resource user_proc_res;
-    struct resource proc_request;
-    int i, result = 0;
+    struct proc_pages newproc;
+    int result = 0;
 
-    user_proc_res.pid = childPid;
-    proc_request.pid = childPid;
-
-
-    //init resource values
-    for(i = 0; i < 10; i++)
+    //add to page table
+    for(i = 0; i < MAX_CONCURRENT_WORKERS; i++)
     {
-        user_proc_res.res[i] = 0;
-        user_proc_res.priority = 1;
-        proc_request.res[i] = 0;
-    }
-
-    //add to table
-    for(i = 0; i < allocationTableSize; i++)
-    {
-        if(allocationTable[i].pid > 0)
+        if(pageTable[i].pid > 0)
         {
             continue;
         }
         else
         {
-            allocationTable[i] = user_proc_res;
-            requestTable[i] = proc_request;
+            newproc.pid = childPid;
+            allocationTable[i] = newproc;
             result = 1;
             break;
         }
@@ -297,24 +286,24 @@ int createChild()
  * @param resId
  * @param allocation
  */
-void updateResourceAllocation(int pid, int resId, int allocation)
+void addPage(int pid, int page, int frame)
 {
     int i;
 
-    for(i = 0; i < allocationTableSize; i++)
+    for(i = 0; i < MAX_CONCURRENT_WORKERS; i++)
     {
-        if(allocationTable[i].pid != pid)
+        if(pageTable[i].pid != pid)
         {
             continue;
         }
         else
         {
-            allocationTable[i].res[resId] += allocation;
-            availableResources.res[resId] -= allocation;
 
-            if(allocation > 0) //consume resources. reduce priority
+
+            if(pageTable[i].allocation < 32) //consume resources. reduce priority
             {
-                allocationTable[i].priority++;
+                pageTable[i].pages[page].frameId = frame;
+                pageTable[i].allocation++;
             }
             break;
         }
@@ -328,30 +317,26 @@ void updateResourceAllocation(int pid, int resId, int allocation)
  * @param pid
  * @param allocation the positive number of resources to release
  */
-void releaseResource(int resId, int pid, int allocation, bool procTerminated)
+void removePage(int pid, int page)
 {
     char logEntry[200];
-    struct  resourcemsg msg;
+    int i;
 
-    if(allocation > 0)
+    for(i = 0; i < MAX_CONCURRENT_WORKERS; i++)
     {
-        allocation = allocation * -1;
-    }
-
-    msg.msgType = pid;
-    sprintf(msg.message, "%d:%d", resId, allocation);
-
-    updateResourceAllocation(pid, resId, allocation);
-    if(!procTerminated)
-    {
-        msgsnd(sendMQId, &msg, sizeof(struct resourcemsg), 0);
-    }
-
-
-    if(verbose)
-    {
-        sprintf(logEntry, "PID %d has released %d unit(s) of R%d", pid, allocation * -1, resId);
-        writeToConsole(logEntry);
+        if(pageTable[i].pid != pid)
+        {
+            continue;
+        }
+        else
+        {
+            if(pageTable[i].allocation > 0) //consume resources. reduce priority
+            {
+                pageTable[i].pages[page].frameId = NULL;
+                pageTable[i].allocation--;
+            }
+            break;
+        }
     }
 }
 
@@ -366,29 +351,23 @@ int removeProcess(pid_t childPid)
     int i,j,result = 0;
     char logEntry[200];
 
-    for(i = 0; i < allocationTableSize; i++)
+    for(i = 0; i < MAX_CONCURRENT_WORKERS; i++)
     {
-        if(allocationTable[i].pid != childPid)
+        if(pageTable[i].pid != childPid)
         {
             continue;
         }
         else
         {
-            //release all resources
-            for(j = 0; j < 10; j++)
+            //release all pages
+            for(j = 0; j < PROC_PAGE_TABLE_SIZE; j++)
             {
-                if(allocationTable[i].res[j] <= 0)
-                {
-                    continue;
-                }
-                else
-                {
-                    releaseResource(j, childPid, allocationTable[i].res[j], true);
-                }
+                removePage(childPid, i);
             }
 
-            //mark for re-use in allocation and request table
-            allocationTable[i].pid = -1;
+            //mark for re-use in page table
+            pageTable[i].pid = -1;
+            result = 1;
         }
     }
 
@@ -417,239 +396,7 @@ int waitForTerm(int childPid)
     return result;
 }
 
-/**
- * Claim a resource for use
- * @param resId
- * @param pid
- * @return
- */
-bool claimResource(int resId, int pid, int allocation)
-{
-    bool result = false;
-    struct resourcemsg replyMsg;
-    char logEntry[200];
 
-    if(availableResources.res[resId] == 0)
-    {
-        //log resource not available
-        if(verbose)
-        {
-            sprintf(logEntry, "PID %d request for %d unit(s) of R%d was rejected", pid, allocation, resId);
-            writeToConsole(logEntry);
-        }
-    }
-    else //allocate and send resource
-    {
-
-        updateResourceAllocation(pid, resId, allocation);
-        replyMsg.msgType = pid;
-        sprintf(replyMsg.message, "%d:%d", resId, allocation);
-        msgsnd(sendMQId, &replyMsg, sizeof(struct resourcemsg), 0);
-        if(verbose)
-        {
-            sprintf(logEntry, "PID %d request for %d unit(s) of R%d was accepted", pid, allocation, resId);
-            writeToConsole(logEntry);
-        }
-
-        requestsGranted++;
-        if(requestsGranted % 20 == 0) //print allocation table
-        {
-            printAllocationTable();
-        }
-        result = true;
-    }
-
-    return result;
-}
-
-/**
- * Gets the priority of the process
- * @param pid
- * @return
- */
-int getProcessPriority(int pid)
-{
-    int i, priority = 0;
-
-    for(i = 0; i < allocationTableSize; i++)
-    {
-        if(allocationTable[i].pid != pid)
-        {
-            continue;
-        }
-        else
-        {
-            priority = allocationTable[i].priority;
-            break;
-        }
-    }
-
-    return priority;
-}
-
-/**
- * searches for processes using the given resource id
- * and returns the process with the lowest priority
- * @param id
- * @return
- */
-struct resource getLowestPriorityProcessByResId(int id)
-{
-    int i, priority = 0;
-    struct resource lowestResource;
-
-    for(i = 0; i < allocationTableSize; i++)
-    {
-        if(allocationTable[i].pid <= 0)
-        {
-            continue;
-        }
-        else if(allocationTable[i].res[id] <= 0)
-        {
-            continue;
-        }
-        else
-        {
-            if(allocationTable[i].priority >= priority)
-            {
-                lowestResource = allocationTable[i];
-            }
-        }
-    }
-    return lowestResource;
-}
-
-bool isDeadlock()
-{
-    bool isDeadlocked = false;
-    char logEntry[200];
-
-    int i, j;
-    deadlockChecks++;
-
-    for(i = 0; i < requestTableSize; i++)
-    {
-        if(requestTable[i].pid <= 0) //skip where needed
-        {
-            continue;
-        }
-        else
-        {
-            for(j = 0; j < 10; j++)
-            {
-
-                if(requestTable[i].res[j] > 0) //parse request
-                {
-                    //deadlock detected
-                    if(!claimResource(j, requestTable[i].pid, requestTable[i].res[j]))
-                    {
-                        isDeadlocked = true;
-                        deadlocksDetected++;
-                        sprintf(logEntry, "Deadlock detected in PID %d for R%d", requestTable[i].pid, j);
-                        writeToConsole(logEntry);
-
-                    }
-                    else // request is compete.  invalidate table entry
-                    {
-                        requestTable[i].pid = -1;
-                        requestTable[i].res[j] = 0;
-                        requestTable[i].priority = 0;
-                    }
-                }
-            }
-        }
-
-
-    }
-
-    return isDeadlocked;
-}
-
-/**
- * Terminates lowest priority process
- * and retries pending resource requests
- */
-void clearDeadlock()
-{
-     int i, k, j;
-     char logEntry[200];
-     int childPid = 0;
-     int lowestPriority = 0;
-     for(i = 0; i < requestTableSize; i++)
-     {
-         if(requestTable[i].pid <= 0)
-         {
-             continue;
-         }
-         else
-         {
-             //track lowest priority process
-             requestTable[i].priority = getProcessPriority(requestTable[i].pid);
-
-             //get conflicted resource
-             for(k = 0; k < 10; k++)
-             {
-                 if(requestTable[i].res[k] <= 0)
-                 {
-                     continue;
-                 }
-                 else
-                 {
-                     struct resource lowest = getLowestPriorityProcessByResId(k);
-                     if(lowest.priority >= requestTable[i].priority)
-                     {
-                         childPid = lowest.pid;
-                     }
-                     else
-                     {
-                         childPid = requestTable[i].pid;
-                     }
-                 }
-             }
-
-             incrementClock();
-         }
-     }
-
-     //terminate process
-     if(childPid > 0)
-     {
-         kill(childPid, SIGTERM);
-         sprintf(logEntry, "Deadlock Detection has marked PID %d for termination", requestTable[j].pid, osclock->seconds, osclock->nanoseconds);
-         writeToConsole(logEntry);
-         waitForTerm(childPid);
-         deadlockTerminations++;
-
-         //cleanup request entry if needed
-         for(i = 0; i < requestTableSize; i++)
-         {
-             if(requestTable[i].pid != childPid)
-             {
-                 continue;
-             }
-             else
-             {
-                 requestTable[i].pid = -1;
-                 requestTable[i].priority = 0;
-                 for(j = 0; j < 10; j++)
-                 {
-                     requestTable[i].res[j] = 0;
-                 }
-                 break;
-             }
-         }
-
-
-     }
-
-
-     //check for deadlock
-     if(isDeadlock())
-     {
-         clearDeadlock();
-     }
-
-}
 
 /**
  * Determines if child processes can be spawned
@@ -688,14 +435,18 @@ struct resourcemsg makeResourceMessage(int pid, int resId, int allocation)
     return msg;
 }
 
-int * getResourceMsg(struct resourcemsg childMsg)
+struct resource getChildMessage(struct resourcemsg childMsg)
 {
-    static int result[2];
+    struct resource result;
 
     char* token = strtok(childMsg.message, ":");
-    result[0] = atoi(token);
+    result.operation = atoi(token);
     token = strtok(NULL, ":");
-    result[1] = atoi(token);
+    result.base = atoi(token);
+    token = strtok(NULL, ":");
+    result.offset = atoi(token);
+    token = strtok(NULL, ":");
+    result.address = atoi(token);
 
     return result;
 }
@@ -736,14 +487,25 @@ void manageProcesses()
     }
 }
 
+int frameSearch(int pid, struct resource request)
+{
+
+}
+
+void processRequest(struct resource request)
+{
+
+}
+
+
 /**
  * listens for incoming messages
  */
 void listenForMessages()
 {
     struct resourcemsg msg;
-    int resId, allocation = 0;
-    int * messageVal;
+    int resId, offset = 0;
+    struct resource request;
     int maxCheck = currentWorkers;
     int i = 0;
     char logEntry[200];
@@ -753,16 +515,27 @@ void listenForMessages()
     {
         if(msgrcv(listenerMQId, (void *)&msg, sizeof(struct resourcemsg), 0, IPC_NOWAIT) != -1)
         {
-            messageVal = getResourceMsg(msg);
-            resId = *(messageVal + 0);
-            allocation = *(messageVal + 1);
+            request = getChildMessage(msg);
 
-            if(resId == -1) // end process
+            switch(request.operation)
             {
-                waitForTerm(msg.msgType);
+                case -1:
+                    waitForTerm(msg.msgType);
+                    break;
+                case 0:
+                case 1:
+                    break;
+                default:
+                    //unknown.  end program
+                    break;
+
+            }
+            if(request.operation == -1) // end process
+            {
+
                 normalTerminations++;
             }
-            else if(allocation > 0) //add to request table
+            else if(resId == 0) //read
             {
                 if(verbose)
                 {
@@ -774,7 +547,7 @@ void listenForMessages()
                 requestTable[i].res[resId] = allocation;
 
             }
-            else //release resource
+            else //write
             {
                 releaseResource(resId, msg.msgType, allocation, false);
             }
