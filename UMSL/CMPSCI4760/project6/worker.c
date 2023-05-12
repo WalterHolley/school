@@ -23,7 +23,7 @@ struct sysclock* osClock;
 
 struct replyMsg{
     int address;
-    char operation[5];
+    char* operation;
 };
 
 void cleanup()

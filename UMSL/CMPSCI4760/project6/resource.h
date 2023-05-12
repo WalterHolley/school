@@ -34,7 +34,7 @@ struct frame{
 
 struct frameTable{
     int headIndex;
-    struct frame frames[FRAME_TABLE_SIZE]
+    struct frame frames[FRAME_TABLE_SIZE];
 };
 
 struct pageEntry {

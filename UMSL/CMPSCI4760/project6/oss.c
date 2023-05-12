@@ -178,28 +178,6 @@ void printAllocationTable()
     int i;
     char line[100];
     //print header
-    sprintf(line, "%-10s%-4s%-4s%-4s%-4s%-4s%-4s%-4s%-4s%-4s%-4s","PID","RO","R1","R2","R3","R4","R5","R6","R7","R8","R9");
-    if(verbose)
-    {
-        logToFile(line);
-        printf("%s\n", line);
-
-        //print rows
-        for(i = 0; i < allocationTableSize; i++)
-        {
-            if(allocationTable[i].pid > 0)
-            {
-                sprintf(line, "%-10i%-4i%-4i%-4i%-4i%-4i%-4i%-4i%-4i%-4i%i", allocationTable[i].pid,
-                        allocationTable[i].res[0], allocationTable[i].res[1], allocationTable[i].res[2],
-                        allocationTable[i].res[3], allocationTable[i].res[4], allocationTable[i].res[5],
-                        allocationTable[i].res[6], allocationTable[i].res[7], allocationTable[i].res[8],
-                        allocationTable[i].res[9]);
-                logToFile(line);
-                printf("%s\n", line);
-            }
-
-        }
-    }
 
 
 }
@@ -215,32 +193,6 @@ void incrementClock()
 
 }
 
-/** Adds a process record to the process table
- * sends initial MQ message to child process
- * **/
-int addProcess(pid_t childPid)
-{
-    struct proc_pages newproc;
-    int result = 0;
-
-    //add to page table
-    for(i = 0; i < MAX_CONCURRENT_WORKERS; i++)
-    {
-        if(pageTable[i].pid > 0)
-        {
-            continue;
-        }
-        else
-        {
-            newproc.pid = childPid;
-            allocationTable[i] = newproc;
-            result = 1;
-            break;
-        }
-    }
-
-    return result;
-}
 
 /**
  * Forks and creates a child process
@@ -267,7 +219,7 @@ int createChild()
     {
         currentWorkers++;
         totalWorkers++;
-        addProcess(childPid);
+        //TODO: add new page record
         incrementClock();
         incrementClock();
     }
@@ -286,25 +238,21 @@ int createChild()
  * @param resId
  * @param allocation
  */
-void addPage(int pid, int page, int frame)
+void addPage(int pid)
 {
     int i;
+    struct proc_pages newPage;
 
     for(i = 0; i < MAX_CONCURRENT_WORKERS; i++)
     {
-        if(pageTable[i].pid != pid)
+        if(pageTable[i].pid > 0)
         {
             continue;
         }
         else
         {
-
-
-            if(pageTable[i].allocation < 32) //consume resources. reduce priority
-            {
-                pageTable[i].pages[page].frameId = frame;
-                pageTable[i].allocation++;
-            }
+            newPage.pid = pid;
+            pageTable[i] = newPage;
             break;
         }
     }
@@ -317,10 +265,11 @@ void addPage(int pid, int page, int frame)
  * @param pid
  * @param allocation the positive number of resources to release
  */
-void removePage(int pid, int page)
+void removePage(int pid)
 {
     char logEntry[200];
     int i;
+    struct proc_pages emptyPage;
 
     for(i = 0; i < MAX_CONCURRENT_WORKERS; i++)
     {
@@ -330,49 +279,16 @@ void removePage(int pid, int page)
         }
         else
         {
-            if(pageTable[i].allocation > 0) //consume resources. reduce priority
+            if(pageTable[i].pid == pid) //consume resources. reduce priority
             {
-                pageTable[i].pages[page].frameId = NULL;
-                pageTable[i].allocation--;
+                emptyPage.pid = 0;
+                pageTable[i] = emptyPage;
             }
             break;
         }
     }
 }
 
-/**
- * Removes a process from the allocation table,
- * and releases all its resources
- * @param childPid
- * @return
- */
-int removeProcess(pid_t childPid)
-{
-    int i,j,result = 0;
-    char logEntry[200];
-
-    for(i = 0; i < MAX_CONCURRENT_WORKERS; i++)
-    {
-        if(pageTable[i].pid != childPid)
-        {
-            continue;
-        }
-        else
-        {
-            //release all pages
-            for(j = 0; j < PROC_PAGE_TABLE_SIZE; j++)
-            {
-                removePage(childPid, i);
-            }
-
-            //mark for re-use in page table
-            pageTable[i].pid = -1;
-            result = 1;
-        }
-    }
-
-    return result;
-}
 
 /** Loops until a child process is terminated.
  * Increments OS clock
@@ -389,7 +305,6 @@ int waitForTerm(int childPid)
         result = waitpid(childPid, &pidStatus, WNOHANG);
         incrementClock();
     }while(result != childPid);
-    removeProcess(childPid);
     currentWorkers--;
     sprintf(logEntry, "PID %d has terminated at S:%d N:%d", childPid, osclock->seconds, osclock->nanoseconds);
     writeToConsole(logEntry);
@@ -487,14 +402,55 @@ void manageProcesses()
     }
 }
 
-int frameSearch(int pid, struct resource request)
-{
+int getPage(struct resource pageRequest){
+    int page = 0;
+    page = (pageRequest.address / pageRequest.base) - (pageRequest.offset / pageRequest.base);
+    return page;
+}
 
+int frameSearch(struct resource request)
+{
+    int i = frameList.headIndex;
+    int result = -1;
+
+    do
+    {
+        if(!frameList.frames[i].occupied)
+        {
+            //update frame
+            //update page
+
+            result = i;
+            break;
+        }
+        else if(frameList.frames[i].id == request.address)
+        {
+            result = i;
+            break;
+        }
+
+        i++;
+        if(i == FRAME_TABLE_SIZE)
+        {
+            i = 0;
+        }
+
+    }
+    while( i != frameList.headIndex);
+
+    return result;
 }
 
 void processRequest(struct resource request)
 {
+    int memFrame = frameSearch(request);
+    char logEntry[200];
 
+    if(memFrame == -1)
+    {
+        sprintf(logEntry, "Address %i is not in frame.  Page Fault has occurred");
+        logToFile(logEntry);
+    }
 }
 
 
@@ -504,7 +460,7 @@ void processRequest(struct resource request)
 void listenForMessages()
 {
     struct resourcemsg msg;
-    int resId, offset = 0;
+    char* operation;
     struct resource request;
     int maxCheck = currentWorkers;
     int i = 0;
@@ -517,6 +473,15 @@ void listenForMessages()
         {
             request = getChildMessage(msg);
 
+            if(request.operation == 0)
+            {
+                operation = "read";
+            }
+            else if(request.operation == 1)
+            {
+                operation = "write";
+            }
+
             switch(request.operation)
             {
                 case -1:
@@ -524,34 +489,17 @@ void listenForMessages()
                     break;
                 case 0:
                 case 1:
+                    sprintf(logEntry, "PID %d requests %s operation on address %i", msg.msgType, operation, request.address);
+                    logToFile(logEntry);
+                    processRequest(request);
                     break;
                 default:
                     //unknown.  end program
+                    sprintf(logEntry, "PID %i asked for an unknown operation.  Terminating OSS", msg.msgType);
+                    logToFile(logEntry);
                     break;
 
             }
-            if(request.operation == -1) // end process
-            {
-
-                normalTerminations++;
-            }
-            else if(resId == 0) //read
-            {
-                if(verbose)
-                {
-                    sprintf(logEntry, "PID %d is requesting %d unit(s) of R%d at S:%d N:%d", msg.msgType, allocation, resId, osclock->seconds,
-                            osclock->nanoseconds);
-                    writeToConsole(logEntry);
-                }
-                requestTable[i].pid = msg.msgType;
-                requestTable[i].res[resId] = allocation;
-
-            }
-            else //write
-            {
-                releaseResource(resId, msg.msgType, allocation, false);
-            }
-
         }
         else if(errno == ENOMSG)
         {
@@ -564,15 +512,12 @@ void listenForMessages()
             exit(-1);
         }
         i++;
+        incrementClock();
     }
     while(i < maxCheck);
-
-    //check for deadlock
-    if(isDeadlock())
-    {
-        clearDeadlock();
-    }
     incrementClock();
+
+
 }
 
 /**
@@ -640,12 +585,6 @@ void init()
         exit(-1);
     }
 
-    //init available resource
-    availableResources.pid = getpid();
-    for(i = 0; i < 10; i ++)
-    {
-        availableResources.res[i] = MAX_RES_COUNT;
-    }
 
     //get start time
     time(&startTime);
