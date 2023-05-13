@@ -2,15 +2,24 @@ Walter Holley III
 Spring 2023
 CMPSCI 4760 - Operating Systems
 
-Github: https://github.com/WalterHolley/school/tree/master/UMSL/CMPSCI4760/project5
+Github: https://github.com/WalterHolley/school/tree/master/UMSL/CMPSCI4760/project6
 
-PROJECT 5: OS Resource Management Simulator written in C.
+PROJECT 6: OS Page & Frame Table Simulator written in C.
 A simulated Operating System clock will be managed by a parent process(oss).
 At random intervals, oss will start a worker processes, and communicate back
 and forth with these processes through a pair of message queues.  The worker processes
-will make requests for resource from oss.  Depending on the availability of resources, oss
-will grant the request, or detect a deadlock if the system has none of the requested resource available.
-oss will then decide to terminate a process based on its priority level if it's using the requested resource.
+will make requests for memory reads and writes.  Depending on the availability of frames, oss
+will grant access to the next available frame, detect a frame with the same addressand report access back, or
+encounter a page fault if no frame are available.  In the event of a page fault, oss will use a
+First-in-First-out(FIFO) approach to swap in a new address.  After each frame event, the corresponding page table
+area will be updated with a reference to the frame that holds its address.
+oss will terminate if more than 100 proccesses have been queued, or 2 real life seconds have passed.  When complete, the
+following stats will be logged and printed to the console:
+-Total memory access requests
+-Total page faults
+-Memory access requests per second(based on actual system clock)
+-page fault to memory access ratio
+-average access speed(based on oss clock)
 
 Installation
 run 'make' command
@@ -20,6 +29,6 @@ oss [-f <logfile> -v]
 For additional information on application use, use the help(oss -h) command
 
 EXAMPLE OUTPUT
-command: oss -f ossproc.log (executes three worker processes, all simultaneously, each process will run for a maximum of 2 seconds, and the oss parent output
-will be written to the ossproc.log file)
+command: oss -f ossproc.log (executes random number of worker processes, will run for a maximum of 2 seconds, then terminate.
+Rhe oss parent will write stats to the console as well the ossproc.log file)
 

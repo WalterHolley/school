@@ -1,5 +1,5 @@
 #define MAX_CONCURRENT_WORKERS 18
-#define MAX_TOTAL_WORKERS 1
+#define MAX_TOTAL_WORKERS 3
 #define MAX_SPAWN_TIME 3
 #define SPAWN_THRESHOLD 20
 
@@ -28,14 +28,11 @@ time_t startTime;
 int totalWorkers = 0;
 int currentWorkers = 0;
 int pendingWorkers = 0;
-int deadlockTerminations = 0;
-int deadlocksDetected = 0;
-int normalTerminations = 0;
-int deadlockChecks = 0;
 int requestsGranted = 0;
+int pageFaults = 0;
+int accessSpeed = 0;
 int listenerMQId, sendMQId, ossMemId;
-const int MAX_RUN_TIME = 60;
-const int NANO_INCREMENT = 10000;
+const int NANO_INCREMENT = 100;
 int TERM_FLAG = 0;
 int linesRemaining = 100000; //total number of lines that can be written to the log
 struct sysclock* osclock;
@@ -44,14 +41,25 @@ struct frameTable frameList;
 struct proc_pages pageTable[MAX_CONCURRENT_WORKERS];
 
 
-//TODO: Define frame queue
-//TODO: Define frame wait queue
+//blocked requests queue
+struct blockedQueue {
+    int size;
+    struct resource requests[MAX_CONCURRENT_WORKERS];
 
+};
+
+struct blockedQueue blockedRequests;
 
 char* logFile = "oss.log";
 FILE *logfp;
 bool verbose = false;
 
+
+void addBlockedRequest(struct resource request)
+{
+    blockedRequests.requests[blockedRequests.size] = request;
+    blockedRequests.size++;
+}
 
 
 
@@ -62,8 +70,25 @@ bool verbose = false;
  */
 void cleanupResources()
 {
+    int i = 0;
 
     printf("Terminating program\n");
+
+    //kill known processes
+    for(i = 0; i < MAX_CONCURRENT_WORKERS; i++)
+    {
+        if(pageTable[i].pid > 0)
+        {
+            kill(pageTable[i].pid, SIGTERM);
+            waitForTerm(pageTable[i].pid);
+
+        }
+        else
+        {
+            continue;
+        }
+    }
+
 
     //close logs
     fclose(logfp);
@@ -170,7 +195,7 @@ void writeToConsole(char entry[200])
 }
 
 /**
- * Prints the process table to
+ * Prints the frame table to
  * the console
  */
 void printAllocationTable()
@@ -178,58 +203,30 @@ void printAllocationTable()
     int i;
     char line[100];
     //print header
+    sprintf(line, "Occupied \t DirtyBit \t Head");
+    writeToConsole(line);
+
+    for(i = 0; i < FRAME_TABLE_SIZE; i++)
+    {
+        char* occupied = frameList.frames[i].occupied?".":"+";
+        char* head = frameList.frames[i].head?"*":"";
+        sprintf(line, "Frame %d:\t%s\t%d\t%s",i, occupied, 0, head);
+        writeToConsole(line);
+    }
 
 
 }
 
 
 /** Increments the simulated clock of the system **/
-void incrementClock()
+void incrementClock(int mult)
 {
     int nanos = osclock->nanoseconds;
-    nanos += NANO_INCREMENT;
+    nanos += NANO_INCREMENT * mult;
     osclock->seconds = osclock->seconds + (nanos / NANOS_IN_SECOND);
     osclock->nanoseconds = nanos % NANOS_IN_SECOND;
 
 }
-
-
-/**
- * Forks and creates a child process
- * @return PID of child process
- */
-int createChild()
-{
-    pid_t childPid; // process ID of a child executable
-
-    childPid = fork();
-    if (childPid == -1) // error
-    {
-        logToFile("An error occurred during fork");
-        cleanupResources();
-        perror("An error occurred during fork");
-        exit(1);
-    }
-    else if (childPid == 0) //this is the child node.  run program
-    {
-        char* args[] = {"./user_proc", NULL};
-        execvp(args[0], args);
-    }
-    else //parent. add child to allocation table
-    {
-        currentWorkers++;
-        totalWorkers++;
-        //TODO: add new page record
-        incrementClock();
-        incrementClock();
-    }
-
-    return childPid;
-}
-
-
-
-
 
 
 /**
@@ -279,16 +276,17 @@ void removePage(int pid)
         }
         else
         {
-            if(pageTable[i].pid == pid) //consume resources. reduce priority
+            if(pageTable[i].pid == pid) //remove page entries
             {
                 emptyPage.pid = 0;
                 pageTable[i] = emptyPage;
+                sprintf(logEntry, "Pages for PID %i removed", pid);
+                logToFile(logEntry);
             }
             break;
         }
     }
 }
-
 
 /** Loops until a child process is terminated.
  * Increments OS clock
@@ -303,13 +301,53 @@ int waitForTerm(int childPid)
     do
     {
         result = waitpid(childPid, &pidStatus, WNOHANG);
-        incrementClock();
+        incrementClock(10);
     }while(result != childPid);
+    removePage(childPid);
     currentWorkers--;
     sprintf(logEntry, "PID %d has terminated at S:%d N:%d", childPid, osclock->seconds, osclock->nanoseconds);
     writeToConsole(logEntry);
     return result;
 }
+
+/**
+ * Forks and creates a child process
+ * @return PID of child process
+ */
+int createChild()
+{
+    pid_t childPid; // process ID of a child executable
+
+    childPid = fork();
+    if (childPid == -1) // error
+    {
+        logToFile("An error occurred during fork");
+        cleanupResources();
+        perror("An error occurred during fork");
+        exit(1);
+    }
+    else if (childPid == 0) //this is the child node.  run program
+    {
+        char* args[] = {"./user_proc", NULL};
+        execvp(args[0], args);
+    }
+    else //parent. add child to allocation table
+    {
+        currentWorkers++;
+        totalWorkers++;
+        //TODO: add new page record
+        addPage(childPid);
+        incrementClock(5);
+    }
+
+    return childPid;
+}
+
+
+
+
+
+
 
 
 
@@ -324,7 +362,7 @@ bool canSpawnChildren()
     time_t now;
     time(&now);
 
-    if(now - startTime < 5 && totalWorkers <= MAX_TOTAL_WORKERS)
+    if(now - startTime < MAX_SPAWN_TIME && totalWorkers < MAX_TOTAL_WORKERS)
     {
         result = true;
     }
@@ -340,17 +378,22 @@ bool canSpawnChildren()
  * @param allocation
  * @return
  */
-struct resourcemsg makeResourceMessage(int pid, int resId, int allocation)
+struct resourcemsg makeResourceMessage(int pid, int operation, int address)
 {
     struct resourcemsg msg;
     msg.msgType = pid;
 
-    sprintf(msg.message, "%d:%d", resId, allocation);
+    sprintf(msg.message, "%d:%d", operation, address);
 
     return msg;
 }
 
-struct resource getChildMessage(struct resourcemsg childMsg)
+/**
+ * parses a message received from a child process
+ * @param childMsg
+ * @return
+ */
+struct resource getChildMessage(struct resourcemsg childMsg, int pid)
 {
     struct resource result;
 
@@ -362,6 +405,8 @@ struct resource getChildMessage(struct resourcemsg childMsg)
     result.offset = atoi(token);
     token = strtok(NULL, ":");
     result.address = atoi(token);
+
+    result.pid = pid;
 
     return result;
 }
@@ -402,12 +447,70 @@ void manageProcesses()
     }
 }
 
+/**
+ * Gets the number of the page to update
+ * @param pageRequest
+ * @return
+ */
 int getPage(struct resource pageRequest){
     int page = 0;
     page = (pageRequest.address / pageRequest.base) - (pageRequest.offset / pageRequest.base);
     return page;
 }
 
+void updateFrame(int frameIndex, struct resource request)
+{
+
+    frameList.frames[frameIndex].pid = request.pid;
+    frameList.frames[frameIndex].occupied = true;
+    frameList.frames[frameIndex].id = request.address;
+    frameList.frames[frameIndex].write = request.operation;
+    if(request.operation > 0)
+    {
+        incrementClock(3);
+    }
+    else
+    {
+        incrementClock(1);
+    }
+
+}
+
+/**
+ * Updates page with an associated frame index
+ * @param frameIndex
+ * @param offset
+ * @param page
+ * @param pid
+ */
+void updatePage(int frameIndex, int offset, int page, int pid)
+{
+    int i;
+    char logEntry[200];
+    for(i = 0; i < MAX_CONCURRENT_WORKERS; i++)
+    {
+        if(pageTable[i].pid != pid)
+        {
+            incrementClock(1);
+            continue;
+        }
+        else
+        {
+            pageTable[i].pages[page].frames[offset] = frameIndex;
+            sprintf(logEntry, "Page %d updated for PID %d with frame %d", page + 1, pid, frameIndex + 1);
+            logToFile(logEntry);
+            incrementClock(1);
+            break;
+        }
+    }
+}
+
+/**
+ * looks for the next available frame
+ * @param request
+ * @param pid
+ * @return index of next available frame, or -1 for page fault
+ */
 int frameSearch(struct resource request)
 {
     int i = frameList.headIndex;
@@ -417,9 +520,6 @@ int frameSearch(struct resource request)
     {
         if(!frameList.frames[i].occupied)
         {
-            //update frame
-            //update page
-
             result = i;
             break;
         }
@@ -434,23 +534,85 @@ int frameSearch(struct resource request)
         {
             i = 0;
         }
-
     }
     while( i != frameList.headIndex);
 
     return result;
 }
 
+/**
+ * Performs frame update in the event of page fault scenarios
+ * @param request
+ * @param pid
+ */
+void handlePageFault(struct resource request)
+{
+    int head = frameList.headIndex;
+    char logEntry[200];
+
+    sprintf(logEntry, "Frame %d for PID %d address %d has been removed", head + 1, frameList.frames[head].pid,
+            frameList.frames[head].id);
+    writeToConsole(logEntry);
+
+    //update current heading frame
+    frameList.frames[head].head = false;
+    updateFrame(head, request);
+    sprintf(logEntry, "Frame %d for PID %d address %d has been updated", head + 1, frameList.frames[head].pid,
+            frameList.frames[head].id);
+    writeToConsole(logEntry);
+
+    //make next frame the new head
+    head++;
+    if(head == FRAME_TABLE_SIZE)
+    {
+        head = 0;
+    }
+    frameList.headIndex = head;
+    frameList.frames[head].head = true;
+    sprintf(logEntry, "Frame %d is now the head of the frame table", head + 1);
+    writeToConsole(logEntry);
+
+}
+
 void processRequest(struct resource request)
 {
     int memFrame = frameSearch(request);
+    struct resourcemsg replyMessage;
     char logEntry[200];
 
     if(memFrame == -1)
     {
-        sprintf(logEntry, "Address %i is not in frame.  Page Fault has occurred");
-        logToFile(logEntry);
+        sprintf(logEntry, "Address %i is not in frame.  Page Fault has occurred. Request for PID %d blocked", request.address, request.pid);
+        writeToConsole(logEntry);
+        addBlockedRequest(request);
+        pageFaults++;
     }
+    else // update normal frame or read existing frame
+    {
+        updateFrame(memFrame, request);
+        if(!frameList.frames[memFrame].occupied) //update empty frame
+        {
+            sprintf(logEntry, "Frame %d updated with address %d for PID %d at S:%d N:%d",
+                    memFrame + 1, request.address, request.pid, osclock->seconds, osclock->nanoseconds);
+            logToFile(logEntry);
+        }
+        else //reference existing frame
+        {
+            sprintf(logEntry, "Referencing address %d in existing frame %d for PID %d",
+                    request.address, memFrame + 1, request.pid);
+            logToFile(logEntry);
+
+        }
+        requestsGranted++;
+    }
+
+    //reply to PID
+    replyMessage.msgType = request.pid;
+    sprintf(replyMessage.message, "%d:%d", request.operation, request.address);
+    printf("Sending message to PID: %d  %s\n",request.pid, replyMessage.message);
+
+    msgsnd(sendMQId, &replyMessage, sizeof(struct resourcemsg), 0);
+
 }
 
 
@@ -462,16 +624,16 @@ void listenForMessages()
     struct resourcemsg msg;
     char* operation;
     struct resource request;
-    int maxCheck = currentWorkers;
+
     int i = 0;
+    int maxCheck = currentWorkers;
     char logEntry[200];
 
-    incrementClock();
     do
     {
         if(msgrcv(listenerMQId, (void *)&msg, sizeof(struct resourcemsg), 0, IPC_NOWAIT) != -1)
         {
-            request = getChildMessage(msg);
+            request = getChildMessage(msg, msg.msgType);
 
             if(request.operation == 0)
             {
@@ -492,6 +654,7 @@ void listenForMessages()
                     sprintf(logEntry, "PID %d requests %s operation on address %i", msg.msgType, operation, request.address);
                     logToFile(logEntry);
                     processRequest(request);
+                    incrementClock(1);
                     break;
                 default:
                     //unknown.  end program
@@ -503,7 +666,7 @@ void listenForMessages()
         }
         else if(errno == ENOMSG)
         {
-            incrementClock();
+            incrementClock(1);
         }
         else
         {
@@ -512,11 +675,19 @@ void listenForMessages()
             exit(-1);
         }
         i++;
-        incrementClock();
+        incrementClock(1);
     }
     while(i < maxCheck);
-    incrementClock();
 
+    //process blocked requests
+    if(blockedRequests.size > 0)
+    {
+        for(i = 0; i < blockedRequests.size; i++)
+        {
+            handlePageFault(blockedRequests.requests[i]);
+        }
+        blockedRequests.size = 0;
+    }
 
 }
 
@@ -527,6 +698,8 @@ void listenForMessages()
 void executeWorkers()
 {
     bool running = true;
+    //get start time
+    time(&startTime);
     while(running)
     {
         if(TERM_FLAG)
@@ -540,7 +713,7 @@ void executeWorkers()
             listenForMessages();
         }
 
-        if(currentWorkers <= 0 && !canSpawnChildren())
+        if((currentWorkers <= 0 && !canSpawnChildren()))
         {
             running = false;
         }
@@ -556,14 +729,15 @@ void init()
     int listenerMQKey = ftok("oss.c", 1);
     int replyMQKey = ftok("oss.c", 3);
     key_t sharedMemKey = ftok("oss.c", 5);
-    char logEntry[100];
-    int i;
 
     //init 'OS' clock and shared resources
     ossMemId = shmget(sharedMemKey, sizeof(struct sysclock), 0644|IPC_CREAT);
     osclock = (struct sysclock*) shmat(ossMemId, (void*)0, 0);
     osclock->seconds = 0;
     osclock->nanoseconds = 0;
+
+    //blocked message structure
+    blockedRequests.size = 0;
 
     //init randomgen
     srand((unsigned) getpid());
@@ -584,31 +758,21 @@ void init()
         cleanupResources();
         exit(-1);
     }
-
-
-    //get start time
-    time(&startTime);
-
 }
 
 void printFinalResults()
 {
-    float terminationPercentage = (float)deadlockTerminations / (float)deadlocksDetected;
-    char logEntry[200];
 
+    char logEntry[200];
+    int memAccessPerSecond = 0;
     sprintf(logEntry, "Requests granted: %d", requestsGranted);
     writeToConsole(logEntry);
-    sprintf(logEntry, "Deadlock checks run: %d", deadlockChecks);
+    sprintf(logEntry, "Memory accesses per second: %d", memAccessPerSecond);
     writeToConsole(logEntry);
-    sprintf(logEntry, "Deadlocks detected: %d", deadlocksDetected);
+    sprintf(logEntry, "Page faults: %d", pageFaults);
     writeToConsole(logEntry);
-    sprintf(logEntry, "Deadlock terminations: %d", deadlockTerminations);
+    sprintf(logEntry, "Page faults per memory access: %d", pageFaults);
     writeToConsole(logEntry);
-    sprintf(logEntry, "Deadlock termination percentage %.2f%s", terminationPercentage * 100, "%");
-    writeToConsole(logEntry);
-    sprintf(logEntry, "Processes terminated normally: %d", normalTerminations);
-    writeToConsole(logEntry);
-
 }
 
 /**MAIN ENTRY POINT**/

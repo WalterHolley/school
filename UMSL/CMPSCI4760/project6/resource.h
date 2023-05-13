@@ -16,6 +16,7 @@ struct resource{
     int offset;
     int base;
     int address;
+    int pid;
 
 };
 
@@ -29,6 +30,7 @@ struct frame{
     bool head;
     int pid;
     int id;
+    int write;
 
 };
 
