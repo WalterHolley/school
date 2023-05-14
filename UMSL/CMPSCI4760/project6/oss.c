@@ -29,10 +29,11 @@ int totalWorkers = 0;
 int currentWorkers = 0;
 int pendingWorkers = 0;
 int requestsGranted = 0;
+int executedWorkers = 0;
 int pageFaults = 0;
 int accessSpeed = 0;
 int listenerMQId, sendMQId, ossMemId;
-const int NANO_INCREMENT = 100;
+const int NANO_INCREMENT = 1000;
 int TERM_FLAG = 0;
 int linesRemaining = 100000; //total number of lines that can be written to the log
 struct sysclock* osclock;
@@ -213,6 +214,10 @@ void printAllocationTable()
         char* head = frameList.frames[i].head?"*":"";
         char frame[20];
         sprintf(frame, "Frame %i:", i + 1);
+
+        if(occupied == "."){
+            operation = "";
+        }
         sprintf(line, "%-15s %5s %15s %15s",frame, occupied, operation, head);
         writeToConsole(line);
     }
@@ -308,6 +313,7 @@ int waitForTerm(int childPid)
     }while(result != childPid);
     removePage(childPid);
     currentWorkers--;
+    executedWorkers++;
     sprintf(logEntry, "PID %d has terminated at S:%d N:%d", childPid, osclock->seconds, osclock->nanoseconds);
     writeToConsole(logEntry);
     return result;
@@ -560,7 +566,7 @@ void handlePageFault(struct resource request)
     //update current heading frame
     frameList.frames[head].head = false;
     updateFrame(head, request);
-    sprintf(logEntry, "Frame %d has been updated with address %d", head + 1, frameList.frames[head].id);
+    sprintf(logEntry, "Frame %d has been updated with address %d at S:%d N:%d", head + 1, frameList.frames[head].id, osclock->seconds, osclock->nanoseconds);
     writeToConsole(logEntry);
 
     //make next frame the new head
@@ -655,7 +661,7 @@ void listenForMessages()
                     break;
                 case 0:
                 case 1:
-                    sprintf(logEntry, "PID %d requests %s operation on address %i", msg.msgType, operation, request.address);
+                    sprintf(logEntry, "PID %d requests %s operation on address %i at S:%d N:%d", msg.msgType, operation, request.address, osclock->seconds, osclock->nanoseconds);
                     logToFile(logEntry);
                     processRequest(request);
                     incrementClock(1);
@@ -769,7 +775,7 @@ void printFinalResults()
 
     char logEntry[200];
     int totalRequests = requestsGranted + pageFaults;
-    double faultPctg = pageFaults / requestsGranted;
+    float faultPctg = 100 - (((float)requestsGranted / pageFaults) * 100);
 
     sprintf(logEntry,"======FINAL FRAME TABLE======");
     writeToConsole(logEntry);
@@ -777,6 +783,10 @@ void printFinalResults()
 
     int memAccessPerSecond = totalRequests / MAX_SPAWN_TIME;
     sprintf(logEntry, "======FINAL RESULTS======");
+    writeToConsole(logEntry);
+    sprintf(logEntry, "Total Processes: %d", executedWorkers);
+    writeToConsole(logEntry);
+    sprintf(logEntry, "Total System run time: %d seconds", MAX_SPAWN_TIME);
     writeToConsole(logEntry);
     sprintf(logEntry, "Total Requests: %d", totalRequests);
     writeToConsole(logEntry);
@@ -786,7 +796,7 @@ void printFinalResults()
     writeToConsole(logEntry);
     sprintf(logEntry, "Page faults: %d", pageFaults);
     writeToConsole(logEntry);
-    sprintf(logEntry, "Page faults per memory access: %d", faultPctg);
+    sprintf(logEntry, "Page faults per memory access: %.2f:10", faultPctg * 0.1f);
     writeToConsole(logEntry);
 }
 
