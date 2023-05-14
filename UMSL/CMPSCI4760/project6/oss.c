@@ -19,6 +19,7 @@
 #include <signal.h>
 #include <time.h>
 #include <errno.h>
+#include <math.h>
 #include "resource.h"
 
 
@@ -30,6 +31,7 @@ int currentWorkers = 0;
 int pendingWorkers = 0;
 int requestsGranted = 0;
 int executedWorkers = 0;
+int elapsedTime = 0;
 int pageFaults = 0;
 int accessSpeed = 0;
 int listenerMQId, sendMQId, ossMemId;
@@ -141,10 +143,6 @@ int handleParams(int argCount, char *argString[])
                 break;
             case ':':
                 printf("%c missing option value\n", optopt);
-                break;
-            case 'v':
-                printf("Verbose logging enabled\n");
-                verbose = true;
                 break;
             case '?':
             default:
@@ -370,12 +368,18 @@ bool canSpawnChildren()
     bool result = false;
     time_t now;
     time(&now);
-
-    if(now - startTime < MAX_SPAWN_TIME && totalWorkers < MAX_TOTAL_WORKERS)
+    int newTimePassed = now - startTime;
+    if(newTimePassed < MAX_SPAWN_TIME && totalWorkers < MAX_TOTAL_WORKERS)
     {
         result = true;
     }
 
+    //print frame table at every real time second
+    if(newTimePassed > elapsedTime && newTimePassed < MAX_SPAWN_TIME)
+    {
+        printAllocationTable();
+        elapsedTime = newTimePassed;
+    }
     return  result;
 }
 
@@ -775,18 +779,22 @@ void printFinalResults()
 
     char logEntry[200];
     int totalRequests = requestsGranted + pageFaults;
+    int memAccessPerSecond = totalRequests / MAX_SPAWN_TIME;
     float faultPctg = 100 - (((float)requestsGranted / pageFaults) * 100);
+    float accessSpeed = (float)memAccessPerSecond / NANOS_IN_SECOND;
 
     sprintf(logEntry,"======FINAL FRAME TABLE======");
     writeToConsole(logEntry);
     printAllocationTable();
 
-    int memAccessPerSecond = totalRequests / MAX_SPAWN_TIME;
+
     sprintf(logEntry, "======FINAL RESULTS======");
     writeToConsole(logEntry);
     sprintf(logEntry, "Total Processes: %d", executedWorkers);
     writeToConsole(logEntry);
-    sprintf(logEntry, "Total System run time: %d seconds", MAX_SPAWN_TIME);
+    sprintf(logEntry, "Total (actual)System run time: %d seconds", MAX_SPAWN_TIME);
+    writeToConsole(logEntry);
+    sprintf(logEntry, "Total Simulator run time: S:%d N:%d", osclock->seconds, osclock->nanoseconds);
     writeToConsole(logEntry);
     sprintf(logEntry, "Total Requests: %d", totalRequests);
     writeToConsole(logEntry);
@@ -797,6 +805,8 @@ void printFinalResults()
     sprintf(logEntry, "Page faults: %d", pageFaults);
     writeToConsole(logEntry);
     sprintf(logEntry, "Page faults per memory access: %.2f:10", faultPctg * 0.1f);
+    writeToConsole(logEntry);
+    sprintf(logEntry, "Average Memory Access Speed: 1 access every %f seconds", accessSpeed);
     writeToConsole(logEntry);
 }
 
