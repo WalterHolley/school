@@ -1,5 +1,5 @@
 #define MAX_CONCURRENT_WORKERS 18
-#define MAX_TOTAL_WORKERS 3
+#define MAX_TOTAL_WORKERS 100
 #define MAX_SPAWN_TIME 3
 #define SPAWN_THRESHOLD 20
 
@@ -203,14 +203,17 @@ void printAllocationTable()
     int i;
     char line[100];
     //print header
-    sprintf(line, "Occupied \t DirtyBit \t Head");
+    sprintf(line, "%25s %20s %10s", "Occupied", "Last Operation", "Head");
     writeToConsole(line);
 
     for(i = 0; i < FRAME_TABLE_SIZE; i++)
     {
-        char* occupied = frameList.frames[i].occupied?".":"+";
+        char* occupied = frameList.frames[i].occupied?"+":".";
+        char* operation = frameList.frames[i].write == 0?"r":"w";
         char* head = frameList.frames[i].head?"*":"";
-        sprintf(line, "Frame %d:\t%s\t%d\t%s",i, occupied, 0, head);
+        char frame[20];
+        sprintf(frame, "Frame %i:", i + 1);
+        sprintf(line, "%-15s %5s %15s %15s",frame, occupied, operation, head);
         writeToConsole(line);
     }
 
@@ -549,16 +552,15 @@ void handlePageFault(struct resource request)
 {
     int head = frameList.headIndex;
     char logEntry[200];
+    struct resourcemsg replyMessage;
 
-    sprintf(logEntry, "Frame %d for PID %d address %d has been removed", head + 1, frameList.frames[head].pid,
-            frameList.frames[head].id);
+    sprintf(logEntry, "Frame %d containing address %d has been removed", head + 1, frameList.frames[head].id);
     writeToConsole(logEntry);
 
     //update current heading frame
     frameList.frames[head].head = false;
     updateFrame(head, request);
-    sprintf(logEntry, "Frame %d for PID %d address %d has been updated", head + 1, frameList.frames[head].pid,
-            frameList.frames[head].id);
+    sprintf(logEntry, "Frame %d has been updated with address %d", head + 1, frameList.frames[head].id);
     writeToConsole(logEntry);
 
     //make next frame the new head
@@ -571,6 +573,10 @@ void handlePageFault(struct resource request)
     frameList.frames[head].head = true;
     sprintf(logEntry, "Frame %d is now the head of the frame table", head + 1);
     writeToConsole(logEntry);
+
+    //reply to PID
+    replyMessage = makeResourceMessage(request.pid, request.operation, request.address);
+    msgsnd(sendMQId, &replyMessage, sizeof(struct resourcemsg), 0);
 
 }
 
@@ -603,15 +609,13 @@ void processRequest(struct resource request)
             logToFile(logEntry);
 
         }
+        //reply to PID
+        replyMessage = makeResourceMessage(request.pid, request.operation, request.address);
+        msgsnd(sendMQId, &replyMessage, sizeof(struct resourcemsg), 0);
         requestsGranted++;
     }
 
-    //reply to PID
-    replyMessage.msgType = request.pid;
-    sprintf(replyMessage.message, "%d:%d", request.operation, request.address);
-    printf("Sending message to PID: %d  %s\n",request.pid, replyMessage.message);
 
-    msgsnd(sendMQId, &replyMessage, sizeof(struct resourcemsg), 0);
 
 }
 
@@ -764,14 +768,25 @@ void printFinalResults()
 {
 
     char logEntry[200];
-    int memAccessPerSecond = 0;
+    int totalRequests = requestsGranted + pageFaults;
+    double faultPctg = pageFaults / requestsGranted;
+
+    sprintf(logEntry,"======FINAL FRAME TABLE======");
+    writeToConsole(logEntry);
+    printAllocationTable();
+
+    int memAccessPerSecond = totalRequests / MAX_SPAWN_TIME;
+    sprintf(logEntry, "======FINAL RESULTS======");
+    writeToConsole(logEntry);
+    sprintf(logEntry, "Total Requests: %d", totalRequests);
+    writeToConsole(logEntry);
     sprintf(logEntry, "Requests granted: %d", requestsGranted);
     writeToConsole(logEntry);
     sprintf(logEntry, "Memory accesses per second: %d", memAccessPerSecond);
     writeToConsole(logEntry);
     sprintf(logEntry, "Page faults: %d", pageFaults);
     writeToConsole(logEntry);
-    sprintf(logEntry, "Page faults per memory access: %d", pageFaults);
+    sprintf(logEntry, "Page faults per memory access: %d", faultPctg);
     writeToConsole(logEntry);
 }
 

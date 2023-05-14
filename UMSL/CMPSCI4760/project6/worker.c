@@ -91,7 +91,6 @@ void updateTerminationFlag()
  */
 void checkForTermination()
 {
-    printf("PID: %d memcheck %d\n", pid, memChecks);
     if(memChecks >= memcheckLimit)
     {
         updateTerminationFlag();
@@ -103,10 +102,8 @@ struct replyMsg parseResourceMsg(struct resourcemsg msg)
    struct replyMsg result;
 
     char* token = strtok(msg.message, ":");
-    printf("%s\n", token);
     result.operation = atoi(token);
     token = strtok(NULL, ":");
-    printf("%s\n", token);
     result.address = atoi(token);
 
     return result;
@@ -124,7 +121,6 @@ void handleReply()
     {
 
         parsedMessage = parseResourceMsg(msg);
-        printf("Worker %i: memory %s of address %i acknowledged\n", pid, parsedMessage.operation == 0?"read":"write", parsedMessage.address);
         memChecks++;
 
     }
@@ -179,7 +175,7 @@ int setup()
 
     //init memory check limit
     memChecks = 0;
-    memcheckLimit = 150 + randRange(100, -100);
+    memcheckLimit = 1000 + randRange(100, -100);
 
     //get shared resources(osclock, reply queue ID, listener queue ID)
     ossMemId = shmget(sharedMemKey, sizeof(struct sysclock), 0644|IPC_CREAT);
@@ -221,12 +217,12 @@ int setup()
 void performOperation()
 {
     manageResources();
-    printf("Resource managed\n");
+
     //handle reply
     handleReply();
-    printf("Reply handled\n");
+
     checkForTermination();
-    printf("Termination Checked\n");
+
 }
 
 int main(int argc, char* argv[])
@@ -241,9 +237,7 @@ int main(int argc, char* argv[])
         do
         {
             performOperation();
-            printf("PID: %d operation performed\n", pid);
         }while(!terminate);
-        printf("PID: %d Terminating\n", pid);
         //communicate termination
         msg = getResourceMsg(-1, -1, -1, -1);
         msgsnd(replyMQId, &msg, sizeof(struct resourcemsg), 0);
